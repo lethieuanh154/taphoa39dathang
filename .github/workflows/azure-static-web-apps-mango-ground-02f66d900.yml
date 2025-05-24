@@ -27,9 +27,9 @@ jobs:
           repo_token: ${{ secrets.GITHUB_TOKEN }} # Used for Github integrations (i.e. PR comments)
           action: "upload"
           ###### Repository/Build Configurations ######
-          app_location: "dist/taphoa39"                         # app nằm ở thư mục gốc repo
+          app_location: ""                         # app nằm ở thư mục gốc repo
           api_location: ""                          # không có API riêng
-          output_location: ""          # Angular output path
+          output_location: "dist/taphoa39/browser"          # Angular output path
           app_build_command: "npm install && npm run build --prod"
           ###### End of Repository/Build Configurations ######
 
