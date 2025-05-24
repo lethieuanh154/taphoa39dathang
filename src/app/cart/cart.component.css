@@ -1,0 +1,84 @@
+ .cart-modal {
+     position: fixed;
+     top: 120px;
+     right: 5px;
+     width: 350px;
+     background: #fff;
+     border: 1px solid #1976d2;
+     border-radius: 8px;
+     padding: 16px;
+     z-index: 1000;
+     min-width: 220px;
+     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+     text-align: right;
+     
+ }
+
+ .cart-list {
+     max-height: 300px;
+     overflow-y: auto;
+     padding: 0;
+     margin: 0;
+ }
+
+ .cart-total {
+     font-size: 16px;
+     font-weight: bold;
+     margin-top: 10px;
+     color: #d21919;
+ }
+
+ .remove-cart-button {
+     background: #1976d2;
+     color: white;
+     border: none;
+     border-radius: 8px;
+     padding: 8px 12px;
+     font-size: 14px;
+     margin-right: 5px;
+ }
+
+ .cart-title {
+     font-size: 18px;
+     font-weight: bold;
+     margin-bottom: 10px;
+     color: #1976d2;
+     text-align: center;
+ }
+
+ li {
+     list-style: square;
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     border: #1976d2 solid 1px;
+     border-radius: 8px;
+ }
+
+ p {
+     margin: 10px;
+     font-size: 15px;
+ }
+ 
+ button {
+    position: relative;
+    top: 5px;
+ }
+ button:hover {
+     background: #639eda;
+     color: white;
+     border: none;
+     border-radius: 8px;
+     padding: 8px 12px;
+     font-size: 14px;
+     margin-right: 5px;
+ }
+ button:active {
+     background: #1976d2;
+     color: white;
+     border: none;
+     border-radius: 8px;
+     padding: 8px 12px;
+     font-size: 14px;
+     margin-right: 5px;
+ }

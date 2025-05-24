@@ -1,0 +1,11 @@
+<section class="listing" (click)="addToCart()">
+  <img class="listing-photo" [src]="product.Image" alt="{{ product.FullName }}" crossorigin />
+  <h2 class="listing-name">{{ product.FullName }}</h2>
+  <p class="listing-price">Giá: {{ product.BasePrice| number: '1.0-0' }} </p>
+  <ng-container *ngIf="product.OnHand === 0; ">
+    <span class="out-of-stock-badge" style="color: red; font-weight: bold;">Hết hàng</span>
+  </ng-container>
+  <div *ngIf="product.discountBasePrice && product.discountBasePrice > 0" class="discount-badge">
+    -{{ product.discountBasePrice }}%
+  </div>
+</section>

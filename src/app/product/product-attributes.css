@@ -1,0 +1,73 @@
+.discount-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #e53935;
+  color: #fff;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 14px;
+  z-index: 2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.listing {
+  position: relative;
+  /* Để .discount-badge định vị tuyệt đối trong .listing */
+}
+
+.listing {
+  background: var(--accent-color);
+  border-radius: 20px;
+  padding-bottom: 20px;
+}
+.out-of-stock-badge {
+  position: absolute;
+  right: 10px;
+  background: #fcfcfc;
+  color: #fff;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 16px;
+  font-size: 14px;
+  z-index: 2;
+}
+.listing-stock {
+  padding: 5px 5px 5px 20px;
+  text-align: left;
+  font-size: 10px;
+  color: rgb(0, 0, 0);
+}
+
+.listing-name {
+  color: var(--primary-color);
+  padding: 10px 20px 0 20px;
+  font-size: 15px;
+  color: rgb(18, 103, 231);
+}
+
+.listing-photo {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 20px 20px 0 0;
+}
+
+.listing-price {
+  padding: 10px 10px 10px 20px;
+  text-align: left;
+  font-size: 15px;
+  color: rgb(216, 55, 15);
+}
+
+section.listing a {
+  padding-left: 20px;
+  text-decoration: none;
+  color: var(--primary-color);
+}
+
+section.listing a::after {
+  content: "\203A";
+  margin-left: 5px;
+}

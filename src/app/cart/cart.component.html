@@ -1,0 +1,19 @@
+<div class="cart-modal">
+    <h3 class="cart-title">Giỏ hàng</h3>
+    <div *ngIf="cart.length === 0" style="font-size: 15px;">Chưa có sản phẩm nào.</div>
+    <div class="cart-list">
+        <ul>
+            <li *ngFor="let item of cart; let i = index">
+                <p>{{item.FullName}}</p>
+                <p>{{item.BasePrice | number : '1.0-0'}}</p>
+                <button class="remove-cart-button" (click)="remove(i)">Xóa</button>
+            </li>
+        </ul>
+    </div>
+    <br>
+    <hr>
+    <div class="cart-total">
+        Tổng: {{ getBill | number : '1.0-0' }} VND
+        <br><button class="remove-cart-button">Đặt hàng</button>
+    </div>
+</div>

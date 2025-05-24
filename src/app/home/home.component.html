@@ -1,0 +1,20 @@
+<section class="sticky-search">
+    <form class="form-inline">
+        <input class="search-bar" type="text" placeholder="Search..." [(ngModel)]="searchTerm" name="searchTerm"
+            (keydown.enter)="onSearch()" />
+        <mat-icon class="icon-button" (click)="startVoiceInput();">mic</mat-icon>
+        <mat-icon class="icon-button">new_releases</mat-icon>
+        <mat-icon class="icon-button" (click)="toggleCart()">shopping_cart</mat-icon>
+        <app-cart *ngIf="showCart"></app-cart>
+        <mat-icon class="profile">perm_identity</mat-icon>
+    </form>
+
+</section>
+<section class="sticky-sale">
+    <button mat-button>new_releases</button>
+    <button mat-button>new_releases</button>
+    <button mat-button>new_releases</button>
+</section>
+<section class="results">
+    <app-product-attributes *ngFor="let product of productList" [product]="product"></app-product-attributes>
+</section>
