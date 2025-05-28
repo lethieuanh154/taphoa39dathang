@@ -11,6 +11,8 @@ import { MatCardModule } from '@angular/material/card';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { CartComponent } from '../cart/cart.component';
+import { Firestore, collection, collectionData, addDoc, deleteDoc, doc } from '@angular/fire/firestore';
+import { Observable } from 'rxjs';
 
 interface IWindow extends Window {
   webkitSpeechRecognition: any;
@@ -39,11 +41,18 @@ export class HomeComponent {
   searchService: search.SearchService = inject(search.SearchService);
   http: HttpClient = inject(HttpClient);
   recognition: any;
+  products$: Observable<any[]>; // observable để bind lên HTML
+
 
   constructor(
+    private firestore: Firestore,
     private ngZone: NgZone,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
+
+    const productsRef = collection(this.firestore, 'products');
+    this.products$ = collectionData(productsRef);
+
     this.productList = this.productService.getAllProducts();
     if (isPlatformBrowser(this.platformId)) {
 
@@ -68,6 +77,29 @@ export class HomeComponent {
       };
     }
   }
+  
+  addProduct() {
+    const productsRef = collection(this.firestore, 'products');
+    addDoc(productsRef, {
+      FullName: 'Bánh mì',
+      Code: 'Test234'
+    }).then(() => {
+      console.log('Sản phẩm đã được thêm thành công');
+    }).catch((error) => {
+      console.error('Lỗi khi thêm sản phẩm:', error);
+    });
+  }
+
+  deleteProduct() {
+    const productDoc = doc(this.firestore, `products`);
+    deleteDoc(productDoc).then(() => {
+      console.log('Sản phẩm đã được xóa thành công');
+    }).catch((error) => {
+      console.error('Lỗi khi xóa sản phẩm:', error);
+    }
+    );
+  }
+
   showCart = false;
   toggleCart() {
     this.showCart = !this.showCart;

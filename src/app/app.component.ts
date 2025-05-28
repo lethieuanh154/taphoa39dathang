@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
-import { HomeComponent } from './home/home.component';
 import { RouterModule } from '@angular/router';
+import { Firestore, collection, addDoc } from '@angular/fire/firestore';
+
 @Component({
   selector: 'app-root',
   imports: [RouterModule],

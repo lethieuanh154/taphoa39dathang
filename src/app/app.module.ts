@@ -9,6 +9,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatDialogModule } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
 
+import { provideFirebaseApp, initializeApp } from '@angular/fire/app';
+import { provideFirestore, getFirestore } from '@angular/fire/firestore'; // Nếu dùng Firestore
+import { environment } from '../environments/environment';
+
 @NgModule({
   declarations: [
 
@@ -24,7 +28,10 @@ import { FormsModule } from '@angular/forms';
     FormsModule,
     MatTableModule
   ],
-  providers: [],
-  bootstrap: []
+  providers: [
+    provideFirebaseApp(() => initializeApp(environment.firebase)),
+    provideFirestore(() => getFirestore())
+  ],
+  bootstrap: [ ]
 })
 export class AppModule { }

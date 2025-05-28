@@ -1,3 +1,12 @@
+<h2>Danh sách sản phẩm</h2>
+<button (click)="addProduct()">Thêm sản phẩm</button>
+<button (click)="deleteProduct()">Xóa sản phẩm</button>
+
+<ul>
+  <li *ngFor="let p of products$ | async">
+    {{ p.Code }} - {{ p.FullName }}₫
+  </li>
+</ul>
 <section class="sticky-search">
     <form class="form-inline">
         <input class="search-bar" type="text" placeholder="Search..." [(ngModel)]="searchTerm" name="searchTerm"
