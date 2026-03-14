@@ -1,0 +1,66 @@
+<div class="detail-backdrop" (click)="onBackdropClick()">
+  <div class="detail-dialog" (click)="onDialogClick($event)">
+    <!-- Close button -->
+    <button class="close-btn" (click)="onBackdropClick()" aria-label="Dong">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <!-- Product Image -->
+    <div class="detail-image-wrap">
+      <img
+        [src]="selectedProduct.Image || 'https://via.placeholder.com/400x400?text=No+Image'"
+        [alt]="selectedProduct.FullName"
+        class="detail-image"
+      />
+      <span class="stock-badge" *ngIf="isOutOfStock">Hết hàng</span>
+    </div>
+
+    <!-- Product Info -->
+    <div class="detail-body">
+      <h2 class="detail-name">{{ selectedProduct.FullName }}</h2>
+
+      <!-- Unit Selector (horizontal) -->
+      <div class="unit-selector" *ngIf="group.length > 1">
+        <button
+          *ngFor="let item of group"
+          class="unit-pill"
+          [class.unit-active]="item.Id === selectedProduct.Id"
+          (click)="selectUnit(item)"
+        >
+          {{ item.Unit }}
+        </button>
+      </div>
+      <div class="unit-single" *ngIf="group.length <= 1 && selectedProduct.Unit">
+        {{ selectedProduct.Unit }}
+      </div>
+
+      <!-- Pricing -->
+      <div class="pricing">
+        <div class="price-row price-market">
+          <span class="price-label">Giá thị trường:</span>
+          <span class="price-value strikethrough">{{ formatPrice(marketPrice) }} đ</span>
+        </div>
+        <div class="price-row price-original">
+          <span class="price-label">Giá gốc:</span>
+          <span class="price-value strikethrough">{{ formatPrice(originalPrice) }} đ</span>
+        </div>
+        <div class="price-row price-sale">
+          <span class="price-label">Giá bán:</span>
+          <span class="price-value">{{ formatPrice(salePrice) }} đ</span>
+        </div>
+      </div>
+
+      <!-- Add to Cart -->
+      <button
+        class="detail-add-btn"
+        [class.added]="addedAnimation"
+        [disabled]="isOutOfStock"
+        (click)="addToCart()"
+      >
+        {{ addedAnimation ? 'Đã thêm vào giỏ hàng!' : 'Thêm vào giỏ hàng' }}
+      </button>
+    </div>
+  </div>
+</div>

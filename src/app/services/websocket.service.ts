@@ -1,0 +1,106 @@
+import { Injectable, OnDestroy } from '@angular/core';
+import { Subject, BehaviorSubject } from 'rxjs';
+import { io, Socket } from 'socket.io-client';
+import { environment } from '../../environments/environment';
+
+export interface ProductWSUpdate {
+  Id: number;
+  OnHand?: number;
+  OnHandNV?: number;
+  BasePrice?: number;
+  Cost?: number;
+  Code?: string;
+  Name?: string;
+  FullName?: string;
+  Description?: string;
+  NormalizedName?: string;
+  NormalizedCode?: string;
+  ModifiedDate?: string;
+  isActive?: boolean;
+  isDeleted?: boolean;
+  [key: string]: any;
+}
+
+export interface ProductsUpdatedPayload {
+  products: ProductWSUpdate[];
+  timestamp: string;
+  count: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class WebSocketService implements OnDestroy {
+  private socket: Socket | null = null;
+
+  private productUpdates$ = new Subject<ProductWSUpdate[]>();
+  private productsAdded$ = new Subject<ProductWSUpdate[]>();
+  private connectionStatus$ = new BehaviorSubject<'connected' | 'disconnected' | 'connecting'>('disconnected');
+
+  connect(): void {
+    if (this.socket?.connected) return;
+
+    this.connectionStatus$.next('connecting');
+
+    this.socket = io(`${environment.domainUrl}/api/websocket/products`, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      timeout: 10000
+    });
+
+    this.socket.on('connect', () => {
+      this.connectionStatus$.next('connected');
+    });
+
+    this.socket.on('disconnect', () => {
+      this.connectionStatus$.next('disconnected');
+    });
+
+    this.socket.on('connect_error', (err) => {
+      console.warn('[WS] Connection error:', err.message);
+    });
+
+    this.socket.on('products_updated', (payload: ProductsUpdatedPayload) => {
+      if (payload?.products?.length) {
+        this.productUpdates$.next(payload.products);
+      }
+    });
+
+    this.socket.on('products_added', (payload: ProductsUpdatedPayload) => {
+      if (payload?.products?.length) {
+        this.productsAdded$.next(payload.products);
+      }
+    });
+
+    this.socket.on('notify', (payload: any) => {
+      if (payload?.products?.length) {
+        this.productUpdates$.next(payload.products);
+      }
+    });
+  }
+
+  getProductUpdates$() {
+    return this.productUpdates$.asObservable();
+  }
+
+  getProductsAdded$() {
+    return this.productsAdded$.asObservable();
+  }
+
+  getConnectionStatus$() {
+    return this.connectionStatus$.asObservable();
+  }
+
+  disconnect(): void {
+    this.socket?.disconnect();
+    this.socket = null;
+    this.connectionStatus$.next('disconnected');
+  }
+
+  ngOnDestroy(): void {
+    this.disconnect();
+    this.productUpdates$.complete();
+    this.productsAdded$.complete();
+    this.connectionStatus$.complete();
+  }
+}

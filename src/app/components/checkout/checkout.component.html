@@ -1,0 +1,134 @@
+<div class="checkout-page">
+  <div class="checkout-header">
+    <button class="back-btn" (click)="goBack()" aria-label="Quay lai">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+    </button>
+    <h1 class="checkout-title">Đặt hàng</h1>
+  </div>
+
+  <div class="checkout-content">
+    <!-- Order Summary -->
+    <section class="section">
+      <h2 class="section-title">Đơn hàng ({{ totalItems }} sản phẩm)</h2>
+      <div class="order-items" *ngIf="items.length > 0">
+        <div class="order-item" *ngFor="let item of items; trackBy: trackByCartItem">
+          <img [src]="item.product.Image || 'https://via.placeholder.com/48'" class="order-item-img" />
+          <div class="order-item-info">
+            <div class="order-item-name">{{ item.product.FullName }}</div>
+            <div class="order-item-qty">x{{ item.quantity }} {{ item.product.Unit }}</div>
+          </div>
+          <div class="order-item-price">{{ formatPrice(item.product.BasePrice * item.quantity) }}d</div>
+        </div>
+      </div>
+      <div class="order-total">
+        <span>Tổng cộng:</span>
+        <strong>{{ formatPrice(totalPrice) }} đ</strong>
+      </div>
+    </section>
+
+    <!-- Customer Info -->
+    <section class="section">
+      <h2 class="section-title">Thông tin nhận hàng</h2>
+
+      <div class="form-group">
+        <label class="form-label" for="name">Họ tên *</label>
+        <input
+          id="name"
+          type="text"
+          class="form-input"
+          placeholder="Nguyen Van A"
+          [(ngModel)]="customerName"
+          autocomplete="name"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="phone">Số điện thoại *</label>
+        <input
+          id="phone"
+          type="tel"
+          class="form-input"
+          placeholder="0905 xxx xxx"
+          [(ngModel)]="customerPhone"
+          autocomplete="tel"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="address">Địa chỉ giao hàng *</label>
+        <input
+          id="address"
+          type="text"
+          class="form-input"
+          placeholder="So nha, duong, phuong/xa..."
+          [(ngModel)]="customerAddress"
+          autocomplete="street-address"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="note">Ghi chú</label>
+        <textarea
+          id="note"
+          class="form-input form-textarea"
+          placeholder="Ghi chu them (khong bat buoc)"
+          [(ngModel)]="note"
+          rows="2"
+        ></textarea>
+      </div>
+    </section>
+
+    <!-- Payment Method -->
+    <section class="section">
+      <h2 class="section-title">Phương thức thanh toán</h2>
+
+      <label class="payment-option" [class.selected]="paymentMethod === 'cod'">
+        <input type="radio" name="payment" value="cod" [(ngModel)]="paymentMethod" />
+        <div class="payment-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+        </div>
+        <div class="payment-text">
+          <strong>Thanh toán khi nhận hàng (COD)</strong>
+          <span>Trả tiền mặt khi nhận hàng</span>
+        </div>
+      </label>
+
+      <label class="payment-option" [class.selected]="paymentMethod === 'transfer'">
+        <input type="radio" name="payment" value="transfer" [(ngModel)]="paymentMethod" />
+        <div class="payment-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+        </div>
+        <div class="payment-text">
+          <strong>Chuyển khoản QR</strong>
+          <span>Techcombank - 1234567890</span>
+        </div>
+      </label>
+
+      <div class="qr-section" *ngIf="paymentMethod === 'transfer'">
+        <img [src]="getQrUrl()" alt="QR chuyen khoan" class="qr-image" />
+        <p class="qr-note">Quét mã QR để chuyển khoản. Số tiền: <strong>{{ formatPrice(totalPrice) }} đ</strong></p>
+      </div>
+    </section>
+
+    <!-- Error -->
+    <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+    <!-- Submit -->
+    <button
+      class="submit-btn"
+      [disabled]="!isFormValid || isSubmitting"
+      (click)="submitOrder()"
+    >
+      {{ isSubmitting ? 'Dang xử lý...' : 'Xác nhận đặt hàng' }}
+    </button>
+  </div>
+</div>

@@ -1,29 +1,60 @@
-<h2>Danh sách sản phẩm</h2>
-<button (click)="addProduct()">Thêm sản phẩm</button>
-<button (click)="deleteProduct()">Xóa sản phẩm</button>
+<app-header (search)="onSearch($event)"></app-header>
 
-<ul>
-  <li *ngFor="let p of products$ | async">
-    {{ p.Code }} - {{ p.FullName }}₫
-  </li>
-</ul>
-<section class="sticky-search">
-    <form class="form-inline">
-        <input class="search-bar" type="text" placeholder="Search..." [(ngModel)]="searchTerm" name="searchTerm"
-            (keydown.enter)="onSearch()" />
-        <mat-icon class="icon-button" (click)="startVoiceInput();">mic</mat-icon>
-        <mat-icon class="icon-button">new_releases</mat-icon>
-        <mat-icon class="icon-button" (click)="toggleCart()">shopping_cart</mat-icon>
-        <app-cart *ngIf="showCart"></app-cart>
-        <mat-icon class="profile">perm_identity</mat-icon>
-    </form>
+<main class="main-content">
+  <!-- Quick Search Tags -->
+  <section class="quick-searches">
+    <button class="quick-tag" *ngFor="let tag of quickSearches; trackBy: trackByIndex" (click)="onQuickSearch(tag)">
+      {{ tag }}
+    </button>
+  </section>
 
-</section>
-<section class="sticky-sale">
-    <button mat-button>new_releases</button>
-    <button mat-button>new_releases</button>
-    <button mat-button>new_releases</button>
-</section>
-<section class="results">
-    <app-product-attributes *ngFor="let product of productList" [product]="product"></app-product-attributes>
-</section>
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải...</p>
+  </div>
+
+  <!-- Product Grid -->
+  <section class="product-grid" *ngIf="!isLoading && displayedProducts.length > 0">
+    <app-product-card *ngFor="let product of displayedProducts; trackBy: trackByProductCode"
+      [product]="product"
+      (cardClick)="onProductClick($event)"></app-product-card>
+  </section>
+
+  <!-- Loading More (infinite scroll) -->
+  <div class="loading-more" *ngIf="isLoadingMore">
+    <div class="spinner-small"></div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && displayedProducts.length === 0 && hasSearched">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <p>Không tìm thấy sản phẩm, Thử từ khóa khác</p>
+  </div>
+</main>
+
+<!-- Cart Panel -->
+<app-cart-panel></app-cart-panel>
+
+<!-- Product Detail Dialog -->
+<app-product-detail
+  *ngIf="detailProduct"
+  [product]="detailProduct"
+  [group]="detailGroup"
+  (close)="onDetailClose()">
+</app-product-detail>
+
+<!-- Footer -->
+<footer class="site-footer" [class.footer-hidden]="footerHidden">
+  <div class="footer-inner">
+    <p class="footer-name">Bách Hóa Tổng Hợp Song Minh</p>
+    <p class="footer-address"> <span class="fa fa-map-marker"> &nbsp;</span>25 Nguyễn Phước Tần, Cẩm Lệ, Đà Nẵng</p>
+    <p class="footer-phone"><span class="fa fa-phone"> &nbsp;</span>SDT: 0703.863.690</p>
+    <p class="footer-cr"> Copyright © 2026 Song Minh. All rights reserved.
+      <br>developing...
+    </p>
+  </div>
+</footer>

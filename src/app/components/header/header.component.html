@@ -1,0 +1,32 @@
+<header class="site-header">
+  <div class="header-inner">
+    <a class="logo-link" href="/">
+      <img src="assets/iconSongMinh.png" alt="Song Minh" class="logo-img" />
+      <span class="logo-text">Song Minh</span>
+    </a>
+
+    <div class="search-box">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Tìm sản phẩm..."
+        [(ngModel)]="searchTerm"
+        (keydown)="onKeydown($event)"
+        aria-label="Tim kiếm sản phẩm"
+      />
+      <button class="search-btn" (click)="onSearch()" aria-label="Tim kiem">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+      </button>
+    </div>
+
+    <button class="cart-btn" (click)="toggleCart()" aria-label="Gio hang">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>
+      <span class="cart-badge" *ngIf="totalItems > 0">{{ totalItems }}</span>
+    </button>
+  </div>
+</header>

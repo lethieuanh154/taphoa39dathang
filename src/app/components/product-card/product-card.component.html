@@ -1,0 +1,33 @@
+<div class="product-card" [class.out-of-stock]="isOutOfStock" (click)="onCardClick()">
+  <div class="card-image-wrap">
+    <img
+      [src]="product.Image || 'https://via.placeholder.com/200x200?text=No+Image'"
+      [alt]="product.FullName"
+      class="card-image"
+      loading="lazy"
+    />
+    <span class="stock-badge" *ngIf="isOutOfStock">Hết hàng</span>
+  </div>
+
+  <div class="card-body">
+    <h3 class="card-name">{{ product.FullName }}</h3>
+    <div class="card-unit" *ngIf="product.Unit">{{ product.Unit }}</div>
+    <div class="card-price">{{ formatPrice(product.BasePrice) }}d</div>
+  </div>
+
+  <button
+    class="add-btn"
+    [class.added]="addedAnimation"
+    [disabled]="isOutOfStock"
+    (click)="addToCart($event)"
+    aria-label="Them vao gio"
+  >
+    <svg *ngIf="!addedAnimation" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    <svg *ngIf="addedAnimation" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span>{{ addedAnimation ? 'Da them' : 'Them' }}</span>
+  </button>
+</div>
