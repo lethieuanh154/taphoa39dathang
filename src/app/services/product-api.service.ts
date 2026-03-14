@@ -307,6 +307,14 @@ export class ProductApiService implements OnDestroy {
   }
 
   /**
+   * Get all cached products (active, non-clone) for discount bar etc.
+   */
+  async getAllCachedProducts(): Promise<Product[]> {
+    const all = await this.getCachedProducts();
+    return all.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
+  }
+
+  /**
    * Check if a product is a clone.
    * Uses same heuristics as BanHang:
    * 1. isClone === true

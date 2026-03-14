@@ -20,17 +20,13 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent],
+  imports: [CommonModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit, OnDestroy {
 
-    readonly quickSearches = [
-    'nước', 'sữa', 'mì gói', 'bánh', 'dầu ăn',
-    'nước mắm', 'bia', 'gạo', 'đường', 'bột gặt'
-  ];
   // All master products from search (after grouping)
   private allMasterProducts: Product[] = [];
   // Displayed subset for infinite scroll
@@ -73,7 +69,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.productApi.initialize().then(() => {
       this.onSearch('nuoc');
+      this.loadDiscountProducts();
     });
+
+    this.loadCategories();
 
     this.updateSub = this.productApi.getProductUpdated$().subscribe(() => {
       if (this.lastSearchTerm) {
@@ -172,15 +171,88 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  onQuickSearch(term: string): void {
-    this.onSearch(term);
+  // --- Discount bar: random 10 products, reset daily ---
+  private async loadDiscountProducts(): Promise<void> {
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const cacheKey = 'dh_discountProducts';
+    const cacheDateKey = 'dh_discountDate';
+
+    const cachedDate = localStorage.getItem(cacheDateKey);
+    const cachedData = localStorage.getItem(cacheKey);
+
+    if (cachedDate === today && cachedData) {
+      try {
+        const codes: string[] = JSON.parse(cachedData);
+        const allProducts = await this.productApi.getAllCachedProducts();
+        this.discountProducts = codes
+          .map(code => allProducts.find(p => p.Code === code))
+          .filter((p): p is Product => !!p);
+        this.cdr.markForCheck();
+        return;
+      } catch { /* fall through to regenerate */ }
+    }
+
+    // Generate new random 10
+    const allProducts = await this.productApi.getAllCachedProducts();
+    if (allProducts.length === 0) return;
+
+    const shuffled = this.seededShuffle([...allProducts], today);
+    this.discountProducts = shuffled.slice(0, 10);
+
+    localStorage.setItem(cacheDateKey, today);
+    localStorage.setItem(cacheKey, JSON.stringify(this.discountProducts.map(p => p.Code)));
+    this.cdr.markForCheck();
+  }
+
+  private seededShuffle(arr: Product[], seed: string): Product[] {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+      hash |= 0;
+    }
+    for (let i = arr.length - 1; i > 0; i--) {
+      hash = (hash * 16807 + 12345) & 0x7fffffff;
+      const j = hash % (i + 1);
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  onDiscountProductClick(product: Product): void {
+    this.onProductClick(product);
+  }
+
+  // --- Category bubble menu ---
+  private async loadCategories(): Promise<void> {
+    try {
+      const url = `${environment.domainUrl}/api/kiotviet/categories`;
+      this.categories = await firstValueFrom(this.http.get<Category[]>(url));
+      this.cdr.markForCheck();
+    } catch {
+      this.categories = [];
+    }
+  }
+
+  toggleBubbleMenu(): void {
+    this.isBubbleMenuOpen = !this.isBubbleMenuOpen;
+    this.cdr.markForCheck();
+  }
+
+  closeBubbleMenu(): void {
+    this.isBubbleMenuOpen = false;
+    this.cdr.markForCheck();
+  }
+
+  onCategoryClick(category: Category): void {
+    this.isBubbleMenuOpen = false;
+    this.onSearch(category.Name);
   }
 
   trackByProductCode(_: number, product: Product): string {
     return product.Code;
   }
 
-  trackByIndex(index: number): number {
-    return index;
+  trackByCategoryId(_: number, cat: Category): number {
+    return cat.Id;
   }
 }

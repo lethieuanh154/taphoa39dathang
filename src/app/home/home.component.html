@@ -1,11 +1,26 @@
 <app-header (search)="onSearch($event)"></app-header>
 
 <main class="main-content">
-  <!-- Quick Search Tags -->
-  <section class="quick-searches">
-    <button class="quick-tag" *ngFor="let tag of quickSearches; trackBy: trackByIndex" (click)="onQuickSearch(tag)">
-      {{ tag }}
-    </button>
+  <!-- Discount Bar - Random 10 products, reset daily -->
+  <section class="discount-bar" *ngIf="discountProducts.length > 0">
+    <div class="discount-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+      <span>Giảm giá hôm nay</span>
+    </div>
+    <div class="discount-scroll">
+      <div class="discount-item" *ngFor="let p of discountProducts; trackBy: trackByProductCode"
+           (click)="onDiscountProductClick(p)">
+        <div class="discount-img-wrap">
+          <img [src]="p.Image || 'assets/no-image.png'" [alt]="p.Name" class="discount-img" loading="lazy">
+          <span class="sale-badge">SALE</span>
+        </div>
+        <div class="discount-name">{{ p.Name }}</div>
+        <div class="discount-price">{{ p.BasePrice | number:'1.0-0' }}đ</div>
+      </div>
+    </div>
   </section>
 
   <!-- Loading -->
@@ -46,6 +61,33 @@
   [group]="detailGroup"
   (close)="onDetailClose()">
 </app-product-detail>
+
+<!-- Category Bubble Menu -->
+<div class="bubble-backdrop" *ngIf="isBubbleMenuOpen" (click)="closeBubbleMenu()"></div>
+<div class="bubble-container" [class.bubble-open]="isBubbleMenuOpen">
+  <!-- Fan items -->
+  <div class="fan-menu" *ngIf="isBubbleMenuOpen">
+    <button class="fan-item"
+            *ngFor="let cat of categories; let i = index; trackBy: trackByCategoryId"
+            [style.--fan-index]="i"
+            [style.--fan-total]="categories.length"
+            (click)="onCategoryClick(cat)">
+      <span class="fan-label">{{ cat.Name }}</span>
+    </button>
+  </div>
+  <!-- Bubble button -->
+  <button class="bubble-btn" (click)="toggleBubbleMenu()" [class.bubble-active]="isBubbleMenuOpen">
+    <svg *ngIf="!isBubbleMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="4" y1="6" x2="20" y2="6"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="18" x2="20" y2="18"/>
+    </svg>
+    <svg *ngIf="isBubbleMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</div>
 
 <!-- Footer -->
 <footer class="site-footer" [class.footer-hidden]="footerHidden">
