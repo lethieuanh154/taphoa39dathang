@@ -259,7 +259,8 @@ export class ChatBubbleComponent implements OnInit, OnDestroy {
 
   formatTime(timestamp: string): string {
     if (!timestamp) return '';
-    const d = new Date(timestamp);
+    // Backend lưu UTC nhưng không có 'Z', thêm 'Z' để JS parse đúng UTC → convert local
+    const d = new Date(timestamp.endsWith('Z') ? timestamp : timestamp + 'Z');
     return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
   }
 
