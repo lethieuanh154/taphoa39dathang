@@ -1,7 +1,7 @@
 <div class="product-card" [class.out-of-stock]="isOutOfStock" (click)="onCardClick()">
   <div class="card-image-wrap">
     <img
-      [src]="product.Image || 'https://via.placeholder.com/200x200?text=No+Image'"
+      [src]="product.Image || 'assets/no-image.svg'"
       [alt]="product.FullName"
       class="card-image"
       loading="lazy"

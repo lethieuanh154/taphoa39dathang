@@ -6,6 +6,8 @@ import { HeaderComponent } from '../components/header/header.component';
 import { ProductCardComponent } from '../components/product-card/product-card.component';
 import { CartPanelComponent } from '../components/cart-panel/cart-panel.component';
 import { ProductDetailComponent } from '../components/product-detail/product-detail.component';
+import { CustomerIdentityDialogComponent } from '../components/customer-identity-dialog/customer-identity-dialog.component';
+import { ChatBubbleComponent } from '../components/chat-bubble/chat-bubble.component';
 import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
 import { Product } from '../models/product';
@@ -20,14 +22,14 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent] as const,
+  imports: [CommonModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit, OnDestroy {
 
-  // All master products from search (after grouping)
+  // All master products from search/category (after grouping)
   private allMasterProducts: Product[] = [];
   // Displayed subset for infinite scroll
   displayedProducts: Product[] = [];
@@ -46,13 +48,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Discount bar - random 10 products, reset daily
   discountProducts: Product[] = [];
 
+  // Customer identity
+  showIdentityDialog = false;
+  customerIdentity: string | null = null;
+
   // Category bubble menu
   categories: Category[] = [];
   isBubbleMenuOpen = false;
+  activeCategory: Category | null = null;
 
   private readonly PAGE_SIZE = 20;
   private loadedCount = 0;
-  private lastScrollY = 0;
   private lastSearchTerm = '';
   private updateSub?: Subscription;
 
@@ -64,20 +70,48 @@ export class HomeComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Check customer identity
+    this.customerIdentity = CustomerIdentityDialogComponent.getStoredIdentity();
+    if (!this.customerIdentity) {
+      this.showIdentityDialog = true;
+      return; // Don't load products until identity is confirmed
+    }
+
+    this.initProducts();
+  }
+
+  onIdentityConfirmed(identity: string): void {
+    this.customerIdentity = identity;
+    this.showIdentityDialog = false;
+    this.cdr.markForCheck();
+    this.initProducts();
+  }
+
+  private initProducts(): void {
     this.isLoading = true;
     this.cdr.markForCheck();
 
+    // Load categories in parallel with product initialization
+    this.loadCategories();
+
     this.productApi.initialize().then(() => {
-      this.onSearch('nuoc');
+      // Show featured products on initial load (no search needed)
+      this.loadFeaturedDisplay();
       this.loadDiscountProducts();
     });
 
-    this.loadCategories();
-
     this.updateSub = this.productApi.getProductUpdated$().subscribe(() => {
-      if (this.lastSearchTerm) {
+      // Refresh current view when WebSocket updates arrive
+      if (this.activeCategory) {
+        this.loadCategoryProducts(this.activeCategory);
+      } else if (this.lastSearchTerm) {
         this.doSearch(this.lastSearchTerm);
+      } else {
+        // Default featured view — refresh from IndexedDB cache
+        this.loadFeaturedDisplay();
       }
+      // Also refresh discount products with updated prices/stock
+      this.refreshDiscountProducts();
     });
   }
 
@@ -89,15 +123,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   onWindowScroll(): void {
     const scrollY = window.scrollY;
 
-    // Footer: hide on scroll down, show on scroll up
-    if (scrollY > this.lastScrollY && scrollY > 100) {
+    // Footer: hide when scrolling down, only show when scrolled back near the top (header area)
+    if (scrollY > 100) {
       this.footerHidden = true;
     } else {
       this.footerHidden = false;
     }
-    this.lastScrollY = scrollY;
-
-    // Infinite scroll: load more when near bottom
+    // Infinite scroll
     const scrollPosition = window.innerHeight + scrollY;
     const docHeight = document.documentElement.scrollHeight;
 
@@ -108,10 +140,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  // ======================== Search ========================
+
   onSearch(term: string): void {
-    if (!term.trim()) {
-      term = 'nuoc';
-    }
+    if (!term.trim()) return;
+
+    this.activeCategory = null;
     this.lastSearchTerm = term;
     this.isLoading = true;
     this.hasSearched = true;
@@ -122,30 +156,78 @@ export class HomeComponent implements OnInit, OnDestroy {
   private async doSearch(term: string): Promise<void> {
     try {
       const results = await this.productApi.searchProducts(term);
-
-      // Group by MasterUnit
-      this.groupedProducts = this.groupService.group(results);
-
-      // Extract master products (first in each group)
-      this.allMasterProducts = Object.values(this.groupedProducts).map(group => group[0]);
-
-      // Reset pagination
-      this.loadedCount = Math.min(this.PAGE_SIZE, this.allMasterProducts.length);
-      this.displayedProducts = this.allMasterProducts.slice(0, this.loadedCount);
+      this.setProducts(results);
     } catch {
-      this.allMasterProducts = [];
-      this.displayedProducts = [];
-      this.groupedProducts = {};
+      this.clearProducts();
     }
     this.isLoading = false;
     this.cdr.markForCheck();
+  }
+
+  // ======================== Category ========================
+
+  onCategoryClick(category: Category): void {
+    this.isBubbleMenuOpen = false;
+    this.activeCategory = category;
+    this.lastSearchTerm = '';
+    this.isLoading = true;
+    this.hasSearched = true;
+    this.cdr.markForCheck();
+    this.loadCategoryProducts(category);
+  }
+
+  private async loadCategoryProducts(category: Category): Promise<void> {
+    try {
+      const results = await this.productApi.loadByCategory(category.Id);
+      this.setProducts(results);
+    } catch {
+      this.clearProducts();
+    }
+    this.isLoading = false;
+    this.cdr.markForCheck();
+  }
+
+  // ======================== Featured (initial) ========================
+
+  private async loadFeaturedDisplay(): Promise<void> {
+    try {
+      const all = await this.productApi.getAllCachedProducts();
+      this.setProducts(all);
+      this.hasSearched = true;
+    } catch {
+      this.clearProducts();
+    }
+    this.isLoading = false;
+    this.cdr.markForCheck();
+  }
+
+  // ======================== Product display helpers ========================
+
+  private setProducts(results: Product[]): void {
+    this.groupedProducts = this.groupService.group(results);
+    this.allMasterProducts = Object.values(this.groupedProducts).map(group => group[0]);
+    // Sort: in-stock products first, out-of-stock at bottom
+    this.allMasterProducts.sort((a, b) => {
+      const stockA = a.OnHand + (a.CloneOnHandNV || 0);
+      const stockB = b.OnHand + (b.CloneOnHandNV || 0);
+      const aInStock = stockA > 0 ? 1 : 0;
+      const bInStock = stockB > 0 ? 1 : 0;
+      return bInStock - aInStock;
+    });
+    this.loadedCount = Math.min(this.PAGE_SIZE, this.allMasterProducts.length);
+    this.displayedProducts = this.allMasterProducts.slice(0, this.loadedCount);
+  }
+
+  private clearProducts(): void {
+    this.allMasterProducts = [];
+    this.displayedProducts = [];
+    this.groupedProducts = {};
   }
 
   private loadMore(): void {
     this.isLoadingMore = true;
     this.cdr.markForCheck();
 
-    // Small delay to show spinner
     setTimeout(() => {
       const nextCount = Math.min(this.loadedCount + this.PAGE_SIZE, this.allMasterProducts.length);
       this.displayedProducts = this.allMasterProducts.slice(0, nextCount);
@@ -154,6 +236,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.cdr.markForCheck();
     }, 100);
   }
+
+  // ======================== Product detail ========================
 
   onProductClick(product: Product): void {
     const masterId = product.MasterUnitId === null || product.MasterUnitId === undefined
@@ -171,9 +255,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
-  // --- Discount bar: random 10 products, reset daily ---
+  // ======================== Discount bar ========================
+
   private async loadDiscountProducts(): Promise<void> {
-    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const today = new Date().toISOString().slice(0, 10);
     const cacheKey = 'dh_discountProducts';
     const cacheDateKey = 'dh_discountDate';
 
@@ -192,7 +277,6 @@ export class HomeComponent implements OnInit, OnDestroy {
       } catch { /* fall through to regenerate */ }
     }
 
-    // Generate new random 10
     const allProducts = await this.productApi.getAllCachedProducts();
     if (allProducts.length === 0) return;
 
@@ -218,11 +302,26 @@ export class HomeComponent implements OnInit, OnDestroy {
     return arr;
   }
 
+  /**
+   * Refresh discount products with latest data from IndexedDB (after WS update).
+   * Keeps the same product codes, just updates prices/stock.
+   */
+  private async refreshDiscountProducts(): Promise<void> {
+    if (this.discountProducts.length === 0) return;
+    const codes = this.discountProducts.map(p => p.Code);
+    const allProducts = await this.productApi.getAllCachedProducts();
+    this.discountProducts = codes
+      .map(code => allProducts.find(p => p.Code === code))
+      .filter((p): p is Product => !!p);
+    this.cdr.markForCheck();
+  }
+
   onDiscountProductClick(product: Product): void {
     this.onProductClick(product);
   }
 
-  // --- Category bubble menu ---
+  // ======================== Category bubble menu ========================
+
   private async loadCategories(): Promise<void> {
     try {
       const url = `${environment.domainUrl}/api/kiotviet/categories`;
@@ -238,14 +337,22 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  onShowAllClick(): void {
+    this.isBubbleMenuOpen = false;
+    this.activeCategory = null;
+    this.lastSearchTerm = '';
+    this.isLoading = true;
+    this.cdr.markForCheck();
+    this.loadFeaturedDisplay();
+  }
+
   closeBubbleMenu(): void {
     this.isBubbleMenuOpen = false;
     this.cdr.markForCheck();
   }
 
-  onCategoryClick(category: Category): void {
-    this.isBubbleMenuOpen = false;
-    this.onSearch(category.Name);
+  getMarketPrice(basePrice: number): number {
+    return Math.round((basePrice * 1.10) / 500) * 500;
   }
 
   trackByProductCode(_: number, product: Product): string {

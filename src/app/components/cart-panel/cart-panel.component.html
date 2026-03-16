@@ -14,7 +14,7 @@
 
   <div class="panel-body" *ngIf="items.length > 0">
     <div class="cart-item" *ngFor="let item of items; trackBy: trackByCartItem">
-      <img [src]="item.product.Image || 'https://via.placeholder.com/60'" [alt]="item.product.FullName" class="item-img" />
+      <img [src]="item.product.Image || 'assets/no-image.svg'" [alt]="item.product.FullName" class="item-img" />
       <div class="item-info">
         <div class="item-name">{{ item.product.FullName }}</div>
         <div class="item-price">{{ formatPrice(item.product.BasePrice) }} đ</div>

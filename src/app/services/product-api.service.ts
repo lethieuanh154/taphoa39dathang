@@ -6,33 +6,42 @@ import { Product } from '../models/product';
 import { IndexedDBService } from './indexed-db.service';
 import { WebSocketService, ProductWSUpdate } from './websocket.service';
 
+interface Category {
+  Id: number;
+  Name: string;
+  Path: string;
+}
+
 /**
- * ProductApiService - Manages product data for online ordering app.
+ * ProductApiService - Hybrid architecture for DatHang app.
  *
  * Architecture:
- * 1. Initial load: Firestore (via backend API) → IndexedDB
- * 2. Search: Local from IndexedDB (no API calls)
- * 3. Realtime: WebSocket updates → IndexedDB → UI
- * 4. Filter: ONLY original products (exclude clones)
+ * 1. Initial load: Featured products (50) + Categories (~5KB total)
+ * 2. Category click: Load products by category from API → cache in IndexedDB
+ * 3. Search: Server-side search API (no full DB load needed)
+ * 4. Realtime: WebSocket updates for products already in IndexedDB
+ * 5. Filter: ONLY original products (exclude clones)
  */
 @Injectable({ providedIn: 'root' })
 export class ProductApiService implements OnDestroy {
   private readonly DB_NAME = 'DatHangDB';
-  private readonly DB_VERSION = 1;
+  private readonly DB_VERSION = 2; // Bumped from 1 to add CategoryId index
   private readonly STORE_NAME = 'products';
-  private readonly LAST_SYNC_KEY = 'dh_lastProductSync';
+  private readonly META_STORE = 'metadata';
   private readonly SEARCH_LIMIT = 80;
 
   private dbInitialized = false;
-  private syncInProgress = false;
   private subs: Subscription[] = [];
 
-  // In-memory cache for fast search
+  // In-memory cache for local operations
   private productsCache: Product[] | null = null;
 
-  // Observable for UI to know when products are ready
+  // Observable for UI
   private productsReady$ = new BehaviorSubject<boolean>(false);
   private productUpdated$ = new Subject<void>();
+
+  // Categories cache
+  private categories: Category[] = [];
 
   constructor(
     private http: HttpClient,
@@ -41,101 +50,191 @@ export class ProductApiService implements OnDestroy {
   ) {}
 
   /**
-   * Initialize: load products + connect WebSocket.
-   * Call this once from AppComponent or HomeComponent ngOnInit.
+   * Initialize: setup DB + WebSocket + load featured products.
+   * NO full product sync — only ~50KB initial payload.
    */
   async initialize(): Promise<void> {
     await this.initDB();
     this.setupWebSocket();
-    await this.syncProducts();
+    await this.loadFeaturedProducts();
   }
 
   private async initDB(): Promise<void> {
     if (this.dbInitialized) return;
-    await this.idb.init(this.DB_NAME, this.DB_VERSION, (db) => {
-      if (!db.objectStoreNames.contains(this.STORE_NAME)) {
+    await this.idb.init(this.DB_NAME, this.DB_VERSION, (db, oldVersion) => {
+      // Version 1 -> 2: Add CategoryId index + metadata store
+      if (oldVersion < 1) {
         const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'Id' });
         store.createIndex('Code', 'Code', { unique: false });
         store.createIndex('NormalizedName', 'NormalizedName', { unique: false });
+        store.createIndex('CategoryId', 'CategoryId', { unique: false });
+      }
+      if (oldVersion < 2) {
+        // Add CategoryId index to existing store if upgrading from v1
+        if (oldVersion >= 1) {
+          const tx = (db as any).transaction;
+          if (tx) {
+            try {
+              const store = tx.objectStore(this.STORE_NAME);
+              if (!store.indexNames.contains('CategoryId')) {
+                store.createIndex('CategoryId', 'CategoryId', { unique: false });
+              }
+            } catch {
+              // If store access fails during upgrade, recreate
+              db.deleteObjectStore(this.STORE_NAME);
+              const store = db.createObjectStore(this.STORE_NAME, { keyPath: 'Id' });
+              store.createIndex('Code', 'Code', { unique: false });
+              store.createIndex('NormalizedName', 'NormalizedName', { unique: false });
+              store.createIndex('CategoryId', 'CategoryId', { unique: false });
+            }
+          }
+        }
+        if (!db.objectStoreNames.contains(this.META_STORE)) {
+          db.createObjectStore(this.META_STORE, { keyPath: 'key' });
+        }
       }
     });
     this.dbInitialized = true;
   }
 
   /**
-   * Sync products from Firestore (via backend) into IndexedDB.
-   * Uses modified-since for incremental sync after first load.
+   * Load featured products (newest 50). Fast initial page render.
    */
-  private async syncProducts(): Promise<void> {
-    if (this.syncInProgress) return;
-    this.syncInProgress = true;
-
+  private async loadFeaturedProducts(): Promise<void> {
     try {
-      const lastSync = localStorage.getItem(this.LAST_SYNC_KEY);
-      const existingCount = await this.idb.count(this.DB_NAME, this.DB_VERSION, this.STORE_NAME);
+      const response = await firstValueFrom(
+        this.http.get<{ products: any[]; count: number }>(
+          `${environment.domainUrl}/api/firebase/products/featured?limit=50`
+        )
+      );
+      const products = this.filterOriginalProducts(response?.products || []);
 
-      let products: Product[];
-
-      if (!lastSync || existingCount === 0) {
-        // Full sync: fetch all products
-        const raw = await firstValueFrom(
-          this.http.get<any[]>(`${environment.domainUrl}/api/firebase/get/products`)
-        );
-        products = this.filterOriginalProducts(raw || []);
-
-        // Clear and re-populate
-        await this.idb.clear(this.DB_NAME, this.DB_VERSION, this.STORE_NAME);
-        if (products.length > 0) {
-          await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
-        }
-      } else {
-        // Incremental sync: only fetch modified products
-        const response = await firstValueFrom(
-          this.http.post<{ products: any[]; count: number }>(
-            `${environment.domainUrl}/api/firebase/products/modified-since`,
-            { since: lastSync, include_inactive: true, include_deleted: false }
-          )
-        );
-        products = this.filterOriginalProducts(response?.products || []);
-
-        if (products.length > 0) {
-          await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
-        }
-
-        // Remove inactive/deleted products from IndexedDB
-        const inactiveProducts = (response?.products || []).filter(
-          (p: any) => p.isDeleted || !p.isActive
-        );
-        for (const p of inactiveProducts) {
-          if (p.Id) {
-            try {
-              const existing = await this.idb.getByKey(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, p.Id);
-              if (existing) {
-                await this.idb.put(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, { ...existing, isDeleted: true, isActive: false });
-              }
-            } catch {}
-          }
-        }
+      if (products.length > 0) {
+        await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
       }
 
-      localStorage.setItem(this.LAST_SYNC_KEY, new Date().toISOString());
       this.invalidateCache();
       this.productsReady$.next(true);
     } catch (err) {
-      console.error('[ProductApi] Sync failed:', err);
-      // Still mark ready if we have cached data
+      console.error('[ProductApi] Featured products load failed:', err);
+      // Still mark ready if we have cached data from previous session
       const count = await this.idb.count(this.DB_NAME, this.DB_VERSION, this.STORE_NAME).catch(() => 0);
       if (count > 0) {
         this.productsReady$.next(true);
       }
-    } finally {
-      this.syncInProgress = false;
     }
   }
 
   /**
-   * Setup WebSocket for realtime product updates.
+   * Load products by category from API → store in IndexedDB.
+   * Returns products for immediate display.
    */
+  async loadByCategory(categoryId: number): Promise<Product[]> {
+    // Check IndexedDB first
+    const cached = await this.idb.getAllByIndex<Product>(
+      this.DB_NAME, this.DB_VERSION, this.STORE_NAME, 'CategoryId', categoryId
+    );
+
+    // Check if we recently synced this category
+    const metaKey = `cat_sync_${categoryId}`;
+    const meta = await this.idb.getByKey<{ key: string; timestamp: string }>(
+      this.DB_NAME, this.DB_VERSION, this.META_STORE, metaKey
+    ).catch(() => undefined);
+
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const isStale = !meta || meta.timestamp < fiveMinAgo;
+
+    if (cached.length > 0 && !isStale) {
+      // Return cached, but no background refresh needed
+      return cached.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
+    }
+
+    // Fetch from API
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ products: any[]; count: number }>(
+          `${environment.domainUrl}/api/firebase/get/products/by-category/${categoryId}`
+        )
+      );
+      const products = this.filterOriginalProducts(response?.products || []);
+
+      if (products.length > 0) {
+        await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
+      }
+
+      // Save sync timestamp
+      await this.idb.put(this.DB_NAME, this.DB_VERSION, this.META_STORE, {
+        key: metaKey, timestamp: new Date().toISOString()
+      });
+
+      this.invalidateCache();
+      this.productUpdated$.next();
+      return products;
+    } catch (err) {
+      console.error(`[ProductApi] Load category ${categoryId} failed:`, err);
+      // Return whatever we have cached
+      return cached.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
+    }
+  }
+
+  /**
+   * Search products via server-side API.
+   * Falls back to local IndexedDB search if API fails.
+   */
+  async searchProducts(term: string): Promise<Product[]> {
+    if (!term?.trim()) return [];
+
+    // Try server-side search first
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ products: any[]; count: number }>(
+          `${environment.domainUrl}/api/firebase/products/search`,
+          { params: { q: term.trim(), limit: String(this.SEARCH_LIMIT) } }
+        )
+      );
+      const products = this.filterOriginalProducts(response?.products || []);
+
+      // Cache search results in IndexedDB for offline use
+      if (products.length > 0) {
+        await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
+        this.invalidateCache();
+      }
+
+      return products;
+    } catch (err) {
+      console.warn('[ProductApi] Server search failed, falling back to local:', err);
+      return this.searchLocal(term);
+    }
+  }
+
+  /**
+   * Local search from IndexedDB (fallback when offline).
+   */
+  private async searchLocal(term: string): Promise<Product[]> {
+    const allProducts = await this.getCachedProducts();
+    const normalized = this.normalize(term.toLowerCase());
+    const tokens = normalized.split(/\s+/).filter(Boolean);
+
+    const results: Product[] = [];
+
+    for (const product of allProducts) {
+      if (product.isDeleted || !product.isActive) continue;
+      if (this.isCloneProduct(product)) continue;
+
+      const name = (product.NormalizedName || product.Name || product.FullName || '').toLowerCase();
+      const code = (product.NormalizedCode || product.Code || '').toLowerCase();
+
+      if (tokens.every(token => name.includes(token) || code.includes(token))) {
+        results.push(product);
+        if (results.length >= this.SEARCH_LIMIT) break;
+      }
+    }
+
+    return results;
+  }
+
+  // ======================== WebSocket ========================
+
   private setupWebSocket(): void {
     this.ws.connect();
 
@@ -145,18 +244,12 @@ export class ProductApiService implements OnDestroy {
       }),
       this.ws.getProductsAdded$().subscribe(newProducts => {
         this.handleProductsAdded(newProducts);
-      }),
-      this.ws.getConnectionStatus$().subscribe(status => {
-        if (status === 'connected') {
-          // Re-sync on reconnect to catch missed updates
-          this.syncProducts();
-        }
       })
     );
   }
 
   /**
-   * Handle realtime product updates from WebSocket.
+   * Handle realtime product updates — only update products already in IndexedDB.
    */
   private async handleProductUpdates(updates: ProductWSUpdate[]): Promise<void> {
     let changed = false;
@@ -168,9 +261,8 @@ export class ProductApiService implements OnDestroy {
       const existing = await this.idb.getByKey<Product>(
         this.DB_NAME, this.DB_VERSION, this.STORE_NAME, id
       );
-      if (!existing) continue;
+      if (!existing) continue; // Not in our local DB — skip
 
-      // Skip clone products
       if (existing.isClone) continue;
 
       const merged = { ...existing };
@@ -202,17 +294,12 @@ export class ProductApiService implements OnDestroy {
     }
   }
 
-  /**
-   * Handle new products added via WebSocket.
-   */
   private async handleProductsAdded(newProducts: ProductWSUpdate[]): Promise<void> {
     let added = false;
 
     for (const raw of newProducts) {
       const id = Number(raw.Id);
       if (!id || isNaN(id)) continue;
-
-      // Skip clones
       if (raw['isClone'] === true) continue;
 
       const existing = await this.idb.getByKey<Product>(
@@ -220,31 +307,7 @@ export class ProductApiService implements OnDestroy {
       );
       if (existing) continue;
 
-      const product: Product = {
-        Id: id,
-        Code: raw.Code || '',
-        Name: raw.Name || raw.FullName || '',
-        FullName: raw.FullName || raw.Name || '',
-        Image: raw['Image'] || null,
-        BasePrice: Number(raw.BasePrice) || 0,
-        Cost: Number(raw.Cost) || 0,
-        OnHand: Number(raw.OnHand) || 0,
-        OnHandNV: Number(raw.OnHandNV) || 0,
-        Unit: raw['Unit'] || '',
-        Description: raw.Description || '',
-        CategoryId: raw['CategoryId'] ?? null,
-        ConversionValue: Number(raw['ConversionValue']) || 0,
-        MasterUnitId: raw['MasterUnitId'] ?? null,
-        MasterProductId: raw['MasterProductId'] ?? null,
-        NormalizedName: raw.NormalizedName || '',
-        NormalizedCode: raw.NormalizedCode || '',
-        isActive: raw.isActive !== false,
-        isDeleted: raw.isDeleted === true,
-        isClone: false,
-        ModifiedDate: raw.ModifiedDate || new Date().toISOString(),
-        ProductAttributes: raw['ProductAttributes'] || []
-      };
-
+      const product: Product = this.mapProduct(raw);
       await this.idb.put(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, product);
       added = true;
     }
@@ -255,80 +318,33 @@ export class ProductApiService implements OnDestroy {
     }
   }
 
-  /**
-   * Search products locally from IndexedDB.
-   * Returns filtered, active, non-clone products matching the search term.
-   */
-  async searchProducts(term: string): Promise<Product[]> {
-    if (!term?.trim()) return [];
+  // ======================== Observables ========================
 
-    const allProducts = await this.getCachedProducts();
-    const normalized = this.normalize(term.toLowerCase());
-    const tokens = normalized.split(/\s+/).filter(Boolean);
-
-    const results: Product[] = [];
-
-    for (const product of allProducts) {
-      // Skip inactive/deleted
-      if (product.isDeleted || !product.isActive) continue;
-
-      // Skip clones
-      if (this.isCloneProduct(product)) continue;
-
-      // Match all tokens against product name/code
-      const name = (product.NormalizedName || product.Name || product.FullName || '').toLowerCase();
-      const code = (product.NormalizedCode || product.Code || '').toLowerCase();
-
-      const matches = tokens.every(token =>
-        name.includes(token) || code.includes(token)
-      );
-
-      if (matches) {
-        results.push(product);
-        if (results.length >= this.SEARCH_LIMIT) break;
-      }
-    }
-
-    return results;
-  }
-
-  /**
-   * Get product update observable for UI refresh.
-   */
   getProductUpdated$() {
     return this.productUpdated$.asObservable();
   }
 
-  /**
-   * Get products ready observable.
-   */
   getProductsReady$() {
     return this.productsReady$.asObservable();
   }
 
   /**
-   * Get all cached products (active, non-clone) for discount bar etc.
+   * Get all cached products (active, non-clone) from IndexedDB.
+   * Used for discount bar etc.
    */
   async getAllCachedProducts(): Promise<Product[]> {
     const all = await this.getCachedProducts();
     return all.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
   }
 
-  /**
-   * Check if a product is a clone.
-   * Uses same heuristics as BanHang:
-   * 1. isClone === true
-   * 2. OnHandNV > 0 && OnHand === 0 (fallback)
-   */
+  // ======================== Helpers ========================
+
   private isCloneProduct(product: Product): boolean {
     if (product.isClone === true) return true;
     if ((product.OnHandNV || 0) > 0 && product.OnHand === 0) return true;
     return false;
   }
 
-  /**
-   * Filter to only original (non-clone) products.
-   */
   private filterOriginalProducts(raw: any[]): Product[] {
     if (!Array.isArray(raw)) return [];
 
@@ -337,7 +353,6 @@ export class ProductApiService implements OnDestroy {
         if (!item || !item.Id) return false;
         if (item.isDeleted) return false;
         if (item.isActive === false) return false;
-        // Exclude clones
         if (item.isClone === true) return false;
         if ((item.OnHandNV || 0) > 0 && (item.OnHand || 0) === 0) return false;
         return true;
@@ -359,6 +374,7 @@ export class ProductApiService implements OnDestroy {
       Unit: item.Unit || '',
       Description: item.Description ? String(item.Description).replace(/<\/?[^>]+(>|$)/g, '') : '',
       CategoryId: item.CategoryId ?? null,
+      CategoryName: item.CategoryName || undefined,
       ConversionValue: Number(item.ConversionValue) || 0,
       MasterUnitId: item.MasterUnitId ?? null,
       MasterProductId: item.MasterProductId ?? null,
@@ -367,6 +383,7 @@ export class ProductApiService implements OnDestroy {
       isActive: item.isActive !== false,
       isDeleted: item.isDeleted === true,
       isClone: item.isClone === true,
+      CloneOnHandNV: Number(item.CloneOnHandNV) || 0,
       ModifiedDate: item.ModifiedDate || '',
       ProductAttributes: item.ProductAttributes || []
     };
@@ -385,9 +402,6 @@ export class ProductApiService implements OnDestroy {
     this.productsCache = null;
   }
 
-  /**
-   * Simple Vietnamese diacritics removal for search matching.
-   */
   private normalize(str: string): string {
     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
   }

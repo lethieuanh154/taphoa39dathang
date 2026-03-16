@@ -11,6 +11,7 @@ export interface Product {
   Unit: string;
   Description: string;
   CategoryId: number | null;
+  CategoryName?: string;
   ConversionValue: number;
   MasterUnitId: number | null;
   MasterProductId: number | null;
@@ -19,6 +20,7 @@ export interface Product {
   isActive: boolean;
   isDeleted: boolean;
   isClone?: boolean;
+  CloneOnHandNV?: number;
   ModifiedDate: string;
   ProductAttributes?: ProductAttribute[];
 }

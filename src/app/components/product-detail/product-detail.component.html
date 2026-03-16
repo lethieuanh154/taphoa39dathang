@@ -10,11 +10,32 @@
     <!-- Product Image -->
     <div class="detail-image-wrap">
       <img
-        [src]="selectedProduct.Image || 'https://via.placeholder.com/400x400?text=No+Image'"
+        [src]="currentImage"
         [alt]="selectedProduct.FullName"
         class="detail-image"
       />
       <span class="stock-badge" *ngIf="isOutOfStock">Hết hàng</span>
+
+      <!-- Navigation arrows (only when multiple images) -->
+      <ng-container *ngIf="productImages.length > 1">
+        <button class="img-nav img-nav-prev" (click)="$event.stopPropagation(); prevImage()" aria-label="Ảnh trước">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <button class="img-nav img-nav-next" (click)="$event.stopPropagation(); nextImage()" aria-label="Ảnh sau">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+        <div class="img-counter">{{ currentImageIndex + 1 }}/{{ productImages.length }}</div>
+      </ng-container>
+    </div>
+
+    <!-- Thumbnail strip -->
+    <div class="img-thumbnails" *ngIf="productImages.length > 1">
+      <img *ngFor="let img of productImages; let i = index"
+           [src]="img"
+           [class.thumb-active]="i === currentImageIndex"
+           (click)="selectImage(i)"
+           class="img-thumb"
+           loading="lazy" />
     </div>
 
     <!-- Product Info -->
@@ -42,10 +63,10 @@
           <span class="price-label">Giá thị trường:</span>
           <span class="price-value strikethrough">{{ formatPrice(marketPrice) }} đ</span>
         </div>
-        <div class="price-row price-original">
+        <!-- <div class="price-row price-original">
           <span class="price-label">Giá gốc:</span>
           <span class="price-value strikethrough">{{ formatPrice(originalPrice) }} đ</span>
-        </div>
+        </div> -->
         <div class="price-row price-sale">
           <span class="price-label">Giá bán:</span>
           <span class="price-value">{{ formatPrice(salePrice) }} đ</span>

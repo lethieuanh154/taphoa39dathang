@@ -1,3 +1,9 @@
+<!-- Customer Identity Dialog -->
+<app-customer-identity-dialog
+  *ngIf="showIdentityDialog"
+  (confirmed)="onIdentityConfirmed($event)">
+</app-customer-identity-dialog>
+
 <app-header (search)="onSearch($event)"></app-header>
 
 <main class="main-content">
@@ -14,10 +20,11 @@
       <div class="discount-item" *ngFor="let p of discountProducts; trackBy: trackByProductCode"
            (click)="onDiscountProductClick(p)">
         <div class="discount-img-wrap">
-          <img [src]="p.Image || 'assets/no-image.png'" [alt]="p.Name" class="discount-img" loading="lazy">
+          <img [src]="p.Image || 'assets/no-image.svg'" [alt]="p.Name" class="discount-img" loading="lazy">
           <span class="sale-badge">SALE</span>
         </div>
         <div class="discount-name">{{ p.Name }}</div>
+        <div class="discount-market-price">{{ getMarketPrice(p.BasePrice) | number:'1.0-0' }}đ</div>
         <div class="discount-price">{{ p.BasePrice | number:'1.0-0' }}đ</div>
       </div>
     </div>
@@ -67,27 +74,39 @@
 <div class="bubble-container" [class.bubble-open]="isBubbleMenuOpen">
   <!-- Fan items -->
   <div class="fan-menu" *ngIf="isBubbleMenuOpen">
+    <!-- Nút "Tất cả" để quay về featured -->
+    <button class="fan-item fan-item-all"
+            [class.fan-active]="!activeCategory"
+            [style.--fan-index]="0"
+            (click)="onShowAllClick()">
+      <span class="fan-label">Tất cả</span>
+    </button>
     <button class="fan-item"
             *ngFor="let cat of categories; let i = index; trackBy: trackByCategoryId"
-            [style.--fan-index]="i"
-            [style.--fan-total]="categories.length"
+            [class.fan-active]="activeCategory?.Id === cat.Id"
+            [style.--fan-index]="i + 1"
+            [style.--fan-total]="categories.length + 1"
             (click)="onCategoryClick(cat)">
       <span class="fan-label">{{ cat.Name }}</span>
     </button>
   </div>
-  <!-- Bubble button -->
+  <!-- Bubble button: hiện tên category nếu đang active -->
   <button class="bubble-btn" (click)="toggleBubbleMenu()" [class.bubble-active]="isBubbleMenuOpen">
-    <svg *ngIf="!isBubbleMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+    <svg *ngIf="!isBubbleMenuOpen && !activeCategory" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <line x1="4" y1="6" x2="20" y2="6"/>
       <line x1="4" y1="12" x2="20" y2="12"/>
       <line x1="4" y1="18" x2="20" y2="18"/>
     </svg>
+    <span *ngIf="!isBubbleMenuOpen && activeCategory" class="bubble-cat-label">{{ activeCategory.Name }}</span>
     <svg *ngIf="isBubbleMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <line x1="18" y1="6" x2="6" y2="18"/>
       <line x1="6" y1="6" x2="18" y2="18"/>
     </svg>
   </button>
 </div>
+
+<!-- Chat Bubble -->
+<app-chat-bubble *ngIf="customerIdentity"></app-chat-bubble>
 
 <!-- Footer -->
 <footer class="site-footer" [class.footer-hidden]="footerHidden">

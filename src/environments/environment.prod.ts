@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  domainUrl: 'https://taphoa39backend.onrender.com',
+  domainUrl: '',
   debug: false
 };

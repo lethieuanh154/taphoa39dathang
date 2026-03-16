@@ -19,7 +19,8 @@ export class ProductCardComponent {
   constructor(private cartService: CartService, private cdr: ChangeDetectorRef) {}
 
   get isOutOfStock(): boolean {
-    return this.product.OnHand <= 0;
+    const totalStock = this.product.OnHand + (this.product.CloneOnHandNV || 0);
+    return totalStock <= 0;
   }
 
   formatPrice(price: number): string {

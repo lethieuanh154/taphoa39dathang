@@ -95,11 +95,19 @@
   max-height: 2.4em;
 }
 
+.discount-market-price {
+  font-size: 10px;
+  color: #999;
+  text-decoration: line-through;
+  margin-top: 2px;
+  line-height: 1;
+}
+
 .discount-price {
   font-size: 12px;
   font-weight: 700;
   color: #e74c3c;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ========== Product Grid ========== */
@@ -238,12 +246,15 @@
   justify-content: center;
   border: none;
   background: #fff;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 12px;
+  border-radius: 14px;
+  padding: 5px 10px;
+  font-size: 11px;
   font-weight: 600;
   color: #333;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 120px;
   cursor: pointer;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
   transition: background 0.15s, color 0.15s, transform 0.15s;
@@ -251,6 +262,15 @@
   animation-delay: calc(var(--fan-index) * 0.025s);
   opacity: 0;
   transform: translateY(20px) scale(0.5);
+}
+
+.fan-item.fan-active {
+  background: var(--green-600, #2e7d32);
+  color: #fff;
+}
+
+.fan-item-all {
+  border: 1.5px dashed #999;
 }
 
 .fan-item:hover {
@@ -265,6 +285,23 @@
 
 .fan-label {
   pointer-events: none;
+}
+
+/* Bubble button: show category name when active */
+.bubble-btn:has(.bubble-cat-label) {
+  width: auto;
+  border-radius: 26px;
+  padding: 0 16px;
+  gap: 6px;
+}
+
+.bubble-cat-label {
+  font-size: 11px;
+  font-weight: 700;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @keyframes fanItemIn {

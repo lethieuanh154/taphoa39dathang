@@ -14,7 +14,7 @@
       <h2 class="section-title">Đơn hàng ({{ totalItems }} sản phẩm)</h2>
       <div class="order-items" *ngIf="items.length > 0">
         <div class="order-item" *ngFor="let item of items; trackBy: trackByCartItem">
-          <img [src]="item.product.Image || 'https://via.placeholder.com/48'" class="order-item-img" />
+          <img [src]="item.product.Image || 'assets/no-image.svg'" class="order-item-img" />
           <div class="order-item-info">
             <div class="order-item-name">{{ item.product.FullName }}</div>
             <div class="order-item-qty">x{{ item.quantity }} {{ item.product.Unit }}</div>
