@@ -33,19 +33,19 @@
       <h2 class="section-title">Thông tin nhận hàng</h2>
 
       <div class="form-group">
-        <label class="form-label" for="name">Họ tên *</label>
+        <label class="form-label" for="name">Họ tên <span class="required-star">*</span></label>
         <input
           id="name"
           type="text"
           class="form-input"
-          placeholder="Nguyen Van A"
+          placeholder="Nguyễn Văn A"
           [(ngModel)]="customerName"
           autocomplete="name"
         />
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="phone">Số điện thoại *</label>
+        <label class="form-label" for="phone">Số điện thoại <span class="required-star">*</span></label>
         <input
           id="phone"
           type="tel"
@@ -57,12 +57,12 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="address">Địa chỉ giao hàng *</label>
+        <label class="form-label" for="address">Địa chỉ giao hàng <span class="required-star">*</span></label>
         <input
           id="address"
           type="text"
           class="form-input"
-          placeholder="So nha, duong, phuong/xa..."
+          placeholder="Số nhà, đường, phường/xã..."
           [(ngModel)]="customerAddress"
           autocomplete="street-address"
         />
@@ -73,7 +73,7 @@
         <textarea
           id="note"
           class="form-input form-textarea"
-          placeholder="Ghi chu them (khong bat buoc)"
+          placeholder="Ghi chú thêm"
           [(ngModel)]="note"
           rows="2"
         ></textarea>
@@ -109,12 +109,13 @@
         </div>
         <div class="payment-text">
           <strong>Chuyển khoản QR</strong>
-          <span>Techcombank - 1234567890</span>
+          <span>TP Bank - 6958 6928 888 </span>
+          <span>Công ty TNHH Thương Mại Tổng Hợp Song Minh </span>
         </div>
       </label>
 
       <div class="qr-section" *ngIf="paymentMethod === 'transfer'">
-        <img [src]="getQrUrl()" alt="QR chuyen khoan" class="qr-image" />
+        <img [src]="getQrUrl()" alt="QR chuyen khoan" class="qr-note" />
         <p class="qr-note">Quét mã QR để chuyển khoản. Số tiền: <strong>{{ formatPrice(totalPrice) }} đ</strong></p>
       </div>
     </section>

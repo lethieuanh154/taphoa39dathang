@@ -7,12 +7,14 @@ import { environment } from '../../../environments/environment';
 
 const IDENTITY_KEY = 'sm_customer_identity';
 const IDENTITY_NAME_KEY = 'sm_customer_name';
+const IDENTITY_PHONE_KEY = 'sm_customer_phone';
 const REGISTER_URL = 'https://songminhdangkythanhvien.onrender.com/';
 
 interface VerifyResponse {
   verified: boolean;
   name?: string;
   identity?: string;
+  phone?: string;
   type?: string;
   message?: string;
 }
@@ -183,6 +185,9 @@ export class CustomerIdentityDialogComponent {
       if (res?.verified) {
         localStorage.setItem(IDENTITY_KEY, res.identity || val);
         localStorage.setItem(IDENTITY_NAME_KEY, res.name || val);
+        if (res.phone) {
+          localStorage.setItem(IDENTITY_PHONE_KEY, res.phone);
+        }
         this.confirmed.emit(res.identity || val);
       } else {
         this.errorMessage = res?.message || 'Không tìm thấy khách hàng';

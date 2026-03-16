@@ -212,16 +212,14 @@
   padding: 16px 0;
 }
 
-.qr-image {
-  width: 180px;
-  height: 180px;
-  border-radius: 12px;
-}
 
 .qr-note {
   font-size: 14px;
   color: var(--text-secondary);
   margin-top: 8px;
+}
+.required-star {
+  color: red;
 }
 
 /* Error */

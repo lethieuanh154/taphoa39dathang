@@ -35,7 +35,7 @@ export class CheckoutComponent implements OnInit {
     if (this.items.length === 0) {
       this.router.navigate(['/']);
     }
-    // Load saved customer info
+    // Load saved customer info from previous order
     try {
       const saved = localStorage.getItem('sm_customer');
       if (saved) {
@@ -45,6 +45,13 @@ export class CheckoutComponent implements OnInit {
         this.customerAddress = data.Address || '';
       }
     } catch {}
+    // Auto-fill from identity verification if fields still empty
+    if (!this.customerName) {
+      this.customerName = localStorage.getItem('sm_customer_name') || '';
+    }
+    if (!this.customerPhone) {
+      this.customerPhone = localStorage.getItem('sm_customer_phone') || '';
+    }
   }
 
   get totalPrice(): number {
@@ -69,7 +76,7 @@ export class CheckoutComponent implements OnInit {
   getQrUrl(): string {
     const amount = this.totalPrice;
     const addInfo = encodeURIComponent('Song Minh DH ' + Date.now());
-    return `https://img.vietqr.io/image/TCB-9905084032-qr_only.png?amount=${amount}&addInfo=${addInfo}`;
+    return `https://img.vietqr.io/image/TPB-69586928888-qr_only.png?amount=${amount}&addInfo=${addInfo}`;
   }
 
   submitOrder(): void {
