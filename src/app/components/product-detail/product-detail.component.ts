@@ -16,6 +16,7 @@ import { environment } from '../../../environments/environment';
 export class ProductDetailComponent {
   @Input() product!: Product;
   @Input() group: Product[] = [];
+  @Input() isSale = false;
   @Output() close = new EventEmitter<void>();
 
   selectedProduct!: Product;
@@ -90,9 +91,9 @@ export class ProductDetailComponent {
     return Math.round((this.selectedProduct.BasePrice * 1.10)/500)*500;
   }
 
-  // get originalPrice(): number {
-  //   return Math.round(this.selectedProduct.BasePrice * 1.05);
-  // }
+  get originalPrice(): number {
+    return Math.round((this.selectedProduct.BasePrice * 1.05)/500)*500;
+  }
 
   get salePrice(): number {
     return this.selectedProduct.BasePrice;

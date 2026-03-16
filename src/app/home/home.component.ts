@@ -44,6 +44,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Product detail dialog
   detailProduct: Product | null = null;
   detailGroup: Product[] = [];
+  isDetailSale = false;
 
   // Discount bar - random 10 products, reset daily
   discountProducts: Product[] = [];
@@ -239,19 +240,21 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // ======================== Product detail ========================
 
-  onProductClick(product: Product): void {
+  onProductClick(product: Product, isSale = false): void {
     const masterId = product.MasterUnitId === null || product.MasterUnitId === undefined
       ? product.Id
       : (Number(product.MasterUnitId) === product.Id ? product.Id : Number(product.MasterUnitId));
 
     this.detailGroup = this.groupedProducts[masterId] || [product];
     this.detailProduct = product;
+    this.isDetailSale = isSale;
     this.cdr.markForCheck();
   }
 
   onDetailClose(): void {
     this.detailProduct = null;
     this.detailGroup = [];
+    this.isDetailSale = false;
     this.cdr.markForCheck();
   }
 
@@ -317,7 +320,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   onDiscountProductClick(product: Product): void {
-    this.onProductClick(product);
+    this.onProductClick(product, true);
   }
 
   // ======================== Category bubble menu ========================

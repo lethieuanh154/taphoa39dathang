@@ -59,14 +59,14 @@
 
       <!-- Pricing -->
       <div class="pricing">
-        <div class="price-row price-market">
+        <div class="price-row price-market" *ngIf="!isSale">
           <span class="price-label">Giá thị trường:</span>
           <span class="price-value strikethrough">{{ formatPrice(marketPrice) }} đ</span>
         </div>
-        <!-- <div class="price-row price-original">
+        <div class="price-row price-market" *ngIf="isSale">
           <span class="price-label">Giá gốc:</span>
           <span class="price-value strikethrough">{{ formatPrice(originalPrice) }} đ</span>
-        </div> -->
+        </div>
         <div class="price-row price-sale">
           <span class="price-label">Giá bán:</span>
           <span class="price-value">{{ formatPrice(salePrice) }} đ</span>
