@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "taphoa39": {
+    "taphoa39dathang": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/taphoa39",
+            "outputPath": "dist/taphoa39dathang",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -24,7 +24,8 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/assets"
             ],
             "styles": [
               "src/styles.css"
@@ -47,7 +48,7 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "4kB",
+                  "maximumWarning": "6kB",
                   "maximumError": "8kB"
                 }
               ],
@@ -65,10 +66,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "taphoa39:build:production"
+              "buildTarget": "taphoa39dathang:build:production"
             },
             "development": {
-              "buildTarget": "taphoa39:build:development"
+              "buildTarget": "taphoa39dathang:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -88,7 +89,8 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              }
+              },
+              "src/assets"
             ],
             "styles": [
               "src/styles.css"

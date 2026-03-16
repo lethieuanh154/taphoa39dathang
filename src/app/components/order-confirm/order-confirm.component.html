@@ -1,0 +1,41 @@
+<div class="confirm-page">
+  <div class="confirm-card">
+    <div class="success-icon">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+    </div>
+
+    <h1 class="confirm-title">Đặt hàng thành công!</h1>
+    <p class="confirm-text">
+      Cảm ơn bạn đã đặt hàng tại <strong>Song Minh</strong>.
+      Chúng tôi sẽ liên hệ để xác nhận sớm nhất.
+    </p>
+
+    <div class="order-id-box">
+      <span class="order-id-label">Mã đơn hàng:</span>
+      <span class="order-id-value">{{ orderId }}</span>
+    </div>
+
+    <div class="confirm-info">
+      <div class="info-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        <span>Hotline: <strong>0703.863.690</strong></span>
+      </div>
+      <div class="info-item">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+          <circle cx="12" cy="10" r="3"/>
+        </svg>
+        <span>25 Nguyễn Phước Tần, Cẩm Lệ, Đà Nẵng</span>
+      </div>
+    </div>
+
+    <button class="home-btn" (click)="goHome()">
+      Tiếp tục mua sắm
+    </button>
+  </div>
+</div>

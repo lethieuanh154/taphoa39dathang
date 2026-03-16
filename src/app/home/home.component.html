@@ -1,29 +1,121 @@
-<h2>Danh sách sản phẩm</h2>
-<button (click)="addProduct()">Thêm sản phẩm</button>
-<button (click)="deleteProduct()">Xóa sản phẩm</button>
+<!-- Customer Identity Dialog -->
+<app-customer-identity-dialog
+  *ngIf="showIdentityDialog"
+  (confirmed)="onIdentityConfirmed($event)">
+</app-customer-identity-dialog>
 
-<ul>
-  <li *ngFor="let p of products$ | async">
-    {{ p.Code }} - {{ p.FullName }}₫
-  </li>
-</ul>
-<section class="sticky-search">
-    <form class="form-inline">
-        <input class="search-bar" type="text" placeholder="Search..." [(ngModel)]="searchTerm" name="searchTerm"
-            (keydown.enter)="onSearch()" />
-        <mat-icon class="icon-button" (click)="startVoiceInput();">mic</mat-icon>
-        <mat-icon class="icon-button">new_releases</mat-icon>
-        <mat-icon class="icon-button" (click)="toggleCart()">shopping_cart</mat-icon>
-        <app-cart *ngIf="showCart"></app-cart>
-        <mat-icon class="profile">perm_identity</mat-icon>
-    </form>
+<app-header (search)="onSearch($event)"></app-header>
 
-</section>
-<section class="sticky-sale">
-    <button mat-button>new_releases</button>
-    <button mat-button>new_releases</button>
-    <button mat-button>new_releases</button>
-</section>
-<section class="results">
-    <app-product-attributes *ngFor="let product of productList" [product]="product"></app-product-attributes>
-</section>
+<main class="main-content">
+  <!-- Discount Bar - Random 10 products, reset daily -->
+  <section class="discount-bar" *ngIf="discountProducts.length > 0">
+    <div class="discount-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+      <span>Giảm giá hôm nay</span>
+    </div>
+    <div class="discount-scroll">
+      <div class="discount-item" *ngFor="let p of discountProducts; trackBy: trackByProductCode"
+           (click)="onDiscountProductClick(p)">
+        <div class="discount-img-wrap">
+          <img [src]="p.Image || 'assets/no-image.svg'" [alt]="p.Name" class="discount-img" loading="lazy">
+          <span class="sale-badge">SALE</span>
+        </div>
+        <div class="discount-name">{{ p.Name }}</div>
+        <div class="discount-market-price">{{ getMarketPrice(p.BasePrice) | number:'1.0-0' }}đ</div>
+        <div class="discount-price">{{ p.BasePrice | number:'1.0-0' }}đ</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading -->
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải...</p>
+  </div>
+
+  <!-- Product Grid -->
+  <section class="product-grid" *ngIf="!isLoading && displayedProducts.length > 0">
+    <app-product-card *ngFor="let product of displayedProducts; trackBy: trackByProductCode"
+      [product]="product"
+      (cardClick)="onProductClick($event)"></app-product-card>
+  </section>
+
+  <!-- Loading More (infinite scroll) -->
+  <div class="loading-more" *ngIf="isLoadingMore">
+    <div class="spinner-small"></div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="!isLoading && displayedProducts.length === 0 && hasSearched">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+    <p>Không tìm thấy sản phẩm, Thử từ khóa khác</p>
+  </div>
+</main>
+
+<!-- Cart Panel -->
+<app-cart-panel></app-cart-panel>
+
+<!-- Product Detail Dialog -->
+<app-product-detail
+  *ngIf="detailProduct"
+  [product]="detailProduct"
+  [group]="detailGroup"
+  (close)="onDetailClose()">
+</app-product-detail>
+
+<!-- Category Bubble Menu -->
+<div class="bubble-backdrop" *ngIf="isBubbleMenuOpen" (click)="closeBubbleMenu()"></div>
+<div class="bubble-container" [class.bubble-open]="isBubbleMenuOpen">
+  <!-- Fan items -->
+  <div class="fan-menu" *ngIf="isBubbleMenuOpen">
+    <!-- Nút "Tất cả" để quay về featured -->
+    <button class="fan-item fan-item-all"
+            [class.fan-active]="!activeCategory"
+            [style.--fan-index]="0"
+            (click)="onShowAllClick()">
+      <span class="fan-label">Tất cả</span>
+    </button>
+    <button class="fan-item"
+            *ngFor="let cat of categories; let i = index; trackBy: trackByCategoryId"
+            [class.fan-active]="activeCategory?.Id === cat.Id"
+            [style.--fan-index]="i + 1"
+            [style.--fan-total]="categories.length + 1"
+            (click)="onCategoryClick(cat)">
+      <span class="fan-label">{{ cat.Name }}</span>
+    </button>
+  </div>
+  <!-- Bubble button: hiện tên category nếu đang active -->
+  <button class="bubble-btn" (click)="toggleBubbleMenu()" [class.bubble-active]="isBubbleMenuOpen">
+    <svg *ngIf="!isBubbleMenuOpen && !activeCategory" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="4" y1="6" x2="20" y2="6"/>
+      <line x1="4" y1="12" x2="20" y2="12"/>
+      <line x1="4" y1="18" x2="20" y2="18"/>
+    </svg>
+    <span *ngIf="!isBubbleMenuOpen && activeCategory" class="bubble-cat-label">{{ activeCategory.Name }}</span>
+    <svg *ngIf="isBubbleMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <line x1="18" y1="6" x2="6" y2="18"/>
+      <line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+  </button>
+</div>
+
+<!-- Chat Bubble -->
+<app-chat-bubble *ngIf="customerIdentity"></app-chat-bubble>
+
+<!-- Footer -->
+<footer class="site-footer" [class.footer-hidden]="footerHidden">
+  <div class="footer-inner">
+    <p class="footer-name">Bách Hóa Tổng Hợp Song Minh</p>
+    <p class="footer-address"> <span class="fa fa-map-marker"> &nbsp;</span>25 Nguyễn Phước Tần, Cẩm Lệ, Đà Nẵng</p>
+    <p class="footer-phone"><span class="fa fa-phone"> &nbsp;</span>SDT: 0703.863.690</p>
+    <p class="footer-cr"> Copyright © 2026 Song Minh. All rights reserved.
+      <br>developing...
+    </p>
+  </div>
+</footer>

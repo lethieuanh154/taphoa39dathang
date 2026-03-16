@@ -1,0 +1,50 @@
+<!-- Backdrop -->
+<div class="cart-backdrop" *ngIf="isOpen" (click)="close()"></div>
+
+<!-- Slide Panel -->
+<div class="cart-panel" [class.open]="isOpen">
+  <div class="panel-header">
+    <h2 class="panel-title">Giỏ hàng ({{ totalItems }})</h2>
+    <button class="close-btn" (click)="close()" aria-label="Dong">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="panel-body" *ngIf="items.length > 0">
+    <div class="cart-item" *ngFor="let item of items; trackBy: trackByCartItem">
+      <img [src]="item.product.Image || 'assets/no-image.svg'" [alt]="item.product.FullName" class="item-img" />
+      <div class="item-info">
+        <div class="item-name">{{ item.product.FullName }}</div>
+        <div class="item-price">{{ formatPrice(item.product.BasePrice) }} đ</div>
+      </div>
+      <div class="item-actions">
+        <div class="qty-control">
+          <button class="qty-btn" (click)="decrease(item.product.Code)" aria-label="Giam">-</button>
+          <span class="qty-value">{{ item.quantity }}</span>
+          <button class="qty-btn" (click)="increase(item.product.Code)" aria-label="Tang">+</button>
+        </div>
+        <button class="remove-btn" (click)="remove(item.product.Code)" aria-label="Xoa">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-empty" *ngIf="items.length === 0">
+    <p>Chưa có sản phẩm nào trong giỏ.</p>
+  </div>
+
+  <div class="panel-footer" *ngIf="items.length > 0">
+    <div class="total-row">
+      <span class="total-label">Tổng cộng:</span>
+      <span class="total-value">{{ formatPrice(totalPrice) }}d</span>
+    </div>
+    <button class="checkout-btn" (click)="goToCheckout()">
+      Đã đặt ({{ totalItems }} sản phẩm)
+    </button>
+  </div>
+</div>

@@ -1,0 +1,96 @@
+🚀 BƯỚC 1 — Build Angular trên máy local
+
+cd TapHoa39DatHang
+ng build --configuration production
+
+Output nằm ở: dist/taphoa39dathang/browser/
+
+🚀 BƯỚC 2 — Tạo thư mục trên server
+
+ssh root@103.173.154.35
+mkdir -p /apps/taphoa39dathang
+
+🚀 BƯỚC 3 — Upload file build lên server
+
+Trên máy local:
+
+scp -r dist/taphoa39dathang/browser/* root@103.173.154.35:/apps/taphoa39dathang/
+
+🚀 BƯỚC 4 — Cấu hình Nginx
+
+Trên server, tạo file config:
+
+nano /etc/nginx/sites-available/taphoa39dathang
+
+Nội dung:
+
+server {
+    listen 80;
+    server_name songminhcr.com www.songminhcr.com;
+
+    root /apps/taphoa39dathang;
+    index index.html;
+
+    # Angular SPA - mọi route đều trả về index.html
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Proxy API requests sang backend Docker container
+    location /api/ {
+        proxy_pass http://127.0.0.1:8001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        # WebSocket support (cho socket.io)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+Kích hoạt config:
+
+ln -s /etc/nginx/sites-available/taphoa39dathang /etc/nginx/sites-enabled/
+
+Xóa default config nếu conflict port 80:
+
+rm /etc/nginx/sites-enabled/default
+
+Test và reload:
+
+nginx -t
+systemctl reload nginx
+
+🚀 BƯỚC 5 — Kiểm tra
+
+Mở trình duyệt: http://songminhcr.com
+- Trang Angular phải load được
+- API calls qua /api/ phải proxy sang backend port 8001
+
+🚀 BƯỚC 5.5 — Cài SSL (HTTPS) với Let's Encrypt
+
+apt install certbot python3-certbot-nginx -y
+certbot --nginx -d songminhcr.com -d www.songminhcr.com
+
+Certbot sẽ tự động sửa nginx config để redirect HTTP → HTTPS.
+SSL tự động renew (certbot đã cài cronjob).
+
+Sau khi cài SSL, kiểm tra: https://songminhcr.com
+
+🚀 CẬP NHẬT SAU NÀY — Khi có thay đổi code
+
+Trên máy local:
+
+ng build --configuration production
+scp -r dist/taphoa39dathang/browser/* root@103.173.154.35:/apps/taphoa39dathang/
+
+Không cần restart nginx (chỉ là static files).
+
+📝 GHI CHÚ
+- domainUrl trong environment.prod.ts đã đổi thành '' (empty string)
+- Nginx reverse proxy /api/ sang backend Docker (127.0.0.1:8001)
+- Không cần CORS vì frontend và API cùng origin
+- WebSocket (socket.io) cũng đi qua nginx proxy
+- TapHoa39BackEnd phải đang chạy: docker ps (kiểm tra container taphoa39backend)
