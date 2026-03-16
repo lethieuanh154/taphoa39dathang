@@ -354,7 +354,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   getMarketPrice(basePrice: number): number {
     return Math.round((basePrice * 1.10) / 500) * 500;
   }
-
+  getOriginalPrice(basePrice: number): number {
+    return Math.round((basePrice * 1.05) / 500) * 500;
+  }
   trackByProductCode(_: number, product: Product): string {
     return product.Code;
   }

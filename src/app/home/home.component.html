@@ -24,7 +24,7 @@
           <span class="sale-badge">SALE</span>
         </div>
         <div class="discount-name">{{ p.Name }}</div>
-        <div class="discount-market-price">{{ getMarketPrice(p.BasePrice) | number:'1.0-0' }}đ</div>
+        <div class="discount-market-price">{{ getOriginalPrice(p.BasePrice) | number:'1.0-0' }}đ</div>
         <div class="discount-price">{{ p.BasePrice | number:'1.0-0' }}đ</div>
       </div>
     </div>
