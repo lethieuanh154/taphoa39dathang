@@ -72,7 +72,7 @@
 
 <!-- Category Bubble Menu -->
 <div class="bubble-backdrop" *ngIf="isBubbleMenuOpen" (click)="closeBubbleMenu()"></div>
-<div class="bubble-container" [class.bubble-open]="isBubbleMenuOpen">
+<div class="bubble-container" [class.bubble-open]="isBubbleMenuOpen" appDraggableBubble [storageKey]="'menu-bubble-pos'">
   <!-- Fan items -->
   <div class="fan-menu" *ngIf="isBubbleMenuOpen">
     <!-- Nút "Tất cả" để quay về featured -->
@@ -107,7 +107,7 @@
 </div>
 
 <!-- Chat Bubble -->
-<app-chat-bubble *ngIf="customerIdentity"></app-chat-bubble>
+<app-chat-bubble *ngIf="customerIdentity" appDraggableBubble [storageKey]="'chat-bubble-pos'"></app-chat-bubble>
 
 <!-- Footer -->
 <footer class="site-footer" [class.footer-hidden]="footerHidden">

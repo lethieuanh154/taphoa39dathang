@@ -1,17 +1,16 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { Subscription, firstValueFrom } from 'rxjs';
+import { Subscription } from 'rxjs';
 import { HeaderComponent } from '../components/header/header.component';
 import { ProductCardComponent } from '../components/product-card/product-card.component';
 import { CartPanelComponent } from '../components/cart-panel/cart-panel.component';
 import { ProductDetailComponent } from '../components/product-detail/product-detail.component';
 import { CustomerIdentityDialogComponent } from '../components/customer-identity-dialog/customer-identity-dialog.component';
 import { ChatBubbleComponent } from '../components/chat-bubble/chat-bubble.component';
+import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
 import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
 import { Product } from '../models/product';
-import { environment } from '../../environments/environment';
 
 interface Category {
   Id: number;
@@ -22,7 +21,7 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent] as const,
+  imports: [CommonModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent, DraggableBubbleDirective] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -40,6 +39,11 @@ export class HomeComponent implements OnInit, OnDestroy {
   isLoadingMore = false;
   hasSearched = false;
   footerHidden = false;
+
+  // Pagination state for API-based infinite scroll
+  private currentOffset = 0;
+  private hasMore = true;
+  private currentMode: 'featured' | 'category' | 'search' = 'featured';
 
   // Product detail dialog
   detailProduct: Product | null = null;
@@ -59,14 +63,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   activeCategory: Category | null = null;
 
   private readonly PAGE_SIZE = 20;
-  private loadedCount = 0;
   private lastSearchTerm = '';
   private updateSub?: Subscription;
 
   constructor(
     private productApi: ProductApiService,
     private groupService: GroupService,
-    private http: HttpClient,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -102,16 +104,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     });
 
     this.updateSub = this.productApi.getProductUpdated$().subscribe(() => {
-      // Refresh current view when WebSocket updates arrive
-      if (this.activeCategory) {
-        this.loadCategoryProducts(this.activeCategory);
-      } else if (this.lastSearchTerm) {
-        this.doSearch(this.lastSearchTerm);
-      } else {
-        // Default featured view — refresh from IndexedDB cache
-        this.loadFeaturedDisplay();
-      }
-      // Also refresh discount products with updated prices/stock
+      // Just refresh discount products on WS update (don't reload main grid to preserve scroll)
       this.refreshDiscountProducts();
     });
   }
@@ -125,16 +118,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     const scrollY = window.scrollY;
 
     // Footer: hide when scrolling down, only show when scrolled back near the top (header area)
-    if (scrollY > 100) {
-      this.footerHidden = true;
-    } else {
-      this.footerHidden = false;
-    }
-    // Infinite scroll
+    this.footerHidden = scrollY > 100;
+
+    // Infinite scroll - load more from API
     const scrollPosition = window.innerHeight + scrollY;
     const docHeight = document.documentElement.scrollHeight;
 
-    if (scrollPosition >= docHeight - 200 && !this.isLoadingMore && this.loadedCount < this.allMasterProducts.length) {
+    if (scrollPosition >= docHeight - 200 && !this.isLoadingMore && this.hasMore) {
       this.loadMore();
     }
 
@@ -155,9 +145,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private async doSearch(term: string): Promise<void> {
+    this.currentMode = 'search';
+    this.hasMore = false;
+    this.clearProducts();
     try {
       const results = await this.productApi.searchProducts(term);
-      this.setProducts(results);
+      this.appendProducts(results);
     } catch {
       this.clearProducts();
     }
@@ -178,9 +171,16 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private async loadCategoryProducts(category: Category): Promise<void> {
+    this.currentMode = 'category';
+    this.currentOffset = 0;
+    this.hasMore = true;
+    this.clearProducts();
+
     try {
-      const results = await this.productApi.loadByCategory(category.Id);
-      this.setProducts(results);
+      const { products, hasMore } = await this.productApi.loadByCategory(category.Id, this.PAGE_SIZE, 0);
+      this.appendProducts(products);
+      this.hasMore = hasMore;
+      this.currentOffset = products.length;
     } catch {
       this.clearProducts();
     }
@@ -191,9 +191,16 @@ export class HomeComponent implements OnInit, OnDestroy {
   // ======================== Featured (initial) ========================
 
   private async loadFeaturedDisplay(): Promise<void> {
+    this.currentMode = 'featured';
+    this.currentOffset = 0;
+    this.hasMore = true;
+    this.clearProducts();
+
     try {
-      const all = await this.productApi.getAllCachedProducts();
-      this.setProducts(all);
+      const { products, hasMore } = await this.productApi.loadFeaturedProducts(this.PAGE_SIZE, 0);
+      this.appendProducts(products);
+      this.hasMore = hasMore;
+      this.currentOffset = products.length;
       this.hasSearched = true;
     } catch {
       this.clearProducts();
@@ -204,19 +211,27 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // ======================== Product display helpers ========================
 
-  private setProducts(results: Product[]): void {
-    this.groupedProducts = this.groupService.group(results);
-    this.allMasterProducts = Object.values(this.groupedProducts).map(group => group[0]);
-    // Sort: in-stock products first, out-of-stock at bottom
-    this.allMasterProducts.sort((a, b) => {
+  private appendProducts(results: Product[]): void {
+    const grouped = this.groupService.group(results);
+    // Merge new grouped products into existing
+    Object.assign(this.groupedProducts, grouped);
+
+    const newMasters = Object.values(grouped).map(group => group[0]);
+    // Sort: in-stock first
+    newMasters.sort((a, b) => {
       const stockA = a.OnHand + (a.CloneOnHandNV || 0);
       const stockB = b.OnHand + (b.CloneOnHandNV || 0);
-      const aInStock = stockA > 0 ? 1 : 0;
-      const bInStock = stockB > 0 ? 1 : 0;
-      return bInStock - aInStock;
+      return (stockB > 0 ? 1 : 0) - (stockA > 0 ? 1 : 0);
     });
-    this.loadedCount = Math.min(this.PAGE_SIZE, this.allMasterProducts.length);
-    this.displayedProducts = this.allMasterProducts.slice(0, this.loadedCount);
+
+    // Avoid duplicates
+    const existingIds = new Set(this.allMasterProducts.map(p => p.Id));
+    for (const p of newMasters) {
+      if (!existingIds.has(p.Id)) {
+        this.allMasterProducts.push(p);
+      }
+    }
+    this.displayedProducts = [...this.allMasterProducts];
   }
 
   private clearProducts(): void {
@@ -225,17 +240,36 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.groupedProducts = {};
   }
 
-  private loadMore(): void {
+  private async loadMore(): Promise<void> {
+    if (this.isLoadingMore || !this.hasMore) return;
+
     this.isLoadingMore = true;
     this.cdr.markForCheck();
 
-    setTimeout(() => {
-      const nextCount = Math.min(this.loadedCount + this.PAGE_SIZE, this.allMasterProducts.length);
-      this.displayedProducts = this.allMasterProducts.slice(0, nextCount);
-      this.loadedCount = nextCount;
-      this.isLoadingMore = false;
-      this.cdr.markForCheck();
-    }, 100);
+    try {
+      let result: { products: Product[]; hasMore: boolean };
+
+      if (this.currentMode === 'category' && this.activeCategory) {
+        result = await this.productApi.loadByCategory(this.activeCategory.Id, this.PAGE_SIZE, this.currentOffset);
+      } else if (this.currentMode === 'featured') {
+        result = await this.productApi.loadFeaturedProducts(this.PAGE_SIZE, this.currentOffset);
+      } else {
+        // Search mode — already fully loaded
+        this.isLoadingMore = false;
+        this.cdr.markForCheck();
+        return;
+      }
+
+      this.appendProducts(result.products);
+      this.currentOffset += result.products.length;
+      this.hasMore = result.hasMore;
+    } catch (err) {
+      console.error('[Home] loadMore failed:', err);
+      this.hasMore = false;
+    }
+
+    this.isLoadingMore = false;
+    this.cdr.markForCheck();
   }
 
   // ======================== Product detail ========================
@@ -327,8 +361,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private async loadCategories(): Promise<void> {
     try {
-      const url = `${environment.domainUrl}/api/kiotviet/categories`;
-      this.categories = await firstValueFrom(this.http.get<Category[]>(url));
+      this.categories = await this.productApi.loadCategories();
       this.cdr.markForCheck();
     } catch {
       this.categories = [];

@@ -29,6 +29,7 @@ export class ProductApiService implements OnDestroy {
   private readonly STORE_NAME = 'products';
   private readonly META_STORE = 'metadata';
   private readonly SEARCH_LIMIT = 80;
+  private readonly PAGE_LIMIT = 20;
 
   private dbInitialized = false;
   private subs: Subscription[] = [];
@@ -40,8 +41,9 @@ export class ProductApiService implements OnDestroy {
   private productsReady$ = new BehaviorSubject<boolean>(false);
   private productUpdated$ = new Subject<void>();
 
-  // Categories cache
-  private categories: Category[] = [];
+  // Categories cache (TTL 24h in IndexedDB)
+  private readonly CATEGORIES_TTL = 24 * 60 * 60 * 1000;
+  private categoriesCache: Category[] | null = null;
 
   constructor(
     private http: HttpClient,
@@ -56,7 +58,8 @@ export class ProductApiService implements OnDestroy {
   async initialize(): Promise<void> {
     await this.initDB();
     this.setupWebSocket();
-    await this.loadFeaturedProducts();
+    // Initial load handled by HomeComponent via loadFeaturedProducts()
+    this.productsReady$.next(true);
   }
 
   private async initDB(): Promise<void> {
@@ -98,82 +101,62 @@ export class ProductApiService implements OnDestroy {
   }
 
   /**
-   * Load featured products (newest 50). Fast initial page render.
+   * Load featured products with pagination. Fast initial page render.
    */
-  private async loadFeaturedProducts(): Promise<void> {
+  async loadFeaturedProducts(limit: number = this.PAGE_LIMIT, offset: number = 0): Promise<{ products: Product[]; hasMore: boolean }> {
     try {
       const response = await firstValueFrom(
-        this.http.get<{ products: any[]; count: number }>(
-          `${environment.domainUrl}/api/firebase/products/featured?limit=50`
+        this.http.get<{ products: any[]; count: number; total: number; hasMore: boolean }>(
+          `${environment.domainUrl}/api/firebase/products/featured`,
+          { params: { limit: String(limit), offset: String(offset) } }
         )
       );
       const products = this.filterOriginalProducts(response?.products || []);
 
       if (products.length > 0) {
         await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
+        this.invalidateCache();
       }
 
-      this.invalidateCache();
       this.productsReady$.next(true);
+      return { products, hasMore: response?.hasMore ?? false };
     } catch (err) {
       console.error('[ProductApi] Featured products load failed:', err);
-      // Still mark ready if we have cached data from previous session
-      const count = await this.idb.count(this.DB_NAME, this.DB_VERSION, this.STORE_NAME).catch(() => 0);
-      if (count > 0) {
-        this.productsReady$.next(true);
-      }
+      // Fallback: use IndexedDB cache
+      const all = await this.getAllCachedProducts();
+      this.productsReady$.next(all.length > 0);
+      return { products: all.slice(offset, offset + limit), hasMore: offset + limit < all.length };
     }
   }
 
   /**
-   * Load products by category from API → store in IndexedDB.
-   * Returns products for immediate display.
+   * Load products by category from API with pagination.
+   * Returns { products, hasMore } for infinite scroll.
    */
-  async loadByCategory(categoryId: number): Promise<Product[]> {
-    // Check IndexedDB first
-    const cached = await this.idb.getAllByIndex<Product>(
-      this.DB_NAME, this.DB_VERSION, this.STORE_NAME, 'CategoryId', categoryId
-    );
-
-    // Check if we recently synced this category
-    const metaKey = `cat_sync_${categoryId}`;
-    const meta = await this.idb.getByKey<{ key: string; timestamp: string }>(
-      this.DB_NAME, this.DB_VERSION, this.META_STORE, metaKey
-    ).catch(() => undefined);
-
-    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    const isStale = !meta || meta.timestamp < fiveMinAgo;
-
-    if (cached.length > 0 && !isStale) {
-      // Return cached, but no background refresh needed
-      return cached.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
-    }
-
-    // Fetch from API
+  async loadByCategory(categoryId: number, limit: number = this.PAGE_LIMIT, offset: number = 0): Promise<{ products: Product[]; hasMore: boolean }> {
     try {
       const response = await firstValueFrom(
-        this.http.get<{ products: any[]; count: number }>(
-          `${environment.domainUrl}/api/firebase/get/products/by-category/${categoryId}`
+        this.http.get<{ products: any[]; count: number; total: number; hasMore: boolean }>(
+          `${environment.domainUrl}/api/firebase/get/products/by-category/${categoryId}`,
+          { params: { limit: String(limit), offset: String(offset) } }
         )
       );
       const products = this.filterOriginalProducts(response?.products || []);
 
       if (products.length > 0) {
         await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
+        this.invalidateCache();
       }
 
-      // Save sync timestamp
-      await this.idb.put(this.DB_NAME, this.DB_VERSION, this.META_STORE, {
-        key: metaKey, timestamp: new Date().toISOString()
-      });
-
-      this.invalidateCache();
-      this.productUpdated$.next();
-      return products;
+      return { products, hasMore: response?.hasMore ?? false };
     } catch (err) {
       console.error(`[ProductApi] Load category ${categoryId} failed:`, err);
-      // Return whatever we have cached
-      return cached.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
+      // Fallback: try IndexedDB cache
+      const cached = await this.idb.getAllByIndex<Product>(
+        this.DB_NAME, this.DB_VERSION, this.STORE_NAME, 'CategoryId', categoryId
+      );
+      const filtered = cached.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
+      return { products: filtered.slice(offset, offset + limit), hasMore: offset + limit < filtered.length };
     }
   }
 
@@ -231,6 +214,50 @@ export class ProductApiService implements OnDestroy {
     }
 
     return results;
+  }
+
+  // ======================== Categories ========================
+
+  /**
+   * Load categories: IndexedDB cache first (TTL 24h), then API.
+   * Categories it thay doi nen cache dai.
+   */
+  async loadCategories(): Promise<Category[]> {
+    // 1. Try in-memory cache
+    if (this.categoriesCache && this.categoriesCache.length > 0) {
+      return this.categoriesCache;
+    }
+
+    // 2. Try IndexedDB cache
+    try {
+      const cached = await this.idb.getByKey<{ key: string; value: Category[]; timestamp: number }>(
+        this.DB_NAME, this.DB_VERSION, this.META_STORE, 'categories'
+      );
+      if (cached && cached.value?.length > 0 && Date.now() - cached.timestamp < this.CATEGORIES_TTL) {
+        this.categoriesCache = cached.value;
+        return this.categoriesCache;
+      }
+    } catch { /* IndexedDB read failed, continue to API */ }
+
+    // 3. Fetch from API
+    try {
+      const categories = await firstValueFrom(
+        this.http.get<Category[]>(`${environment.domainUrl}/api/kiotviet/categories`)
+      );
+      if (categories && categories.length > 0) {
+        this.categoriesCache = categories;
+        // Save to IndexedDB
+        await this.idb.put(this.DB_NAME, this.DB_VERSION, this.META_STORE, {
+          key: 'categories',
+          value: categories,
+          timestamp: Date.now()
+        });
+      }
+      return this.categoriesCache || [];
+    } catch (err) {
+      console.error('[ProductApi] Categories load failed:', err);
+      return this.categoriesCache || [];
+    }
   }
 
   // ======================== WebSocket ========================
