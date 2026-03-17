@@ -94,10 +94,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.markForCheck();
 
-    // Load categories in parallel with product initialization
-    this.loadCategories();
-
     this.productApi.initialize().then(() => {
+      // Load categories after DB is initialized to avoid race condition
+      this.loadCategories();
       // Show featured products on initial load (no search needed)
       this.loadFeaturedDisplay();
       this.loadDiscountProducts();

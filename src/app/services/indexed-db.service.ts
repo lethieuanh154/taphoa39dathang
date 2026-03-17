@@ -4,6 +4,7 @@ import { openDB, IDBPDatabase } from 'idb';
 @Injectable({ providedIn: 'root' })
 export class IndexedDBService {
   private dbPromise: Promise<IDBPDatabase> | null = null;
+  private initPromise: Promise<IDBPDatabase> | null = null;
 
   private getDB(
     dbName: string,
@@ -11,11 +12,17 @@ export class IndexedDBService {
     upgradeFn?: (db: IDBPDatabase, oldVersion: number) => void
   ): Promise<IDBPDatabase> {
     if (!this.dbPromise) {
-      this.dbPromise = openDB(dbName, version, {
-        upgrade(db, oldVersion) {
-          upgradeFn?.(db, oldVersion);
-        }
-      });
+      if (!this.initPromise) {
+        // DB not initialized yet - open with upgrade function if provided
+        this.dbPromise = openDB(dbName, version, {
+          upgrade(db, oldVersion) {
+            upgradeFn?.(db, oldVersion);
+          }
+        });
+      } else {
+        // Wait for init() to complete first, then reuse its connection
+        this.dbPromise = this.initPromise;
+      }
     }
     return this.dbPromise;
   }
@@ -25,7 +32,14 @@ export class IndexedDBService {
     version: number,
     upgradeFn: (db: IDBPDatabase, oldVersion: number) => void
   ): Promise<void> {
-    await this.getDB(dbName, version, upgradeFn);
+    // Store init promise so getDB() can wait for it if called before init completes
+    this.initPromise = openDB(dbName, version, {
+      upgrade(db, oldVersion) {
+        upgradeFn(db, oldVersion);
+      }
+    });
+    this.dbPromise = this.initPromise;
+    await this.dbPromise;
   }
 
   async getAll<T>(dbName: string, version: number, storeName: string): Promise<T[]> {
