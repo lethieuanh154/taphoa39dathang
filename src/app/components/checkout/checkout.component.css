@@ -292,11 +292,60 @@
   font-weight: 500;
 }
 
+/* Radio options for receive method */
+.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.radio-option-active {
+  border-color: var(--green-600);
+  background: #e8f5e9;
+}
+
+.radio-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--green-600);
+  cursor: pointer;
+}
+
+.radio-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.radio-option-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.radio-option-row .radio-option {
+  flex: 1;
+}
+
 /* Shipping details */
 .shipping-details {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #f0f0f0;
+}
+
+.ship-address-hint {
+  font-size: 14px;
+  color: #e65100;
+  background: #fff3e0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
 }
 
 .ship-loading {

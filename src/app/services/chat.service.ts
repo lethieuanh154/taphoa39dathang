@@ -6,6 +6,7 @@ import {
   getFirestore, collection, onSnapshot, query, where, orderBy,
   Firestore, Unsubscribe
 } from 'firebase/firestore';
+import { openDB, IDBPDatabase } from 'idb';
 import { environment } from '../../environments/environment';
 
 export interface ChatMessage {
@@ -18,6 +19,10 @@ export interface ChatMessage {
   timestamp: string;
 }
 
+const CHAT_DB_NAME = 'DatHangChatDB';
+const CHAT_DB_VERSION = 1;
+const MESSAGES_STORE = 'messages';
+
 @Injectable({ providedIn: 'root' })
 export class ChatService implements OnDestroy {
   private newMessage$ = new Subject<ChatMessage>();
@@ -29,6 +34,9 @@ export class ChatService implements OnDestroy {
   private conversationUnsub: Unsubscribe | null = null;
   private knownMessageIds = new Set<string>();
 
+  // IndexedDB cache
+  private idbPromise: Promise<IDBPDatabase> | null = null;
+
   constructor(private http: HttpClient) {}
 
   /**
@@ -37,6 +45,7 @@ export class ChatService implements OnDestroy {
    */
   connect(): void {
     this.initFirestore();
+    this.initIDB();
   }
 
   disconnect(): void {
@@ -64,12 +73,23 @@ export class ChatService implements OnDestroy {
     const res = await firstValueFrom(this.http.post<{ status: string; message: ChatMessage }>(
       `${environment.domainUrl}/api/chat/send`, body
     ));
+    // Cache sent message
+    if (res.message?.id) {
+      this.saveMessagesToIDB([res.message]);
+    }
     return res.message;
   }
 
   async loadMessages(conversationId: string): Promise<ChatMessage[]> {
     // Unsubscribe previous listener
     this.conversationUnsub?.();
+
+    // Load cached messages from IndexedDB first (instant UI)
+    const cached = await this.loadMessagesFromIDB(conversationId);
+    if (cached.length > 0) {
+      this.messages$.next(cached);
+      cached.forEach(m => { if (m.id) this.knownMessageIds.add(m.id); });
+    }
 
     if (!this.chatDb) {
       // Fallback to HTTP if Firestore not available
@@ -78,6 +98,7 @@ export class ChatService implements OnDestroy {
       ));
       const result = msgs || [];
       this.messages$.next(result);
+      this.saveMessagesToIDB(result);
       return result;
     }
 
@@ -98,6 +119,9 @@ export class ChatService implements OnDestroy {
           this.docToMessage(doc.id, doc.data())
         );
         this.messages$.next(msgs);
+
+        // Sync to IndexedDB
+        this.saveMessagesToIDB(msgs);
 
         if (isInitial) {
           isInitial = false;
@@ -140,6 +164,43 @@ export class ChatService implements OnDestroy {
     const existing = getApps().find(app => app.name === appName);
     this.chatApp = existing || initializeApp(config, appName);
     this.chatDb = getFirestore(this.chatApp);
+  }
+
+  private initIDB(): void {
+    if (this.idbPromise) return;
+    this.idbPromise = openDB(CHAT_DB_NAME, CHAT_DB_VERSION, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains(MESSAGES_STORE)) {
+          const store = db.createObjectStore(MESSAGES_STORE, { keyPath: 'id' });
+          store.createIndex('conversationId', 'conversationId', { unique: false });
+        }
+      }
+    });
+  }
+
+  private async loadMessagesFromIDB(conversationId: string): Promise<ChatMessage[]> {
+    try {
+      const db = await this.idbPromise;
+      if (!db) return [];
+      const msgs = await db.getAllFromIndex(MESSAGES_STORE, 'conversationId', conversationId);
+      return msgs.sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
+    } catch {
+      return [];
+    }
+  }
+
+  private async saveMessagesToIDB(messages: ChatMessage[]): Promise<void> {
+    try {
+      const db = await this.idbPromise;
+      if (!db) return;
+      const tx = db.transaction(MESSAGES_STORE, 'readwrite');
+      for (const msg of messages) {
+        if (msg.id) tx.store.put(msg);
+      }
+      await tx.done;
+    } catch {
+      // Silent fail - cache is best-effort
+    }
   }
 
   private docToMessage(id: string, data: any): ChatMessage {

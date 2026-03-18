@@ -2,7 +2,7 @@
   <div class="checkout-header">
     <button class="back-btn" (click)="goBack()" aria-label="Quay lai">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="15 18 9 12 15 6"/>
+        <polyline points="15 18 9 12 15 6" />
       </svg>
     </button>
     <h1 class="checkout-title">Đặt hàng</h1>
@@ -13,7 +13,8 @@
     <section class="section reward-banner">
       <div class="reward-info">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff9800" stroke-width="2">
-          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          <polygon
+            points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
         </svg>
         <span>Điểm thưởng hiện có: <strong>{{ formatPrice(availablePoints) }} điểm</strong></span>
       </div>
@@ -44,97 +45,132 @@
 
       <div class="form-group">
         <label class="form-label" for="name">Họ tên <span class="required-star">*</span></label>
-        <input
-          id="name"
-          type="text"
-          class="form-input"
-          placeholder="Nguyễn Văn A"
-          [(ngModel)]="customerName"
-          autocomplete="name"
-        />
+        <input id="name" type="text" class="form-input" placeholder="Nguyễn Văn A" [(ngModel)]="customerName"
+          autocomplete="name" />
       </div>
 
       <div class="form-group">
         <label class="form-label" for="phone">Số điện thoại <span class="required-star">*</span></label>
-        <input
-          id="phone"
-          type="tel"
-          class="form-input"
-          placeholder="0905 xxx xxx"
-          [(ngModel)]="customerPhone"
-          autocomplete="tel"
-        />
+        <input id="phone" type="tel" class="form-input" placeholder="0905 xxx xxx" [(ngModel)]="customerPhone"
+          autocomplete="tel" />
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="address">Địa chỉ giao hàng <span class="required-star" *ngIf="wantDelivery">*</span></label>
-        <input
-          id="address"
-          type="text"
-          class="form-input"
-          placeholder="số nhà,đường phố,phường/xã..."
-          [(ngModel)]="customerAddress"
-          (ngModelChange)="onAddressChange()"
-          autocomplete="street-address"
-        />
+        <label class="form-label" for="address">Địa chỉ giao hàng <span class="required-star"
+            *ngIf="wantDelivery">*</span></label>
+        <input id="address" type="text" class="form-input" placeholder="số nhà,đường phố,phường/xã..."
+          [(ngModel)]="customerAddress" (ngModelChange)="onAddressChange()" autocomplete="street-address" />
       </div>
 
       <div class="form-group">
         <label class="form-label" for="note">Ghi chú</label>
-        <textarea
-          id="note"
-          class="form-input form-textarea"
-          placeholder="Ghi chú thêm"
-          [(ngModel)]="note"
-          rows="2"
-        ></textarea>
+        <textarea id="note" class="form-input form-textarea" placeholder="Ghi chú thêm" [(ngModel)]="note"
+          rows="2"></textarea>
       </div>
     </section>
-
-    <!-- Shipping -->
+    <!-- Hình thức nhận hàng -->
     <section class="section">
-      <div class="section-title-row">
-        <h2 class="section-title" style="margin-bottom:0">Giao hàng</h2>
-        <div class="ship-rate-wrapper">
-          <button type="button" class="ship-rate-toggle" (click)="showShipRates = !showShipRates">
-            Bảng giá ship
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
-            </svg>
-          </button>
-          <!-- Popup tooltip -->
-          <div class="ship-rate-popup" *ngIf="showShipRates">
-            <div class="ship-rate-popup-backdrop" (click)="showShipRates = false"></div>
-            <div class="ship-rate-popup-content">
-              <div class="ship-rate-popup-header">
-                <strong>Bảng phí (đã bao gồm VAT)</strong>
-                <button type="button" class="ship-rate-close" (click)="showShipRates = false">&times;</button>
-              </div>
-              <table>
-                <thead>
-                  <tr><th>Giá trị đơn</th><th>Free ship</th><th>Phí vượt</th></tr>
-                </thead>
-                <tbody>
-                  <tr><td>&lt; 200.000đ</td><td colspan="2" style="text-align:center;color:#c62828">Không giao hàng</td></tr>
-                  <tr><td>200k – 500k</td><td>0 km</td><td>13.000đ/km</td></tr>
-                  <tr><td>500k – 1 tr</td><td>≤ 2km</td><td>7.000đ/km</td></tr>
-                  <tr><td>1 tr – 2 tr</td><td>≤ 3km</td><td>6.000đ/km</td></tr>
-                  <tr><td>&gt;2 tr – 10 tr</td><td>≤ 5km</td><td>6.000đ/km</td></tr>
-                  <tr><td>&gt; 10 triệu</td><td>≤ 7km</td><td>5.000đ/km</td></tr>
+      <h2 class="section-title">Hình thức nhận hàng</h2>
 
-                </tbody>
-              </table>
+      <!-- Option 1: Lấy hàng từ cửa hàng -->
+      <label class="radio-option" [class.radio-option-active]="!wantDelivery" (click)="selectPickup()">
+        <input type="radio" name="receiveMethod" [checked]="!wantDelivery" />
+        <span class="radio-label">Lấy hàng từ cửa hàng</span>
+      </label>
+
+      <div class="pickup-details" *ngIf="!wantDelivery" style="margin-top: 12px;">
+        <div class="delivery-datetime">
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label class="form-label" for="pickupDate">Ngày lấy hàng</label>
+            <input id="pickupDate" type="date" class="form-input" [min]="minDeliveryDate"
+              [(ngModel)]="desiredPickupDate" />
+          </div>
+          <div class="form-group" style="flex:1;margin-bottom:0">
+            <label class="form-label" for="pickupTime">Giờ lấy hàng</label>
+            <input id="pickupTime" type="text" inputmode="numeric" class="form-input" placeholder="HH:mm"
+              maxlength="5" [(ngModel)]="desiredPickupTime" (input)="onPickupTimeInput($event)"
+              (blur)="onPickupTimeChange()" />
+          </div>
+        </div>
+        <div class="ship-error" *ngIf="pickupTimeError" style="margin-top:8px">{{ pickupTimeError }}</div>
+      </div>
+
+      <!-- Option 2: Giao hàng tận nơi -->
+      <div style="margin-top: 12px;">
+        <div class="radio-option-row">
+          <label class="radio-option" [class.radio-option-active]="wantDelivery" (click)="selectDelivery()">
+            <input type="radio" name="receiveMethod" [checked]="wantDelivery" />
+            <span class="radio-label">Giao hàng tận nơi</span>
+          </label>
+          <div class="ship-rate-wrapper">
+            <button type="button" class="ship-rate-toggle" (click)="showShipRates = !showShipRates">
+              Bảng giá ship
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
+            </button>
+            <!-- Popup tooltip -->
+            <div class="ship-rate-popup" *ngIf="showShipRates">
+              <div class="ship-rate-popup-backdrop" (click)="showShipRates = false"></div>
+              <div class="ship-rate-popup-content">
+                <div class="ship-rate-popup-header">
+                  <strong>Bảng phí (đã bao gồm VAT)</strong>
+                  <button type="button" class="ship-rate-close" (click)="showShipRates = false">&times;</button>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Giá trị đơn</th>
+                      <th>Free ship</th>
+                      <th>Phí vượt</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>&lt; 200.000đ</td>
+                      <td colspan="2" style="text-align:center;color:#c62828">Không giao hàng</td>
+                    </tr>
+                    <tr>
+                      <td>200k – 500k</td>
+                      <td>0 km</td>
+                      <td>13.000đ/km</td>
+                    </tr>
+                    <tr>
+                      <td>500k – 1 tr</td>
+                      <td>≤ 2km</td>
+                      <td>7.000đ/km</td>
+                    </tr>
+                    <tr>
+                      <td>1 tr – 2 tr</td>
+                      <td>≤ 3km</td>
+                      <td>6.000đ/km</td>
+                    </tr>
+                    <tr>
+                      <td>&gt;2 tr – 10 tr</td>
+                      <td>≤ 5km</td>
+                      <td>6.000đ/km</td>
+                    </tr>
+                    <tr>
+                      <td>&gt; 10 triệu</td>
+                      <td>≤ 7km</td>
+                      <td>5.000đ/km</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <label class="checkbox-option">
-        <input type="checkbox" [(ngModel)]="wantDelivery" (ngModelChange)="onDeliveryToggle()" />
-        <span class="checkbox-label">Giao hàng tận nơi</span>
-      </label>
-
       <div class="shipping-details" *ngIf="wantDelivery">
+        <!-- Empty address warning -->
+        <div class="ship-address-hint" *ngIf="!customerAddress.trim() && !isCalculatingShip && !shipError">
+          Hãy nhập địa chỉ giao hàng
+        </div>
+
         <!-- Loading -->
         <div class="ship-loading" *ngIf="isCalculatingShip">
           <span class="spinner"></span>
@@ -164,7 +200,8 @@
             <strong>{{ formatPrice(shipResult.shipCost) }} đ</strong>
           </div>
           <div class="ship-note" *ngIf="shipResult.freeKm > 0">
-            Miễn phí ship cho {{ shipResult.freeKm }}km đầu. <i style="font-size: 20px;" class="fa-regular fa-hand-point-left"></i>
+            Miễn phí ship cho {{ shipResult.freeKm }}km đầu. <i style="font-size: 20px;"
+              class="fa-regular fa-hand-point-left"></i>
           </div>
         </div>
 
@@ -173,32 +210,19 @@
           <div class="delivery-datetime">
             <div class="form-group" style="flex:1;margin-bottom:0">
               <label class="form-label" for="deliveryDate">Ngày giao</label>
-              <input
-                id="deliveryDate"
-                type="date"
-                class="form-input"
-                [min]="minDeliveryDate"
-                [(ngModel)]="desiredDeliveryDate"
-                (ngModelChange)="onDesiredTimeChange()"
-              />
+              <input id="deliveryDate" type="date" class="form-input" [min]="minDeliveryDate"
+                [(ngModel)]="desiredDeliveryDate" (ngModelChange)="onDesiredTimeChange()" />
             </div>
             <div class="form-group" style="flex:1;margin-bottom:0">
               <label class="form-label" for="deliveryTime">Giờ giao</label>
-              <input
-                id="deliveryTime"
-                type="text"
-                inputmode="numeric"
-                class="form-input"
-                placeholder="HH:mm"
-                maxlength="5"
-                [(ngModel)]="desiredDeliveryTime"
-                (input)="onTimeInput($event)"
-                (blur)="onDesiredTimeChange()"
-              />
+              <input id="deliveryTime" type="text" inputmode="numeric" class="form-input" placeholder="HH:mm"
+                maxlength="5" [(ngModel)]="desiredDeliveryTime" (input)="onTimeInput($event)"
+                (blur)="onDesiredTimeChange()" />
             </div>
           </div>
           <div class="ship-error" *ngIf="deliveryTimeError" style="margin-top:8px">{{ deliveryTimeError }}</div>
-          <div class="ship-start-time" *ngIf="estimatedStartTime && desiredDeliveryTime && desiredDeliveryDate && !deliveryTimeError">
+          <div class="ship-start-time"
+            *ngIf="estimatedStartTime && desiredDeliveryTime && desiredDeliveryDate && !deliveryTimeError">
             Bắt đầu giao lúc: <strong>{{ estimatedStartTime }}, {{ formatDeliveryDate(desiredDeliveryDate) }}</strong>
           </div>
         </div>
@@ -287,11 +311,7 @@
     <div class="error-msg" *ngIf="errorMessage">{{ errorMessage }}</div>
 
     <!-- Submit -->
-    <button
-      class="submit-btn"
-      [disabled]="!isFormValid || isSubmitting"
-      (click)="submitOrder()"
-    >
+    <button class="submit-btn" [disabled]="!isFormValid || isSubmitting" (click)="submitOrder()">
       {{ isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt hàng' }}
     </button>
   </div>

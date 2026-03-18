@@ -7,6 +7,7 @@ import { ChatService, ChatMessage } from '../../services/chat.service';
 const IDENTITY_KEY = 'sm_customer_identity';
 const IDENTITY_NAME_KEY = 'sm_customer_name';
 const ZALO_OA_URL = 'https://zalo.me/1420769616971124037';
+const LAST_READ_KEY = 'sm_chat_last_read';
 
 @Component({
   selector: 'app-chat-bubble',
@@ -22,6 +23,7 @@ const ZALO_OA_URL = 'https://zalo.me/1420769616971124037';
       <svg *ngIf="isOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">
         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
       </svg>
+      <span class="unread-badge" *ngIf="!isOpen && unreadCount > 0">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
     </button>
 
     <!-- Chatbox -->
@@ -76,6 +78,23 @@ const ZALO_OA_URL = 'https://zalo.me/1420769616971124037';
     }
     .chat-fab:hover { transform: scale(1.08); }
     .chat-fab-active { background: #d32f2f; }
+
+    .unread-badge {
+      position: absolute;
+      top: -4px; right: -4px;
+      min-width: 20px; height: 20px;
+      border-radius: 10px;
+      background: #d32f2f;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 5px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      line-height: 1;
+    }
 
     .chatbox {
       position: absolute;
@@ -207,9 +226,11 @@ export class ChatBubbleComponent implements OnInit, OnDestroy {
   messages: ChatMessage[] = [];
   messageText = '';
   isSending = false;
+  unreadCount = 0;
   zaloUrl = ZALO_OA_URL;
 
   private sub?: Subscription;
+  private newMsgSub?: Subscription;
   private identity = '';
   private customerName = '';
 
@@ -220,21 +241,47 @@ export class ChatBubbleComponent implements OnInit, OnDestroy {
     this.customerName = localStorage.getItem(IDENTITY_NAME_KEY) || this.identity;
     this.chatService.connect();
 
+    // Load messages ngay từ đầu để đếm unread
+    if (this.identity) {
+      this.chatService.loadMessages(this.identity);
+    }
+
     this.sub = this.chatService.getMessages$().subscribe(msgs => {
       this.messages = msgs;
+      // Đếm unread staff messages dựa trên lastRead timestamp
+      if (!this.isOpen) {
+        const lastRead = localStorage.getItem(LAST_READ_KEY) || '';
+        this.unreadCount = msgs.filter(m =>
+          m.senderType === 'staff' && m.timestamp > lastRead
+        ).length;
+      }
       this.cdr.markForCheck();
       setTimeout(() => this.scrollToBottom(), 50);
+    });
+
+    // Real-time: tăng unread khi có tin nhắn mới từ staff
+    this.newMsgSub = this.chatService.getNewMessage$().subscribe(msg => {
+      if (msg.senderType === 'staff' && !this.isOpen) {
+        this.unreadCount++;
+        this.cdr.markForCheck();
+      }
     });
   }
 
   ngOnDestroy(): void {
     this.sub?.unsubscribe();
+    this.newMsgSub?.unsubscribe();
   }
 
   toggleChat(): void {
     this.isOpen = !this.isOpen;
-    if (this.isOpen && this.identity) {
-      this.chatService.loadMessages(this.identity);
+    if (this.isOpen) {
+      // Đánh dấu đã đọc
+      this.unreadCount = 0;
+      localStorage.setItem(LAST_READ_KEY, new Date().toISOString());
+      if (this.identity) {
+        this.chatService.loadMessages(this.identity);
+      }
     }
     this.cdr.markForCheck();
   }

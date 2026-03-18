@@ -42,6 +42,11 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   estimatedStartTime = '';
   minDeliveryDate = '';
 
+  // Pickup (customer đến lấy hàng)
+  desiredPickupDate = '';
+  desiredPickupTime = '';
+  pickupTimeError = '';
+
   // Reward points
   availablePoints = 0;
   usePointsForShip = false;
@@ -71,6 +76,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     const today = new Date();
     this.minDeliveryDate = today.toISOString().split('T')[0];
     this.desiredDeliveryDate = this.minDeliveryDate;
+    this.desiredPickupDate = this.minDeliveryDate;
 
     // Load saved customer info
     try {
@@ -178,7 +184,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         && !this.isCalculatingShip
         && this.distanceKm > 0;
     }
-    return baseValid;
+    return baseValid && !this.pickupTimeError;
   }
 
   // --- Actions ---
@@ -187,15 +193,24 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     return price.toLocaleString('vi-VN');
   }
 
-  onDeliveryToggle(): void {
-    if (!this.wantDelivery) {
-      this.usePointsForShip = false;
-      this.distanceKm = 0;
-      this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
-      this.shipError = '';
-      this.desiredDeliveryTime = '';
-      this.estimatedStartTime = '';
-    } else if (this.customerAddress.trim()) {
+  selectPickup(): void {
+    if (!this.wantDelivery) return; // already pickup
+    this.wantDelivery = false;
+    this.usePointsForShip = false;
+    this.distanceKm = 0;
+    this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
+    this.shipError = '';
+    this.desiredDeliveryTime = '';
+    this.estimatedStartTime = '';
+    this.desiredPickupDate = this.minDeliveryDate;
+    this.desiredPickupTime = '';
+    this.pickupTimeError = '';
+  }
+
+  selectDelivery(): void {
+    if (this.wantDelivery) return; // already delivery
+    this.wantDelivery = true;
+    if (this.customerAddress.trim()) {
       this.isCalculatingShip = true;
       this.addressSubject.next(this.customerAddress);
     }
@@ -242,6 +257,38 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       }
     }
     this.updateStartTime();
+  }
+
+  onPickupTimeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    let val = input.value.replace(/[^\d]/g, '');
+    if (val.length > 2) {
+      val = val.slice(0, 2) + ':' + val.slice(2, 4);
+    }
+    if (val.length >= 2) {
+      const h = Math.min(23, parseInt(val.slice(0, 2), 10));
+      val = h.toString().padStart(2, '0') + val.slice(2);
+    }
+    if (val.length === 5) {
+      const m = Math.min(59, parseInt(val.slice(3, 5), 10));
+      val = val.slice(0, 3) + m.toString().padStart(2, '0');
+    }
+    input.value = val;
+    this.desiredPickupTime = val;
+    if (val.length === 5) {
+      this.onPickupTimeChange();
+    }
+  }
+
+  onPickupTimeChange(): void {
+    this.pickupTimeError = '';
+    if (this.desiredPickupTime) {
+      const [h, m] = this.desiredPickupTime.split(':').map(Number);
+      const minutes = h * 60 + m;
+      if (minutes < 480 || minutes > 960) {
+        this.pickupTimeError = 'Giờ lấy hàng chỉ từ 8:00 đến 16:00. Vui lòng chọn lại.';
+      }
+    }
   }
 
   onPointsForShipToggle(): void {
@@ -313,7 +360,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       pointsUsedForOrder: calc.pointsUsedForOrder,
       desiredDeliveryDate: this.desiredDeliveryDate,
       desiredDeliveryTime: this.desiredDeliveryTime,
-      estimatedStartTime: this.estimatedStartTime
+      estimatedStartTime: this.estimatedStartTime,
+      desiredPickupDate: !this.wantDelivery ? this.desiredPickupDate : '',
+      desiredPickupTime: !this.wantDelivery ? this.desiredPickupTime : ''
     };
 
     // Save customer info for next time

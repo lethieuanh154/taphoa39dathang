@@ -62,6 +62,8 @@ export interface OrderData {
   desiredDeliveryDate: string;
   desiredDeliveryTime: string;
   estimatedStartTime: string;
+  desiredPickupDate?: string;
+  desiredPickupTime?: string;
 }
 
 export interface ShipCostResult {
