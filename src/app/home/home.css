@@ -28,6 +28,10 @@
   flex-shrink: 0;
 }
 
+.discount-scroll-wrap {
+  position: relative;
+}
+
 .discount-scroll {
   display: flex;
   gap: 10px;
@@ -43,6 +47,32 @@
 
 .discount-scroll::-webkit-scrollbar { height: 4px; }
 .discount-scroll::-webkit-scrollbar-thumb { background: #ffccbc; border-radius: 4px; }
+
+.scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e74c3c;
+  pointer-events: none;
+  animation: arrowPulse 1.5s ease-in-out infinite;
+}
+
+.scroll-arrow-right {
+  right: 4px;
+}
+
+@keyframes arrowPulse {
+  0%, 100% { opacity: 0.7; transform: translateY(-50%) translateX(0); }
+  50% { opacity: 1; transform: translateY(-50%) translateX(3px); }
+}
 
 .discount-item {
   flex: 0 0 100px;

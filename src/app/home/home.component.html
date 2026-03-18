@@ -16,16 +16,21 @@
       </svg>
       <span>Giảm giá hôm nay</span>
     </div>
-    <div class="discount-scroll">
-      <div class="discount-item" *ngFor="let p of discountProducts; trackBy: trackByProductCode"
-           (click)="onDiscountProductClick(p)">
-        <div class="discount-img-wrap">
-          <img [src]="p.Image || 'assets/no-image.svg'" [alt]="p.Name" class="discount-img" loading="lazy">
-          <span class="sale-badge">SALE</span>
+    <div class="discount-scroll-wrap">
+      <div class="discount-scroll">
+        <div class="discount-item" *ngFor="let p of discountProducts; trackBy: trackByProductCode"
+             (click)="onDiscountProductClick(p)">
+          <div class="discount-img-wrap">
+            <img [src]="p.Image || 'assets/no-image.svg'" [alt]="p.Name" class="discount-img" loading="lazy">
+            <span class="sale-badge">SALE</span>
+          </div>
+          <div class="discount-name">{{ p.Name }}</div>
+          <div class="discount-market-price">{{ getOriginalPrice(p.BasePrice) | number:'1.0-0' }}đ</div>
+          <div class="discount-price">{{ p.BasePrice | number:'1.0-0' }}đ</div>
         </div>
-        <div class="discount-name">{{ p.Name }}</div>
-        <div class="discount-market-price">{{ getOriginalPrice(p.BasePrice) | number:'1.0-0' }}đ</div>
-        <div class="discount-price">{{ p.BasePrice | number:'1.0-0' }}đ</div>
+      </div>
+      <div class="scroll-arrow scroll-arrow-right">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
       </div>
     </div>
   </section>
