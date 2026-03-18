@@ -320,6 +320,14 @@
   to { opacity: 1; }
 }
 
+/* ========== Profile Bubble (host positioning) ========== */
+app-profile-bubble {
+  position: fixed;
+  right: 16px;
+  top: 70px;
+  z-index: 1000;
+}
+
 /* ========== Footer ========== */
 .site-footer {
   position: fixed;

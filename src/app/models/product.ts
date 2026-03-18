@@ -54,7 +54,6 @@ export interface OrderData {
   createdDate: string;
   deliveryTime: string;
   source: 'online';
-  paymentMethod: 'cod' | 'transfer';
   wantDelivery: boolean;
   shipCost: number;
   distanceKm: number;

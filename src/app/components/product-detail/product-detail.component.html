@@ -16,6 +16,7 @@
       />
       <span class="stock-badge" *ngIf="isOutOfStock">Hết hàng</span>
 
+
       <!-- Navigation arrows (only when multiple images) -->
       <ng-container *ngIf="productImages.length > 1">
         <button class="img-nav img-nav-prev" (click)="$event.stopPropagation(); prevImage()" aria-label="Ảnh trước">
@@ -71,6 +72,12 @@
           <span class="price-label">Giá bán:</span>
           <span class="price-value">{{ formatPrice(salePrice) }} đ</span>
         </div>
+      </div>
+
+      <!-- Stock Status -->
+      <div class="stock-status" [ngClass]="'stock-' + stockStatus">
+        <span class="stock-dot"></span>
+        <span class="stock-text">{{ stockLabel }}</span>
       </div>
 
       <!-- Add to Cart -->

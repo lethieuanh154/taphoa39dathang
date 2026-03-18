@@ -99,9 +99,40 @@ export class ProductDetailComponent {
     return this.selectedProduct.BasePrice;
   }
 
+  /** Total stock across all group variants, converted to master unit */
+  get totalMasterStock(): number {
+    return this.group.reduce((sum, p) => {
+      const stock = p.OnHand + (p.CloneOnHandNV || 0);
+      return sum + stock * (p.ConversionValue || 1);
+    }, 0);
+  }
+
+  /** Stock as percentage of the largest ConversionValue in the group */
+  get stockPercent(): number {
+    const maxCV = Math.max(...this.group.map(p => p.ConversionValue || 1));
+    if (maxCV <= 0) return this.totalMasterStock > 0 ? 100 : 0;
+    return (this.totalMasterStock / maxCV) * 100;
+  }
+
+  get stockStatus(): 'in-stock' | 'low-stock' | 'very-low' | 'out-of-stock' {
+    const pct = this.stockPercent;
+    if (pct <= 0) return 'out-of-stock';
+    if (pct < 3) return 'very-low';
+    if (pct <= 10) return 'low-stock';
+    return 'in-stock';
+  }
+
+  get stockLabel(): string {
+    switch (this.stockStatus) {
+      case 'in-stock': return 'Còn hàng';
+      case 'low-stock': return 'Sắp hết hàng';
+      case 'very-low': return 'Chỉ còn vài sản phẩm';
+      case 'out-of-stock': return 'Hết hàng';
+    }
+  }
+
   get isOutOfStock(): boolean {
-    const totalStock = this.selectedProduct.OnHand + (this.selectedProduct.CloneOnHandNV || 0);
-    return totalStock <= 0;
+    return this.stockStatus === 'out-of-stock';
   }
 
   formatPrice(price: number): string {

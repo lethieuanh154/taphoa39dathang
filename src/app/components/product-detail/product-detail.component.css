@@ -248,6 +248,57 @@
   color: var(--orange-600);
 }
 
+/* Stock Status */
+.stock-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stock-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.stock-status.stock-in-stock {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+.stock-status.stock-in-stock .stock-dot {
+  background: #4caf50;
+}
+
+.stock-status.stock-low-stock {
+  background: #fff8e1;
+  color: #f57f17;
+}
+.stock-status.stock-low-stock .stock-dot {
+  background: #ff9800;
+}
+
+.stock-status.stock-very-low {
+  background: #fff3e0;
+  color: #e65100;
+}
+.stock-status.stock-very-low .stock-dot {
+  background: #f57c00;
+}
+
+.stock-status.stock-out-of-stock {
+  background: #ffebee;
+  color: #c62828;
+}
+.stock-status.stock-out-of-stock .stock-dot {
+  background: #d32f2f;
+}
+
 /* Add to Cart Button */
 .detail-add-btn {
   width: 100%;

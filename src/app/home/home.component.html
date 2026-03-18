@@ -106,6 +106,9 @@
   </button>
 </div>
 
+<!-- Profile Bubble -->
+<app-profile-bubble *ngIf="customerIdentity" appDraggableBubble [storageKey]="'profile-bubble-pos'"></app-profile-bubble>
+
 <!-- Chat Bubble -->
 <app-chat-bubble *ngIf="customerIdentity" appDraggableBubble [storageKey]="'chat-bubble-pos'"></app-chat-bubble>
 

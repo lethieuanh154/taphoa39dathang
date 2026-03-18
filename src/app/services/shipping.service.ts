@@ -113,7 +113,7 @@ export class ShippingService {
       ratePerKm = 6000;
     } else {
       freeKm = 7;
-      ratePerKm = 6000;
+      ratePerKm = 5000;
     }
 
     const chargeableKm = Math.max(0, distanceKm - freeKm);

@@ -25,7 +25,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   customerPhone = '';
   customerAddress = '';
   note = '';
-  paymentMethod: 'cod' | 'transfer' = 'cod';
   isSubmitting = false;
   errorMessage = '';
 
@@ -271,12 +270,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     return `${d}/${m}/${y}`;
   }
 
-  getQrUrl(): string {
-    const amount = this.calculation.finalTotal;
-    const addInfo = encodeURIComponent('Song Minh DH ' + Date.now());
-    return `https://img.vietqr.io/image/TPB-69586928888-qr_only.png?amount=${amount}&addInfo=${addInfo}`;
-  }
-
   submitOrder(): void {
     if (!this.isFormValid || this.isSubmitting) return;
 
@@ -308,14 +301,13 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       totalPrice: calc.finalTotal,
       totalQuantity: this.totalItems,
       discountAmount: calc.pointsUsedForOrder,
-      customerPaid: this.paymentMethod === 'transfer' ? calc.finalTotal : 0,
+      customerPaid:  calc.finalTotal ,
       totalCost: this.items.reduce((sum, i) => sum + (i.product.Cost || 0) * i.quantity, 0),
       note: this.note.trim(),
       status: 'pending',
       createdDate: now.toISOString(),
       deliveryTime: '',
       source: 'online',
-      paymentMethod: this.paymentMethod,
       wantDelivery: this.wantDelivery,
       shipCost: calc.shipCost,
       distanceKm: this.distanceKm,
