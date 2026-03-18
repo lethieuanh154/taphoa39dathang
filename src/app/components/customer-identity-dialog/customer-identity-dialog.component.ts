@@ -8,6 +8,7 @@ import { environment } from '../../../environments/environment';
 const IDENTITY_KEY = 'sm_customer_identity';
 const IDENTITY_NAME_KEY = 'sm_customer_name';
 const IDENTITY_PHONE_KEY = 'sm_customer_phone';
+const GIFT_POINT_KEY = 'sm_customer_giftpoint';
 const REGISTER_URL = 'https://songminhdangkythanhvien.onrender.com/';
 
 interface VerifyResponse {
@@ -17,6 +18,7 @@ interface VerifyResponse {
   phone?: string;
   type?: string;
   message?: string;
+  giftPoint?: number;
 }
 
 @Component({
@@ -188,6 +190,7 @@ export class CustomerIdentityDialogComponent {
         if (res.phone) {
           localStorage.setItem(IDENTITY_PHONE_KEY, res.phone);
         }
+        localStorage.setItem(GIFT_POINT_KEY, String(res.giftPoint || 0));
         this.confirmed.emit(res.identity || val);
       } else {
         this.errorMessage = res?.message || 'Không tìm thấy khách hàng';

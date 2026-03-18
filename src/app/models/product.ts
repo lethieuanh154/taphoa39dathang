@@ -55,4 +55,30 @@ export interface OrderData {
   deliveryTime: string;
   source: 'online';
   paymentMethod: 'cod' | 'transfer';
+  wantDelivery: boolean;
+  shipCost: number;
+  distanceKm: number;
+  pointsUsedForShip: number;
+  pointsUsedForOrder: number;
+  desiredDeliveryTime: string;
+  estimatedStartTime: string;
+}
+
+export interface ShipCostResult {
+  shipCost: number;
+  freeKm: number;
+  ratePerKm: number;
+  canShip: boolean;
+  message: string;
+}
+
+export interface FinalCalculation {
+  orderSubtotal: number;
+  shipCost: number;
+  pointsUsedForShip: number;
+  actualShipPayment: number;
+  pointsUsedForOrder: number;
+  orderAfterDiscount: number;
+  finalTotal: number;
+  remainingPoints: number;
 }

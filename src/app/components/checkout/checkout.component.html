@@ -9,6 +9,16 @@
   </div>
 
   <div class="checkout-content">
+    <!-- Reward Points Banner -->
+    <section class="section reward-banner">
+      <div class="reward-info">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ff9800" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Điểm thưởng hiện có: <strong>{{ formatPrice(availablePoints) }} điểm</strong></span>
+      </div>
+    </section>
+
     <!-- Order Summary -->
     <section class="section">
       <h2 class="section-title">Đơn hàng ({{ totalItems }} sản phẩm)</h2>
@@ -19,12 +29,12 @@
             <div class="order-item-name">{{ item.product.FullName }}</div>
             <div class="order-item-qty">x{{ item.quantity }} {{ item.product.Unit }}</div>
           </div>
-          <div class="order-item-price">{{ formatPrice(item.product.BasePrice * item.quantity) }}d</div>
+          <div class="order-item-price">{{ formatPrice(item.product.BasePrice * item.quantity) }}đ</div>
         </div>
       </div>
       <div class="order-total">
         <span>Tổng cộng:</span>
-        <strong>{{ formatPrice(totalPrice) }} đ</strong>
+        <strong>{{ formatPrice(orderSubtotal) }} đ</strong>
       </div>
     </section>
 
@@ -57,13 +67,14 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="address">Địa chỉ giao hàng <span class="required-star">*</span></label>
+        <label class="form-label" for="address">Địa chỉ giao hàng <span class="required-star" *ngIf="wantDelivery">*</span></label>
         <input
           id="address"
           type="text"
           class="form-input"
           placeholder="Số nhà, đường, phường/xã..."
           [(ngModel)]="customerAddress"
+          (ngModelChange)="onAddressChange()"
           autocomplete="street-address"
         />
       </div>
@@ -77,6 +88,143 @@
           [(ngModel)]="note"
           rows="2"
         ></textarea>
+      </div>
+    </section>
+
+    <!-- Shipping -->
+    <section class="section">
+      <h2 class="section-title">Giao hàng</h2>
+
+      <label class="checkbox-option">
+        <input type="checkbox" [(ngModel)]="wantDelivery" (ngModelChange)="onDeliveryToggle()" />
+        <span class="checkbox-label">Giao hàng tận nơi</span>
+      </label>
+
+      <div class="shipping-details" *ngIf="wantDelivery">
+        <!-- Loading -->
+        <div class="ship-loading" *ngIf="isCalculatingShip">
+          Đang tính khoảng cách...
+        </div>
+
+        <!-- Error -->
+        <div class="ship-error" *ngIf="shipError">{{ shipError }}</div>
+
+        <!-- Cannot ship -->
+        <div class="ship-error" *ngIf="!shipResult.canShip && !shipError && !isCalculatingShip">
+          {{ shipResult.message }}
+        </div>
+
+        <!-- Ship info -->
+        <div class="ship-info" *ngIf="distanceKm > 0 && shipResult.canShip && !shipError && !isCalculatingShip">
+          <div class="ship-row">
+            <span>Khoảng cách:</span>
+            <strong>{{ distanceKm }} km</strong>
+          </div>
+          <div class="ship-row">
+            <span>Thời gian di chuyển:</span>
+            <strong>{{ durationMinutes }} phút</strong>
+          </div>
+          <div class="ship-row">
+            <span>Phí ship:</span>
+            <strong>{{ formatPrice(shipResult.shipCost) }} đ</strong>
+          </div>
+          <div class="ship-note" *ngIf="shipResult.freeKm > 0">
+            Miễn phí {{ shipResult.freeKm }}km đầu
+          </div>
+        </div>
+
+        <!-- Delivery time -->
+        <div class="form-group" *ngIf="distanceKm > 0 && shipResult.canShip" style="margin-top: 12px;">
+          <label class="form-label" for="deliveryTime">Muốn nhận hàng lúc</label>
+          <input
+            id="deliveryTime"
+            type="time"
+            class="form-input"
+            [(ngModel)]="desiredDeliveryTime"
+            (ngModelChange)="onDesiredTimeChange()"
+          />
+          <div class="ship-start-time" *ngIf="estimatedStartTime && desiredDeliveryTime">
+            Bắt đầu giao lúc: <strong>{{ estimatedStartTime }}</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Use Points for Ship -->
+    <section class="section" *ngIf="wantDelivery && shipCost > 0 && availablePoints > 0">
+      <label class="checkbox-option">
+        <input type="checkbox" [(ngModel)]="usePointsForShip" (ngModelChange)="onPointsForShipToggle()" />
+        <span class="checkbox-label">Dùng điểm thưởng để giảm tiền ship</span>
+      </label>
+
+      <div class="points-detail" *ngIf="usePointsForShip">
+        <div class="ship-row">
+          <span>Điểm dùng cho ship:</span>
+          <strong>-{{ formatPrice(calculation.pointsUsedForShip) }} đ</strong>
+        </div>
+        <div class="ship-row">
+          <span>Còn phải trả ship:</span>
+          <strong>{{ formatPrice(calculation.actualShipPayment) }} đ</strong>
+        </div>
+        <div class="points-msg success" *ngIf="calculation.actualShipPayment === 0">
+          Miễn phí ship hoàn toàn!
+        </div>
+        <div class="points-msg warning" *ngIf="calculation.actualShipPayment > 0">
+          Điểm không đủ, trả {{ formatPrice(calculation.actualShipPayment) }}đ tiền mặt khi nhận hàng
+        </div>
+      </div>
+    </section>
+
+    <!-- Use Points for Order -->
+    <section class="section" *ngIf="availablePoints > 0">
+      <label class="checkbox-option">
+        <input type="checkbox" [(ngModel)]="usePointsForOrder" (ngModelChange)="onPointsForOrderToggle()" />
+        <span class="checkbox-label">Dùng điểm thưởng để giảm tiền hàng</span>
+      </label>
+
+      <div class="points-detail" *ngIf="usePointsForOrder">
+        <div class="ship-row">
+          <span>Điểm dùng cho hàng:</span>
+          <strong>-{{ formatPrice(calculation.pointsUsedForOrder) }} đ</strong>
+        </div>
+        <div class="ship-row">
+          <span>Tiền hàng sau giảm:</span>
+          <strong>{{ formatPrice(calculation.orderAfterDiscount) }} đ</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- Payment Summary -->
+    <section class="section summary-section">
+      <h2 class="section-title">Tổng thanh toán</h2>
+
+      <div class="summary-row">
+        <span>Tiền hàng:</span>
+        <span>{{ formatPrice(orderSubtotal) }} đ</span>
+      </div>
+
+      <div class="summary-row" *ngIf="wantDelivery && shipCost > 0">
+        <span>Tiền ship:</span>
+        <span>{{ formatPrice(shipCost) }} đ</span>
+      </div>
+
+      <div class="summary-row discount" *ngIf="calculation.pointsUsedForShip > 0">
+        <span>Điểm dùng cho ship:</span>
+        <span>-{{ formatPrice(calculation.pointsUsedForShip) }} đ</span>
+      </div>
+
+      <div class="summary-row discount" *ngIf="calculation.pointsUsedForOrder > 0">
+        <span>Điểm dùng cho hàng:</span>
+        <span>-{{ formatPrice(calculation.pointsUsedForOrder) }} đ</span>
+      </div>
+
+      <div class="summary-total">
+        <span>Tổng cuối:</span>
+        <strong>{{ formatPrice(calculation.finalTotal) }} đ</strong>
+      </div>
+
+      <div class="remaining-points" *ngIf="(usePointsForShip || usePointsForOrder) && availablePoints > 0">
+        Điểm còn lại: {{ formatPrice(calculation.remainingPoints) }} điểm
       </div>
     </section>
 
@@ -116,7 +264,7 @@
 
       <div class="qr-section" *ngIf="paymentMethod === 'transfer'">
         <img [src]="getQrUrl()" alt="QR chuyen khoan" class="qr-note" />
-        <p class="qr-note">Quét mã QR để chuyển khoản. Số tiền: <strong>{{ formatPrice(totalPrice) }} đ</strong></p>
+        <p class="qr-note">Quét mã QR để chuyển khoản. Số tiền: <strong>{{ formatPrice(calculation.finalTotal) }} đ</strong></p>
       </div>
     </section>
 
@@ -129,7 +277,7 @@
       [disabled]="!isFormValid || isSubmitting"
       (click)="submitOrder()"
     >
-      {{ isSubmitting ? 'Dang xử lý...' : 'Xác nhận đặt hàng' }}
+      {{ isSubmitting ? 'Đang xử lý...' : 'Xác nhận đặt hàng' }}
     </button>
   </div>
 </div>

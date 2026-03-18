@@ -2,6 +2,9 @@ export const environment = {
   production: true,
   domainUrl: '',
   debug: false,
+  googleMapsApiKey: 'AIzaSyA0NmxKAtQK2ylITxp7fvFFkkQrugmjqAk',
+  storeLat: 16.019693,
+  storeLng: 108.197694,
   // Firebase Chat project (taphoa39khachhang - for realtime chat sync cross-server)
   firebaseChat: {
     apiKey: "AIzaSyCsn7rfux51q26YuB37-Mtd1BzDbE3dMnM",
