@@ -186,14 +186,19 @@
               <label class="form-label" for="deliveryTime">Giờ giao</label>
               <input
                 id="deliveryTime"
-                type="time"
+                type="text"
+                inputmode="numeric"
                 class="form-input"
+                placeholder="HH:mm"
+                maxlength="5"
                 [(ngModel)]="desiredDeliveryTime"
-                (ngModelChange)="onDesiredTimeChange()"
+                (input)="onTimeInput($event)"
+                (blur)="onDesiredTimeChange()"
               />
             </div>
           </div>
-          <div class="ship-start-time" *ngIf="estimatedStartTime && desiredDeliveryTime && desiredDeliveryDate">
+          <div class="ship-error" *ngIf="deliveryTimeError" style="margin-top:8px">{{ deliveryTimeError }}</div>
+          <div class="ship-start-time" *ngIf="estimatedStartTime && desiredDeliveryTime && desiredDeliveryDate && !deliveryTimeError">
             Bắt đầu giao lúc: <strong>{{ estimatedStartTime }}, {{ formatDeliveryDate(desiredDeliveryDate) }}</strong>
           </div>
         </div>

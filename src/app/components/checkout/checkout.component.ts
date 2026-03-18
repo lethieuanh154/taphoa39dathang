@@ -39,6 +39,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   shipError = '';
   desiredDeliveryDate = '';
   desiredDeliveryTime = '';
+  deliveryTimeError = '';
   estimatedStartTime = '';
   minDeliveryDate = '';
 
@@ -176,6 +177,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         && this.customerAddress.trim().length > 0
         && this.shipResult.canShip
         && !this.shipError
+        && !this.deliveryTimeError
         && !this.isCalculatingShip
         && this.distanceKm > 0;
     }
@@ -209,7 +211,39 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
   }
 
+  onTimeInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    // Only allow digits and colon
+    let val = input.value.replace(/[^\d]/g, '');
+    // Auto-insert colon after 2 digits
+    if (val.length > 2) {
+      val = val.slice(0, 2) + ':' + val.slice(2, 4);
+    }
+    // Clamp hours 0-23, minutes 0-59
+    if (val.length >= 2) {
+      const h = Math.min(23, parseInt(val.slice(0, 2), 10));
+      val = h.toString().padStart(2, '0') + val.slice(2);
+    }
+    if (val.length === 5) {
+      const m = Math.min(59, parseInt(val.slice(3, 5), 10));
+      val = val.slice(0, 3) + m.toString().padStart(2, '0');
+    }
+    input.value = val;
+    this.desiredDeliveryTime = val;
+    if (val.length === 5) {
+      this.onDesiredTimeChange();
+    }
+  }
+
   onDesiredTimeChange(): void {
+    this.deliveryTimeError = '';
+    if (this.desiredDeliveryTime) {
+      const [h, m] = this.desiredDeliveryTime.split(':').map(Number);
+      const minutes = h * 60 + m;
+      if (minutes < 480 || minutes > 960) { // 8:00 = 480, 17:00 = 1020
+        this.deliveryTimeError = 'Giờ giao hàng chỉ từ 8:00 đến 16:00. Vui lòng chọn lại.';
+      }
+    }
     this.updateStartTime();
   }
 
