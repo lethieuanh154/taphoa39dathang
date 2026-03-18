@@ -38,6 +38,9 @@ export class ProfileBubbleComponent implements OnInit, OnDestroy {
     this.customerCode = localStorage.getItem('sm_customer_identity') || '';
     this.giftPoint = Number(localStorage.getItem('sm_customer_giftpoint')) || 0;
 
+    // Ensure customer WS is connected (independent of product WS)
+    this.wsService.connectCustomer();
+
     this.bonusSub = this.wsService.getBonusUpdated$().subscribe(payload => {
       console.log('[ProfileBubble] bonus_updated:', payload.giftPoint);
       this.giftPoint = payload.giftPoint;

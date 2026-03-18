@@ -110,6 +110,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
 
     // Listen for realtime bonus updates
+    this.wsService.connectCustomer();
     this.wsService.getBonusUpdated$().pipe(takeUntil(this.destroy$)).subscribe(payload => {
       console.log('[Checkout] bonus_updated:', payload.giftPoint);
       this.availablePoints = payload.giftPoint;

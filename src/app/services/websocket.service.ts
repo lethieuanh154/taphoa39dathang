@@ -86,7 +86,13 @@ export class WebSocketService implements OnDestroy {
       }
     });
 
-    // Customer namespace for bonus updates
+    this.connectCustomer();
+  }
+
+  /** Connect to customer namespace (bonus updates). Safe to call multiple times. */
+  connectCustomer(): void {
+    if (this.customerSocket?.connected) return;
+
     this.customerSocket = io(`${environment.domainUrl}/api/websocket/customers`, {
       transports: ['websocket', 'polling'],
       reconnection: true,
