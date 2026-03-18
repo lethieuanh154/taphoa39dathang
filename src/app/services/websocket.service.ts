@@ -95,12 +95,23 @@ export class WebSocketService implements OnDestroy {
       timeout: 10000
     });
 
+    this.customerSocket.on('connect', () => {
+      console.log('[WS-Customer] Connected to /api/websocket/customers');
+    });
+
+    this.customerSocket.on('connect_error', (err) => {
+      console.warn('[WS-Customer] Connection error:', err.message);
+    });
+
     this.customerSocket.on('bonus_updated', (payload: BonusUpdatedPayload) => {
+      console.log('[WS-Customer] bonus_updated received:', payload);
       if (payload?.code) {
         const myCode = localStorage.getItem('sm_customer_identity') || '';
+        console.log('[WS-Customer] myCode:', myCode, 'payload.code:', payload.code);
         if (myCode && myCode === payload.code) {
           localStorage.setItem('sm_customer_giftpoint', String(payload.giftPoint));
           this.bonusUpdated$.next(payload);
+          console.log('[WS-Customer] giftPoint updated to', payload.giftPoint);
         }
       }
     });
