@@ -27,12 +27,20 @@ export interface ProductsUpdatedPayload {
   count: number;
 }
 
+export interface BonusUpdatedPayload {
+  code: string;
+  giftPoint: number;
+  bonusAdded: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class WebSocketService implements OnDestroy {
   private socket: Socket | null = null;
+  private customerSocket: Socket | null = null;
 
   private productUpdates$ = new Subject<ProductWSUpdate[]>();
   private productsAdded$ = new Subject<ProductWSUpdate[]>();
+  private bonusUpdated$ = new Subject<BonusUpdatedPayload>();
   private connectionStatus$ = new BehaviorSubject<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
   connect(): void {
@@ -77,6 +85,25 @@ export class WebSocketService implements OnDestroy {
         this.productUpdates$.next(payload.products);
       }
     });
+
+    // Customer namespace for bonus updates
+    this.customerSocket = io(`${environment.domainUrl}/api/websocket/customers`, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 2000,
+      timeout: 10000
+    });
+
+    this.customerSocket.on('bonus_updated', (payload: BonusUpdatedPayload) => {
+      if (payload?.code) {
+        const myCode = localStorage.getItem('sm_customer_identity') || '';
+        if (myCode && myCode === payload.code) {
+          localStorage.setItem('sm_customer_giftpoint', String(payload.giftPoint));
+          this.bonusUpdated$.next(payload);
+        }
+      }
+    });
   }
 
   getProductUpdates$() {
@@ -87,6 +114,10 @@ export class WebSocketService implements OnDestroy {
     return this.productsAdded$.asObservable();
   }
 
+  getBonusUpdated$() {
+    return this.bonusUpdated$.asObservable();
+  }
+
   getConnectionStatus$() {
     return this.connectionStatus$.asObservable();
   }
@@ -94,6 +125,8 @@ export class WebSocketService implements OnDestroy {
   disconnect(): void {
     this.socket?.disconnect();
     this.socket = null;
+    this.customerSocket?.disconnect();
+    this.customerSocket = null;
     this.connectionStatus$.next('disconnected');
   }
 
@@ -101,6 +134,7 @@ export class WebSocketService implements OnDestroy {
     this.disconnect();
     this.productUpdates$.complete();
     this.productsAdded$.complete();
+    this.bonusUpdated$.complete();
     this.connectionStatus$.complete();
   }
 }

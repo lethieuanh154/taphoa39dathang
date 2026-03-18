@@ -1,9 +1,11 @@
 import {
-  Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef,
+  Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef,
   ViewChild, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Subscription } from 'rxjs';
 import JsBarcode from 'jsbarcode';
+import { WebSocketService } from '../../services/websocket.service';
 
 @Component({
   selector: 'app-profile-bubble',
@@ -13,7 +15,7 @@ import JsBarcode from 'jsbarcode';
   templateUrl: './profile-bubble.component.html',
   styleUrl: './profile-bubble.component.css'
 })
-export class ProfileBubbleComponent implements OnInit {
+export class ProfileBubbleComponent implements OnInit, OnDestroy {
   @ViewChild('barcodeEl') barcodeEl?: ElementRef<SVGSVGElement>;
 
   isOpen = false;
@@ -22,17 +24,28 @@ export class ProfileBubbleComponent implements OnInit {
   customerCode = '';
   giftPoint = 0;
 
+  private bonusSub?: Subscription;
+
   get initial(): string {
     return this.customerName?.charAt(0)?.toUpperCase() || '?';
   }
 
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(private cdr: ChangeDetectorRef, private wsService: WebSocketService) {}
 
   ngOnInit(): void {
     this.customerName = localStorage.getItem('sm_customer_name') || '';
     this.customerPhone = localStorage.getItem('sm_customer_phone') || '';
     this.customerCode = localStorage.getItem('sm_customer_identity') || '';
     this.giftPoint = Number(localStorage.getItem('sm_customer_giftpoint')) || 0;
+
+    this.bonusSub = this.wsService.getBonusUpdated$().subscribe(payload => {
+      this.giftPoint = payload.giftPoint;
+      this.cdr.markForCheck();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.bonusSub?.unsubscribe();
   }
 
   toggleModal(): void {

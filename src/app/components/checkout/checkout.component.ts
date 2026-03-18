@@ -8,6 +8,7 @@ import { CartService } from '../../services/cart.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { ShippingService } from '../../services/shipping.service';
 import { RewardService } from '../../services/reward.service';
+import { WebSocketService } from '../../services/websocket.service';
 import { CartItem, OrderData, FinalCalculation, ShipCostResult } from '../../models/product';
 import { environment } from '../../../environments/environment';
 
@@ -55,6 +56,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     private orderApi: OrderApiService,
     private shippingService: ShippingService,
     private rewardService: RewardService,
+    private wsService: WebSocketService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private http: HttpClient
@@ -106,6 +108,12 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         });
       }
     }
+
+    // Listen for realtime bonus updates
+    this.wsService.getBonusUpdated$().pipe(takeUntil(this.destroy$)).subscribe(payload => {
+      this.availablePoints = payload.giftPoint;
+      this.cdr.markForCheck();
+    });
 
     // Setup address geocoding pipeline
     this.addressSubject.pipe(
