@@ -100,17 +100,20 @@ export class ShippingService {
     let ratePerKm = 0;
 
     if (orderSubtotal < 500000) {
-      ratePerKm = 10000;
-      freeKm = 1;
-    } else if (orderSubtotal < 700000) {
-      freeKm = 3;
-      ratePerKm = 5000;
+      freeKm = 0;
+      ratePerKm = 13000;
     } else if (orderSubtotal < 1000000) {
+      freeKm = 2;
+      ratePerKm = 7000;
+    } else if (orderSubtotal < 2000000) {
+      freeKm = 3;
+      ratePerKm = 6000;
+    } else if (orderSubtotal < 10000000){
       freeKm = 5;
-      ratePerKm = 5000;
-    } else if (orderSubtotal < 2000000){
+      ratePerKm = 6000;
+    } else {
       freeKm = 7;
-      ratePerKm = 5000;
+      ratePerKm = 6000;
     }
 
     const chargeableKm = Math.max(0, distanceKm - freeKm);

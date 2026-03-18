@@ -130,7 +130,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       takeUntil(this.destroy$)
     ).subscribe(result => {
       this.distanceKm = result.distanceKm;
-      this.durationMinutes = result.durationMinutes;
+      this.durationMinutes = result.durationMinutes+5;
       this.shipResult = this.shippingService.calculateShipCost(this.orderSubtotal, this.distanceKm);
       this.isCalculatingShip = false;
       this.updateStartTime();
