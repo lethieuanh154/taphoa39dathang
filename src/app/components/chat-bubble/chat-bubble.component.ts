@@ -29,8 +29,8 @@ const ZALO_OA_URL = 'https://zalo.me/1420769616971124037';
       <div class="chatbox-header">
         <span>Chat với Song Minh</span>
         <a class="zalo-link" [href]="zaloUrl" target="_blank" rel="noopener">
-          <img src="https://page.widget.zalo.me/static/images/2.0/Logo.svg" alt="Zalo" width="20" height="20" />
-          Zalo OA
+          <i style="font-size: 20px;" class="fa-solid fa-hand-point-right"></i><img src="https://page.widget.zalo.me/static/images/2.0/Logo.svg" alt="Zalo" width="20" height="20" />
+         Chat qua Zalo
         </a>
       </div>
 
