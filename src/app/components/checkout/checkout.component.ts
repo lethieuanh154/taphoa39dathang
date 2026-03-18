@@ -8,7 +8,6 @@ import { CartService } from '../../services/cart.service';
 import { OrderApiService } from '../../services/order-api.service';
 import { ShippingService } from '../../services/shipping.service';
 import { RewardService } from '../../services/reward.service';
-import { WebSocketService } from '../../services/websocket.service';
 import { CartItem, OrderData, FinalCalculation, ShipCostResult } from '../../models/product';
 import { environment } from '../../../environments/environment';
 
@@ -56,7 +55,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     private orderApi: OrderApiService,
     private shippingService: ShippingService,
     private rewardService: RewardService,
-    private wsService: WebSocketService,
     private router: Router,
     private cdr: ChangeDetectorRef,
     private http: HttpClient
@@ -91,31 +89,21 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.customerPhone = localStorage.getItem('sm_customer_phone') || '';
     }
 
-    // Load reward points - fetch from API if not cached
+    // Load reward points - always fetch latest from API
     this.availablePoints = this.rewardService.getAvailablePoints();
-    if (this.availablePoints === 0) {
-      const identity = localStorage.getItem('sm_customer_identity') || localStorage.getItem('sm_customer_phone');
-      if (identity) {
-        this.http.post<any>(`${environment.domainUrl}/api/chat/verify-identity`, { identity }).subscribe({
-          next: (res) => {
-            if (res?.verified && res.giftPoint != null) {
-              localStorage.setItem('sm_customer_giftpoint', String(res.giftPoint));
-              this.availablePoints = res.giftPoint;
-              this.cdr.markForCheck();
-            }
-          },
-          error: () => {} // silent fail
-        });
-      }
+    const identity = localStorage.getItem('sm_customer_identity') || localStorage.getItem('sm_customer_phone');
+    if (identity) {
+      this.http.post<any>(`${environment.domainUrl}/api/chat/verify-identity`, { identity }).subscribe({
+        next: (res) => {
+          if (res?.verified && res.giftPoint != null) {
+            localStorage.setItem('sm_customer_giftpoint', String(res.giftPoint));
+            this.availablePoints = res.giftPoint;
+            this.cdr.markForCheck();
+          }
+        },
+        error: () => {}
+      });
     }
-
-    // Listen for realtime bonus updates
-    this.wsService.connectCustomer();
-    this.wsService.getBonusUpdated$().pipe(takeUntil(this.destroy$)).subscribe(payload => {
-      console.log('[Checkout] bonus_updated:', payload.giftPoint);
-      this.availablePoints = payload.giftPoint;
-      this.cdr.markForCheck();
-    });
 
     // Setup address geocoding pipeline
     this.addressSubject.pipe(

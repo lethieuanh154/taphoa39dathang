@@ -1,11 +1,11 @@
 import {
-  Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef,
+  Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef,
   ViewChild, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
 import JsBarcode from 'jsbarcode';
-import { WebSocketService } from '../../services/websocket.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-profile-bubble',
@@ -15,7 +15,7 @@ import { WebSocketService } from '../../services/websocket.service';
   templateUrl: './profile-bubble.component.html',
   styleUrl: './profile-bubble.component.css'
 })
-export class ProfileBubbleComponent implements OnInit, OnDestroy {
+export class ProfileBubbleComponent implements OnInit {
   @ViewChild('barcodeEl') barcodeEl?: ElementRef<SVGSVGElement>;
 
   isOpen = false;
@@ -24,45 +24,21 @@ export class ProfileBubbleComponent implements OnInit, OnDestroy {
   customerCode = '';
   giftPoint = 0;
 
-  private bonusSub?: Subscription;
-
   get initial(): string {
     return this.customerName?.charAt(0)?.toUpperCase() || '?';
   }
 
-  constructor(private cdr: ChangeDetectorRef, private wsService: WebSocketService) {}
+  constructor(private cdr: ChangeDetectorRef, private http: HttpClient) {}
 
   ngOnInit(): void {
-    this.customerName = localStorage.getItem('sm_customer_name') || '';
-    this.customerPhone = localStorage.getItem('sm_customer_phone') || '';
-    this.customerCode = localStorage.getItem('sm_customer_identity') || '';
-    this.giftPoint = Number(localStorage.getItem('sm_customer_giftpoint')) || 0;
-
-    // Ensure customer WS is connected (independent of product WS)
-    this.wsService.connectCustomer();
-
-    this.bonusSub = this.wsService.getBonusUpdated$().subscribe(payload => {
-      console.log('[ProfileBubble] bonus_updated:', payload.giftPoint);
-      this.giftPoint = payload.giftPoint;
-      this.cdr.markForCheck();
-    });
-  }
-
-  ngOnDestroy(): void {
-    this.bonusSub?.unsubscribe();
+    this.loadFromLocalStorage();
   }
 
   toggleModal(): void {
     this.isOpen = !this.isOpen;
     if (this.isOpen) {
-      // Refresh data
-      this.customerName = localStorage.getItem('sm_customer_name') || '';
-      this.customerPhone = localStorage.getItem('sm_customer_phone') || '';
-      this.customerCode = localStorage.getItem('sm_customer_identity') || '';
-      this.giftPoint = Number(localStorage.getItem('sm_customer_giftpoint')) || 0;
-      this.cdr.markForCheck();
-
-      // Render barcode after view updates
+      this.loadFromLocalStorage();
+      this.fetchLatestProfile();
       setTimeout(() => this.renderBarcode(), 0);
     }
     this.cdr.markForCheck();
@@ -71,6 +47,39 @@ export class ProfileBubbleComponent implements OnInit, OnDestroy {
   closeModal(): void {
     this.isOpen = false;
     this.cdr.markForCheck();
+  }
+
+  private loadFromLocalStorage(): void {
+    this.customerName = localStorage.getItem('sm_customer_name') || '';
+    this.customerPhone = localStorage.getItem('sm_customer_phone') || '';
+    this.customerCode = localStorage.getItem('sm_customer_identity') || '';
+    this.giftPoint = Number(localStorage.getItem('sm_customer_giftpoint')) || 0;
+  }
+
+  private fetchLatestProfile(): void {
+    const identity = this.customerCode || this.customerPhone;
+    if (!identity) return;
+
+    this.http.post<any>(`${environment.domainUrl}/api/chat/verify-identity`, { identity }).subscribe({
+      next: (res) => {
+        if (res?.verified) {
+          if (res.name) {
+            this.customerName = res.name;
+            localStorage.setItem('sm_customer_name', res.name);
+          }
+          if (res.phone) {
+            this.customerPhone = res.phone;
+            localStorage.setItem('sm_customer_phone', res.phone);
+          }
+          if (res.giftPoint != null) {
+            this.giftPoint = res.giftPoint;
+            localStorage.setItem('sm_customer_giftpoint', String(res.giftPoint));
+          }
+          this.cdr.markForCheck();
+        }
+      },
+      error: () => {}
+    });
   }
 
   private renderBarcode(): void {
