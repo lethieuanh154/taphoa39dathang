@@ -8,7 +8,7 @@ const STORE_LAT = environment.storeLat;
 const STORE_LNG = environment.storeLng;
 
 /** Road distance factor: multiply straight-line distance by this to estimate real road distance */
-const ROAD_FACTOR = 1.3;
+const ROAD_FACTOR = 1.36;
 /** Average speed in km/h for estimating travel time in urban area */
 const AVG_SPEED_KMH = 25;
 
