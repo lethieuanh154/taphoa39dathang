@@ -8,7 +8,7 @@ const STORE_LAT = environment.storeLat;
 const STORE_LNG = environment.storeLng;
 
 /** Road distance factor: multiply straight-line distance by this to estimate real road distance */
-const ROAD_FACTOR = 1.36;
+const ROAD_FACTOR = 1.3;
 /** Average speed in km/h for estimating travel time in urban area */
 const AVG_SPEED_KMH = 25;
 
@@ -18,18 +18,45 @@ export class ShippingService {
 
   /** Geocode address to lat/lng via Nominatim (OpenStreetMap) - free, no API key needed */
   geocodeAddress(address: string): Observable<{ lat: number; lng: number }> {
-    const query = encodeURIComponent(address + ', Đà Nẵng, Việt Nam');
+    let cleaned = this.normalizeAddress(address);
+    // Append city/country only if not already present
+    const lower = cleaned.toLowerCase();
+    if (!/đà\s*nẵng|da\s*nang/.test(lower)) {
+      cleaned += ', Đà Nẵng';
+    }
+    if (!/việt\s*nam|viet\s*nam/.test(lower)) {
+      cleaned += ', Việt Nam';
+    }
+    const query = encodeURIComponent(cleaned);
     const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=vn`;
     return this.http.get<any[]>(url, {
       headers: { 'Accept-Language': 'vi' }
     }).pipe(
       map(results => {
         if (!results?.length) {
-          throw new Error('Không tìm thấy địa chỉ. Vui lòng nhập chi tiết hơn.');
+          throw new Error('Không tìm thấy địa chỉ ở Đà Nẵng. Vui lòng nhập chi tiết hơn.');
         }
         return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
       })
     );
+  }
+
+  /** Strip Vietnamese address prefixes that Nominatim doesn't understand */
+  private normalizeAddress(raw: string): string {
+    return raw
+      .replace(/\b(số|so)\s+/gi, '')
+      .replace(/\b(đường|duong)\s+/gi, '')
+      .replace(/\b(phường|phuong)\s+/gi, '')
+      .replace(/\b(quận|quan)\s+/gi, '')
+      .replace(/\b(thành phố|thanh pho|tp\.?)\s+/gi, '')
+      .replace(/\b(xã|xa)\s+/gi, '')
+      .replace(/\b(huyện|huyen)\s+/gi, '')
+      .replace(/\b(thị trấn|thi tran)\s+/gi, '')
+      .replace(/\b(khu phố|khu pho)\s+/gi, '')
+      .replace(/\b(tổ|to)\s+\d+\s*/gi, '')
+      .replace(/,\s*,/g, ',')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   /**
@@ -52,7 +79,9 @@ export class ShippingService {
     const dLat = this.toRad(lat2 - lat1);
     const dLng = this.toRad(lng2 - lng1);
     const a = Math.sin(dLat / 2) ** 2
-      + Math.cos(this.toRad(lat1)) * Math.cos(this.toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+      + Math.cos(this.toRad(lat1)) * 
+      Math.cos(this.toRad(lat2)) * 
+      Math.sin(dLng / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
@@ -72,25 +101,20 @@ export class ShippingService {
 
     if (orderSubtotal < 500000) {
       ratePerKm = 10000;
-      freeKm = 0;
+      freeKm = 1;
     } else if (orderSubtotal < 700000) {
       freeKm = 3;
       ratePerKm = 5000;
     } else if (orderSubtotal < 1000000) {
       freeKm = 5;
       ratePerKm = 5000;
-    } else {
-      freeKm = 10;
+    } else if (orderSubtotal < 2000000){
+      freeKm = 7;
       ratePerKm = 5000;
     }
 
-    let rawCost: number;
-    if (orderSubtotal < 500000) {
-      rawCost = distanceKm * ratePerKm;
-    } else {
-      const chargeableKm = Math.max(0, distanceKm - freeKm);
-      rawCost = chargeableKm * ratePerKm;
-    }
+    const chargeableKm = Math.max(0, distanceKm - freeKm);
+    const rawCost = chargeableKm * ratePerKm;
 
     const shipCost = Math.round(rawCost / 1000) * 1000;
 

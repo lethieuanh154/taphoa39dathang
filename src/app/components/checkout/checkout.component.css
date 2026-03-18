@@ -199,6 +199,99 @@
   color: var(--text-primary);
 }
 
+/* Section title row */
+.section-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ship-rate-wrapper {
+  position: relative;
+}
+
+.ship-rate-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid var(--green-600);
+  color: var(--green-600);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* Popup tooltip */
+.ship-rate-popup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+}
+
+.ship-rate-popup-content {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 999;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.18);
+  padding: 12px;
+  min-width: 280px;
+  animation: popIn 0.15s ease-out;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ship-rate-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.ship-rate-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.ship-rate-popup-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.ship-rate-popup-content th,
+.ship-rate-popup-content td {
+  padding: 5px 8px;
+  border: 1px solid #e0e0e0;
+  text-align: left;
+}
+
+.ship-rate-popup-content th {
+  background: #f5f5f5;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ship-rate-popup-content td:first-child {
+  font-weight: 500;
+}
+
 /* Shipping details */
 .shipping-details {
   margin-top: 12px;
@@ -207,9 +300,28 @@
 }
 
 .ship-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
   color: var(--text-secondary);
   padding: 8px 0;
+}
+
+/* Loading spinner */
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid #e0e0e0;
+  border-top-color: var(--green-600);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .ship-error {
@@ -245,6 +357,12 @@
   color: var(--green-700);
   font-style: italic;
   margin-top: 4px;
+}
+
+/* Delivery date+time row */
+.delivery-datetime {
+  display: flex;
+  gap: 12px;
 }
 
 .ship-start-time {

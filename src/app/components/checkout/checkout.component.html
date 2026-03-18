@@ -72,7 +72,7 @@
           id="address"
           type="text"
           class="form-input"
-          placeholder="Số nhà, đường, phường/xã..."
+          placeholder="Ví dụ: 01, Nguyễn Văn Linh, Hải Châu"
           [(ngModel)]="customerAddress"
           (ngModelChange)="onAddressChange()"
           autocomplete="street-address"
@@ -93,7 +93,40 @@
 
     <!-- Shipping -->
     <section class="section">
-      <h2 class="section-title">Giao hàng</h2>
+      <div class="section-title-row">
+        <h2 class="section-title" style="margin-bottom:0">Giao hàng</h2>
+        <div class="ship-rate-wrapper">
+          <button type="button" class="ship-rate-toggle" (click)="showShipRates = !showShipRates">
+            Bảng giá ship
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </button>
+          <!-- Popup tooltip -->
+          <div class="ship-rate-popup" *ngIf="showShipRates">
+            <div class="ship-rate-popup-backdrop" (click)="showShipRates = false"></div>
+            <div class="ship-rate-popup-content">
+              <div class="ship-rate-popup-header">
+                <strong>Bảng phí (đã bao gồm VAT)</strong>
+                <button type="button" class="ship-rate-close" (click)="showShipRates = false">&times;</button>
+              </div>
+              <table>
+                <thead>
+                  <tr><th>Giá trị đơn</th><th>Free ship</th><th>Phí vượt</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td>&lt; 200.000đ</td><td colspan="2" style="text-align:center;color:#c62828">Không giao hàng</td></tr>
+                  <tr><td>200k – 500k</td><td>≤ 1km</td><td>10.000đ/km</td></tr>
+                  <tr><td>500k – 700k</td><td>≤ 3km</td><td>5.000đ/km</td></tr>
+                  <tr><td>700k – 1 tr</td><td>≤ 5km</td><td>5.000đ/km</td></tr>
+                  <tr><td>1 tr – 2 tr</td><td>≤ 7km</td><td>5.000đ/km</td></tr>
+                  <tr><td>&gt; 2 triệu</td><td>≤ 10km</td><td>5.000đ/km</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <label class="checkbox-option">
         <input type="checkbox" [(ngModel)]="wantDelivery" (ngModelChange)="onDeliveryToggle()" />
@@ -103,6 +136,7 @@
       <div class="shipping-details" *ngIf="wantDelivery">
         <!-- Loading -->
         <div class="ship-loading" *ngIf="isCalculatingShip">
+          <span class="spinner"></span>
           Đang tính khoảng cách...
         </div>
 
@@ -133,18 +167,33 @@
           </div>
         </div>
 
-        <!-- Delivery time -->
-        <div class="form-group" *ngIf="distanceKm > 0 && shipResult.canShip" style="margin-top: 12px;">
-          <label class="form-label" for="deliveryTime">Muốn nhận hàng lúc</label>
-          <input
-            id="deliveryTime"
-            type="time"
-            class="form-input"
-            [(ngModel)]="desiredDeliveryTime"
-            (ngModelChange)="onDesiredTimeChange()"
-          />
-          <div class="ship-start-time" *ngIf="estimatedStartTime && desiredDeliveryTime">
-            Bắt đầu giao lúc: <strong>{{ estimatedStartTime }}</strong>
+        <!-- Delivery date & time -->
+        <div *ngIf="distanceKm > 0 && shipResult.canShip" style="margin-top: 12px;">
+          <div class="delivery-datetime">
+            <div class="form-group" style="flex:1;margin-bottom:0">
+              <label class="form-label" for="deliveryDate">Ngày giao</label>
+              <input
+                id="deliveryDate"
+                type="date"
+                class="form-input"
+                [min]="minDeliveryDate"
+                [(ngModel)]="desiredDeliveryDate"
+                (ngModelChange)="onDesiredTimeChange()"
+              />
+            </div>
+            <div class="form-group" style="flex:1;margin-bottom:0">
+              <label class="form-label" for="deliveryTime">Giờ giao</label>
+              <input
+                id="deliveryTime"
+                type="time"
+                class="form-input"
+                [(ngModel)]="desiredDeliveryTime"
+                (ngModelChange)="onDesiredTimeChange()"
+              />
+            </div>
+          </div>
+          <div class="ship-start-time" *ngIf="estimatedStartTime && desiredDeliveryTime && desiredDeliveryDate">
+            Bắt đầu giao lúc: <strong>{{ estimatedStartTime }}, {{ formatDeliveryDate(desiredDeliveryDate) }}</strong>
           </div>
         </div>
       </div>

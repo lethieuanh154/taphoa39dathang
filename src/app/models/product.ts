@@ -60,6 +60,7 @@ export interface OrderData {
   distanceKm: number;
   pointsUsedForShip: number;
   pointsUsedForOrder: number;
+  desiredDeliveryDate: string;
   desiredDeliveryTime: string;
   estimatedStartTime: string;
 }

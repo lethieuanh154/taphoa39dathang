@@ -30,14 +30,17 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   errorMessage = '';
 
   // Shipping
+  showShipRates = false;
   wantDelivery = false;
   isCalculatingShip = false;
   distanceKm = 0;
   durationMinutes = 0;
   shipResult: ShipCostResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
   shipError = '';
+  desiredDeliveryDate = '';
   desiredDeliveryTime = '';
   estimatedStartTime = '';
+  minDeliveryDate = '';
 
   // Reward points
   availablePoints = 0;
@@ -63,6 +66,11 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.router.navigate(['/']);
       return;
     }
+
+    // Set min delivery date to today
+    const today = new Date();
+    this.minDeliveryDate = today.toISOString().split('T')[0];
+    this.desiredDeliveryDate = this.minDeliveryDate;
 
     // Load saved customer info
     try {
@@ -189,12 +197,14 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.desiredDeliveryTime = '';
       this.estimatedStartTime = '';
     } else if (this.customerAddress.trim()) {
+      this.isCalculatingShip = true;
       this.addressSubject.next(this.customerAddress);
     }
   }
 
   onAddressChange(): void {
     if (this.wantDelivery && this.customerAddress.trim()) {
+      this.isCalculatingShip = true;
       this.addressSubject.next(this.customerAddress);
     }
   }
@@ -219,6 +229,12 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.desiredDeliveryTime,
       this.durationMinutes
     );
+  }
+
+  formatDeliveryDate(dateStr: string): string {
+    if (!dateStr) return '';
+    const [y, m, d] = dateStr.split('-');
+    return `${d}/${m}/${y}`;
   }
 
   getQrUrl(): string {
@@ -271,6 +287,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       distanceKm: this.distanceKm,
       pointsUsedForShip: calc.pointsUsedForShip,
       pointsUsedForOrder: calc.pointsUsedForOrder,
+      desiredDeliveryDate: this.desiredDeliveryDate,
       desiredDeliveryTime: this.desiredDeliveryTime,
       estimatedStartTime: this.estimatedStartTime
     };
