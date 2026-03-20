@@ -80,6 +80,16 @@
         <span class="stock-text">{{ stockLabel }}</span>
       </div>
 
+      <!-- Quantity Selector -->
+      <div class="quantity-selector" *ngIf="!isOutOfStock">
+        <span class="qty-label">Số lượng:</span>
+        <div class="qty-controls">
+          <button class="qty-btn" [disabled]="quantity <= 1" (click)="decreaseQuantity()">−</button>
+          <span class="qty-value">{{ quantity }}</span>
+          <button class="qty-btn" (click)="increaseQuantity()">+</button>
+        </div>
+      </div>
+
       <!-- Add to Cart -->
       <button
         class="detail-add-btn"
@@ -91,4 +101,9 @@
       </button>
     </div>
   </div>
+</div>
+
+<!-- Snackbar -->
+<div class="snackbar" [class.snackbar-show]="snackbarVisible">
+  {{ snackbarMessage }}
 </div>

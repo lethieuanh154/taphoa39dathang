@@ -40,7 +40,6 @@ export class CartService {
       this.items = [...this.items, { product, quantity, unitPriceSaleOff: 0 }];
     }
     this.emit();
-    this.panelOpenSubject.next(true);
   }
 
   updateQuantity(code: string, quantity: number): void {

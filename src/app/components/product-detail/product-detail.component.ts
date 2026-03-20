@@ -21,6 +21,12 @@ export class ProductDetailComponent {
 
   selectedProduct!: Product;
   addedAnimation = false;
+  quantity = 1;
+
+  // Snackbar
+  snackbarVisible = false;
+  snackbarMessage = '';
+  private snackbarTimer: any;
 
   // Image gallery
   productImages: string[] = [];
@@ -35,6 +41,7 @@ export class ProductDetailComponent {
 
   ngOnChanges(): void {
     this.selectedProduct = this.product;
+    this.quantity = 1;
     this.currentImageIndex = 0;
     this.productImages = [];
     this.imagesLoaded = false;
@@ -148,15 +155,40 @@ export class ProductDetailComponent {
     this.cdr.markForCheck();
   }
 
+  increaseQuantity(): void {
+    this.quantity++;
+    this.cdr.markForCheck();
+  }
+
+  decreaseQuantity(): void {
+    if (this.quantity > 1) {
+      this.quantity--;
+      this.cdr.markForCheck();
+    }
+  }
+
   addToCart(): void {
     if (this.isOutOfStock) return;
-    this.cartService.addToCart(this.selectedProduct);
+    this.cartService.addToCart(this.selectedProduct, this.quantity);
+    this.showSnackbar(`Đã thêm ${this.selectedProduct.FullName} vào giỏ hàng`);
+    this.quantity = 1;
     this.addedAnimation = true;
     this.cdr.markForCheck();
     setTimeout(() => {
       this.addedAnimation = false;
       this.cdr.markForCheck();
     }, 600);
+  }
+
+  private showSnackbar(message: string): void {
+    clearTimeout(this.snackbarTimer);
+    this.snackbarMessage = message;
+    this.snackbarVisible = true;
+    this.cdr.markForCheck();
+    this.snackbarTimer = setTimeout(() => {
+      this.snackbarVisible = false;
+      this.cdr.markForCheck();
+    }, 2500);
   }
 
   onBackdropClick(): void {
