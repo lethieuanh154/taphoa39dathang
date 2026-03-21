@@ -1,9 +1,38 @@
 <header class="site-header">
   <div class="header-inner">
-    <a class="logo-link" href="/">
+    <a class="logo-link" (click)="showAbout = true; $event.preventDefault()" href="javascript:void(0)">
       <img src="iconSongMinh.png" alt="Song Minh" class="logo-img" />
       <span class="logo-text">Song Minh</span>
     </a>
+
+    <!-- About Modal -->
+    <div class="about-overlay" *ngIf="showAbout" (click)="showAbout = false">
+      <div class="about-modal" (click)="$event.stopPropagation()">
+        <button class="about-close" (click)="showAbout = false">&times;</button>
+
+        <div class="about-header">
+          <img src="logo_Name_SongMinh.png" alt="Song Minh" class="about-banner" />
+        </div>
+
+        <div class="about-info">
+          <p>Bản quyền © 2026 songminhcr.com</p>
+          <p><strong>CÔNG TY TNHH MTV Thương Mại Tổng Hợp Song Minh</strong></p>
+          <p>Giấy chứng nhận Đăng ký Kinh doanh số 0402318272 do Sở Kế hoạch và Đầu tư Thành phố Đà Nẵng cấp ngày 22/01/2026</p>
+          <p>Trụ sở: số 25, đường Nguyễn Phước Tần, Phường Cẩm Lệ, Thành phố Đà Nẵng</p>
+          <p>Điện thoại: <a href="tel:0703863690">0703863690</a></p>
+        </div>
+
+        <hr class="about-divider" />
+
+        <div class="about-promo">
+          <div class="about-promo-scroll">
+            <p>Với phương châm <em>"Bán bằng uy tín – Giữ trọn niềm tin"</em>, Song Minh luôn cố gắng mỗi ngày để mang đến cho khách hàng những sản phẩm chất lượng, giá cả hợp lý và dịch vụ tận tâm như người thân trong gia đình.</p>
+            <p>Chúng tôi lựa chọn kỹ lưỡng từng mặt hàng trước khi đưa lên kệ, cam kết 100% chính hãng, có nguồn gốc rõ ràng và đầy đủ hóa đơn VAT theo quy định. Song Minh luôn mong muốn khách hàng khi đến mua sắm sẽ cảm thấy thoải mái, yên tâm và hài lòng – từ những nhu yếu phẩm hằng ngày đến các sản phẩm phục vụ gia đình.</p>
+            <p>Sự tin tưởng của khách hàng chính là động lực để Song Minh không ngừng hoàn thiện và phát triển mỗi ngày.</p>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="search-box">
       <input

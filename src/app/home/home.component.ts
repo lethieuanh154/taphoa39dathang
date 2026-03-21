@@ -74,14 +74,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Check customer identity
-    this.customerIdentity = CustomerIdentityDialogComponent.getStoredIdentity();
-    if (!this.customerIdentity) {
+    const storedIdentity = CustomerIdentityDialogComponent.getStoredIdentity();
+    if (storedIdentity) {
+      this.customerIdentity = storedIdentity;
+      this.initProducts();
+    } else {
       this.showIdentityDialog = true;
-      return; // Don't load products until identity is confirmed
     }
-
-    this.initProducts();
   }
 
   onIdentityConfirmed(identity: string): void {

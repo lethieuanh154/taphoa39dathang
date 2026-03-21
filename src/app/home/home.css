@@ -353,8 +353,8 @@
 /* ========== Profile Bubble (host positioning) ========== */
 app-profile-bubble {
   position: fixed;
-  right: 16px;
-  top: 70px;
+  right: 20px;
+  bottom: 84px;
   z-index: 1000;
 }
 

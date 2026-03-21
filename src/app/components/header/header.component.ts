@@ -14,6 +14,7 @@ import { CartService } from '../../services/cart.service';
 })
 export class HeaderComponent implements OnDestroy {
   searchTerm = '';
+  showAbout = false;
   @Output() search = new EventEmitter<string>();
 
   totalItems = 0;
