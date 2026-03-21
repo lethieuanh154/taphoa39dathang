@@ -182,6 +182,131 @@
   margin: 0 auto;
 }
 
+/* ========== Change Password ========== */
+.cpw-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #555;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 8px;
+}
+
+.cpw-toggle-btn:hover {
+  background: #f5f5f5;
+}
+
+.cpw-form {
+  margin-top: 10px;
+  padding: 12px;
+  background: #f9f9f9;
+  border-radius: 10px;
+}
+
+.cpw-input-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.cpw-input {
+  width: 100%;
+  padding: 10px 36px 10px 12px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+
+.cpw-input:focus {
+  border-color: #1976d2;
+}
+
+.cpw-eye {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+}
+
+.cpw-eye:hover {
+  opacity: 1;
+}
+
+.cpw-msg {
+  font-size: 12px;
+  margin: 4px 0;
+  text-align: center;
+}
+
+.cpw-error {
+  color: #d32f2f;
+}
+
+.cpw-success {
+  color: #2e7d32;
+}
+
+.cpw-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.cpw-btn-save {
+  flex: 1;
+  padding: 9px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cpw-btn-save:disabled {
+  background: #b0bec5;
+  cursor: not-allowed;
+}
+
+.cpw-btn-save:not(:disabled):hover {
+  background: #1565c0;
+}
+
+.cpw-btn-cancel {
+  flex: 1;
+  padding: 9px;
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.cpw-btn-cancel:hover {
+  background: #f0f0f0;
+}
+
 /* ========== Animations ========== */
 @keyframes pb-fadeIn {
   from { opacity: 0; }

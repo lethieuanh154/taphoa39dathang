@@ -39,6 +39,53 @@
           <span class="points-value">{{ giftPoint | number:'1.0-0' }} điểm</span>
         </div>
 
+        <!-- Change Password -->
+        <button class="cpw-toggle-btn" *ngIf="!showChangePassword" (click)="showChangePassword = true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+          </svg>
+          Đổi mật khẩu
+        </button>
+
+        <div class="cpw-form" *ngIf="showChangePassword">
+          <div class="cpw-input-wrap">
+            <input
+              class="cpw-input"
+              [(ngModel)]="currentPassword"
+              [type]="showCurrentPw ? 'text' : 'password'"
+              placeholder="Mật khẩu hiện tại (nếu có)"
+            />
+            <button class="cpw-eye" type="button" (click)="showCurrentPw = !showCurrentPw">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                <path *ngIf="!showCurrentPw" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle *ngIf="!showCurrentPw" cx="12" cy="12" r="3"/>
+                <path *ngIf="showCurrentPw" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line *ngIf="showCurrentPw" x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <div class="cpw-input-wrap">
+            <input
+              class="cpw-input"
+              [(ngModel)]="newPassword"
+              [type]="showNewPw ? 'text' : 'password'"
+              placeholder="Mật khẩu mới"
+              (keydown.enter)="changePassword()"
+            />
+            <button class="cpw-eye" type="button" (click)="showNewPw = !showNewPw">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                <path *ngIf="!showNewPw" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle *ngIf="!showNewPw" cx="12" cy="12" r="3"/>
+                <path *ngIf="showNewPw" d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line *ngIf="showNewPw" x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+          <p class="cpw-msg cpw-error" *ngIf="cpwError">{{ cpwError }}</p>
+          <p class="cpw-msg cpw-success" *ngIf="cpwSuccess">{{ cpwSuccess }}</p>
+          <div class="cpw-actions">
+            <button class="cpw-btn-save" [disabled]="!newPassword.trim() || newPassword.trim().length < 4 || cpwSubmitting" (click)="changePassword()">
+              {{ cpwSubmitting ? 'Đang lưu...' : 'Lưu' }}
+            </button>
+            <button class="cpw-btn-cancel" (click)="cancelChangePassword()">Hủy</button>
+          </div>
+        </div>
 
       </div>
     </div>

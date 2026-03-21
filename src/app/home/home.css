@@ -394,3 +394,108 @@ app-profile-bubble {
   font-size: 11px;
   margin: 4px 0;
 }
+
+/* ========== Change Password Popup ========== */
+.cpw-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 16px;
+}
+.cpw-dialog {
+  background: #fff;
+  border-radius: 16px;
+  padding: 28px 24px;
+  max-width: 380px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  text-align: center;
+}
+.cpw-title {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+.cpw-desc {
+  font-size: 13px;
+  color: #666;
+  margin: 0 0 16px;
+}
+.cpw-input-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.cpw-input {
+  width: 100%;
+  padding: 12px 40px 12px 14px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.2s;
+}
+.cpw-input:focus {
+  border-color: #1976d2;
+}
+.cpw-eye {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+}
+.cpw-eye:hover {
+  opacity: 1;
+}
+.cpw-error {
+  font-size: 13px;
+  color: #d32f2f;
+  margin: 0 0 8px;
+  font-weight: 500;
+}
+.cpw-btn-primary {
+  width: 100%;
+  padding: 12px;
+  background: #1976d2;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 8px;
+}
+.cpw-btn-primary:disabled {
+  background: #b0bec5;
+  cursor: not-allowed;
+}
+.cpw-btn-primary:not(:disabled):hover {
+  background: #1565c0;
+}
+.cpw-btn-secondary {
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.cpw-btn-secondary:hover {
+  background: #f5f5f5;
+}

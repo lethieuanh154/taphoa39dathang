@@ -3,6 +3,7 @@ import {
   ViewChild, ElementRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import JsBarcode from 'jsbarcode';
 import { environment } from '../../../environments/environment';
@@ -10,7 +11,7 @@ import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-profile-bubble',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile-bubble.component.html',
   styleUrl: './profile-bubble.component.css'
@@ -23,6 +24,16 @@ export class ProfileBubbleComponent implements OnInit {
   customerPhone = '';
   customerCode = '';
   giftPoint = 0;
+
+  // Change password
+  showChangePassword = false;
+  currentPassword = '';
+  newPassword = '';
+  showCurrentPw = false;
+  showNewPw = false;
+  cpwSubmitting = false;
+  cpwError = '';
+  cpwSuccess = '';
 
   get initial(): string {
     return this.customerName?.charAt(0)?.toUpperCase() || '?';
@@ -80,6 +91,57 @@ export class ProfileBubbleComponent implements OnInit {
       },
       error: () => {}
     });
+  }
+
+  changePassword(): void {
+    const pw = this.newPassword.trim();
+    if (!pw || pw.length < 4 || this.cpwSubmitting) return;
+
+    this.cpwSubmitting = true;
+    this.cpwError = '';
+    this.cpwSuccess = '';
+    this.cdr.markForCheck();
+
+    const identity = this.customerCode || this.customerPhone;
+    const body: any = { identity, newPassword: pw };
+    if (this.currentPassword.trim()) {
+      body.currentPassword = this.currentPassword.trim();
+    }
+
+    this.http.post<any>(`${environment.domainUrl}/api/chat/change-password`, body).subscribe({
+      next: (res) => {
+        this.cpwSubmitting = false;
+        if (res?.success) {
+          this.cpwSuccess = 'Đổi mật khẩu thành công!';
+          this.currentPassword = '';
+          this.newPassword = '';
+          setTimeout(() => {
+            this.showChangePassword = false;
+            this.cpwSuccess = '';
+            this.cdr.markForCheck();
+          }, 1500);
+        } else {
+          this.cpwError = res?.message || 'Lỗi đổi mật khẩu';
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.cpwSubmitting = false;
+        this.cpwError = err?.error?.message || 'Lỗi kết nối';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  cancelChangePassword(): void {
+    this.showChangePassword = false;
+    this.currentPassword = '';
+    this.newPassword = '';
+    this.cpwError = '';
+    this.cpwSuccess = '';
+    this.showCurrentPw = false;
+    this.showNewPw = false;
+    this.cdr.markForCheck();
   }
 
   private renderBarcode(): void {

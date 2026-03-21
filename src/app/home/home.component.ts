@@ -1,11 +1,14 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../environments/environment';
 import { Subscription } from 'rxjs';
 import { HeaderComponent } from '../components/header/header.component';
 import { ProductCardComponent } from '../components/product-card/product-card.component';
 import { CartPanelComponent } from '../components/cart-panel/cart-panel.component';
 import { ProductDetailComponent } from '../components/product-detail/product-detail.component';
-import { CustomerIdentityDialogComponent } from '../components/customer-identity-dialog/customer-identity-dialog.component';
+import { CustomerIdentityDialogComponent, IdentityConfirmedEvent } from '../components/customer-identity-dialog/customer-identity-dialog.component';
 import { ChatBubbleComponent } from '../components/chat-bubble/chat-bubble.component';
 import { ProfileBubbleComponent } from '../components/profile-bubble/profile-bubble.component';
 import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
@@ -22,7 +25,7 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent, ProfileBubbleComponent, DraggableBubbleDirective] as const,
+  imports: [CommonModule, FormsModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent, ProfileBubbleComponent, DraggableBubbleDirective] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -58,6 +61,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   showIdentityDialog = false;
   customerIdentity: string | null = null;
 
+  // Change password popup
+  showChangePasswordPopup = false;
+  newPassword = '';
+  showNewPassword = false;
+  changePasswordSubmitting = false;
+  changePasswordMessage = '';
+
   // Category bubble menu
   categories: Category[] = [];
   isBubbleMenuOpen = false;
@@ -70,7 +80,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   constructor(
     private productApi: ProductApiService,
     private groupService: GroupService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private http: HttpClient
   ) {}
 
   ngOnInit(): void {
@@ -83,11 +94,54 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  onIdentityConfirmed(identity: string): void {
-    this.customerIdentity = identity;
+  onIdentityConfirmed(event: IdentityConfirmedEvent): void {
+    this.customerIdentity = event.identity;
     this.showIdentityDialog = false;
     this.cdr.markForCheck();
     this.initProducts();
+
+    // Old customer without password → suggest setting one
+    if (!event.hasPassword) {
+      this.showChangePasswordPopup = true;
+      this.cdr.markForCheck();
+    }
+  }
+
+  onChangePassword(): void {
+    const pw = this.newPassword.trim();
+    if (!pw || pw.length < 4 || this.changePasswordSubmitting) return;
+
+    this.changePasswordSubmitting = true;
+    this.changePasswordMessage = '';
+    this.cdr.markForCheck();
+
+    this.http.post<any>(`${environment.domainUrl}/api/chat/change-password`, {
+      identity: this.customerIdentity,
+      newPassword: pw
+    }).subscribe({
+      next: (res) => {
+        this.changePasswordSubmitting = false;
+        if (res?.success) {
+          this.showChangePasswordPopup = false;
+          this.newPassword = '';
+        } else {
+          this.changePasswordMessage = res?.message || 'Lỗi đổi mật khẩu';
+        }
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.changePasswordSubmitting = false;
+        this.changePasswordMessage = err?.error?.message || 'Lỗi kết nối';
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  onSkipChangePassword(): void {
+    this.showChangePasswordPopup = false;
+    this.newPassword = '';
+    this.changePasswordMessage = '';
+    this.cdr.markForCheck();
   }
 
   private initProducts(): void {

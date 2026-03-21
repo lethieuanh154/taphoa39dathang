@@ -19,6 +19,13 @@ interface VerifyResponse {
   type?: string;
   message?: string;
   giftPoint?: number;
+  hasPassword?: boolean;
+  requirePassword?: boolean;
+}
+
+export interface IdentityConfirmedEvent {
+  identity: string;
+  hasPassword: boolean;
 }
 
 @Component({
@@ -40,24 +47,54 @@ interface VerifyResponse {
 
         <input
           class="identity-input"
-          [class.input-error]="errorMessage"
+          [class.input-error]="errorMessage && !showPasswordStep"
           [(ngModel)]="inputValue"
           placeholder="Mã thành viên / Số điện thoại"
           (keydown.enter)="onConfirm()"
           (input)="errorMessage = ''"
+          [disabled]="showPasswordStep"
           autofocus
         />
 
+        <div class="password-section" *ngIf="showPasswordStep">
+          <p class="password-label">Nhập mật khẩu cho <strong>{{ pendingName || inputValue }}</strong></p>
+          <div class="password-input-wrap">
+            <input
+              class="identity-input"
+              [class.input-error]="errorMessage"
+              [(ngModel)]="passwordValue"
+              [type]="showPassword ? 'text' : 'password'"
+              placeholder="Mật khẩu"
+              (keydown.enter)="onConfirm()"
+              (input)="errorMessage = ''"
+            />
+            <button class="eye-btn" type="button" (click)="showPassword = !showPassword">
+              <svg *ngIf="!showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg *ngIf="showPassword" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#666" stroke-width="2">
+                <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
         <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
 
-        <p class="identity-register-text">
+        <p class="identity-register-text" *ngIf="!showPasswordStep">
           Nếu bạn chưa có mã thành viên, hãy nhấn vào
           <a class="register-link" (click)="onRegister()">Đăng ký</a>
         </p>
 
-        <button class="identity-confirm-btn" [disabled]="!inputValue.trim() || isVerifying" (click)="onConfirm()">
-          <span *ngIf="!isVerifying">Xác nhận</span>
+        <button class="identity-confirm-btn" [disabled]="(!inputValue.trim() && !showPasswordStep) || (showPasswordStep && !passwordValue.trim()) || isVerifying" (click)="onConfirm()">
+          <span *ngIf="!isVerifying">{{ showPasswordStep ? 'Đăng nhập' : 'Xác nhận' }}</span>
           <span *ngIf="isVerifying">Đang xác minh...</span>
+        </button>
+
+        <button class="back-btn" *ngIf="showPasswordStep" (click)="resetToIdentity()">
+          ← Nhập lại mã/SĐT
         </button>
       </div>
     </div>
@@ -152,16 +189,64 @@ interface VerifyResponse {
     .identity-confirm-btn:not(:disabled):hover {
       background: #1565c0;
     }
+    .password-section {
+      margin-top: 12px;
+    }
+    .password-label {
+      font-size: 13px;
+      color: #444;
+      margin: 0 0 8px;
+      text-align: left;
+    }
+    .password-input-wrap {
+      position: relative;
+    }
+    .password-input-wrap .identity-input {
+      padding-right: 40px;
+    }
+    .eye-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      opacity: 0.6;
+    }
+    .eye-btn:hover {
+      opacity: 1;
+    }
+    .back-btn {
+      display: block;
+      margin: 10px auto 0;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+    .back-btn:hover {
+      color: #1976d2;
+    }
   `]
 })
 export class CustomerIdentityDialogComponent {
-  @Output() confirmed = new EventEmitter<string>();
+  @Output() confirmed = new EventEmitter<IdentityConfirmedEvent>();
 
   private http = inject(HttpClient);
 
   inputValue = '';
+  passwordValue = '';
   errorMessage = '';
   isVerifying = false;
+  showPasswordStep = false;
+  showPassword = false;
+  pendingName = '';
 
   static getStoredIdentity(): string | null {
     return localStorage.getItem(IDENTITY_KEY);
@@ -179,10 +264,23 @@ export class CustomerIdentityDialogComponent {
     this.errorMessage = '';
 
     try {
+      const body: any = { identity: val };
+      if (this.showPasswordStep) {
+        body.password = this.passwordValue;
+      }
+
       const res = await firstValueFrom(this.http.post<VerifyResponse>(
         `${environment.domainUrl}/api/chat/verify-identity`,
-        { identity: val }
+        body
       ));
+
+      if (res?.requirePassword && !this.showPasswordStep) {
+        // Customer has password → show password step
+        this.showPasswordStep = true;
+        this.pendingName = res.name || val;
+        this.isVerifying = false;
+        return;
+      }
 
       if (res?.verified) {
         localStorage.setItem(IDENTITY_KEY, res.identity || val);
@@ -191,7 +289,7 @@ export class CustomerIdentityDialogComponent {
           localStorage.setItem(IDENTITY_PHONE_KEY, res.phone);
         }
         localStorage.setItem(GIFT_POINT_KEY, String(res.giftPoint || 0));
-        this.confirmed.emit(res.identity || val);
+        this.confirmed.emit({ identity: res.identity || val, hasPassword: res.hasPassword ?? false });
       } else {
         this.errorMessage = res?.message || 'Không tìm thấy khách hàng';
       }
@@ -201,6 +299,14 @@ export class CustomerIdentityDialogComponent {
     }
 
     this.isVerifying = false;
+  }
+
+  resetToIdentity(): void {
+    this.showPasswordStep = false;
+    this.passwordValue = '';
+    this.showPassword = false;
+    this.errorMessage = '';
+    this.pendingName = '';
   }
 
   onRegister(): void {
