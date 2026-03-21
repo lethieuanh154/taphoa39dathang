@@ -47,21 +47,19 @@ export interface IdentityConfirmedEvent {
 
         <input
           class="identity-input"
-          [class.input-error]="errorMessage && !showPasswordStep"
+          [class.input-error]="errorMessage"
           [(ngModel)]="inputValue"
           placeholder="Mã thành viên / Số điện thoại"
-          (keydown.enter)="onConfirm()"
+          (keydown.enter)="passwordInput.focus()"
           (input)="errorMessage = ''"
-          [disabled]="showPasswordStep"
           autofocus
         />
 
-        <div class="password-section" *ngIf="showPasswordStep">
-          <p class="password-label">Nhập mật khẩu cho <strong>{{ pendingName || inputValue }}</strong></p>
+        <div class="password-section">
           <div class="password-input-wrap">
             <input
+              #passwordInput
               class="identity-input"
-              [class.input-error]="errorMessage"
               [(ngModel)]="passwordValue"
               [type]="showPassword ? 'text' : 'password'"
               placeholder="Mật khẩu"
@@ -83,18 +81,14 @@ export interface IdentityConfirmedEvent {
 
         <p class="error-text" *ngIf="errorMessage">{{ errorMessage }}</p>
 
-        <p class="identity-register-text" *ngIf="!showPasswordStep">
+        <p class="identity-register-text">
           Nếu bạn chưa có mã thành viên, hãy nhấn vào
           <a class="register-link" (click)="onRegister()">Đăng ký</a>
         </p>
 
-        <button class="identity-confirm-btn" [disabled]="(!inputValue.trim() && !showPasswordStep) || (showPasswordStep && !passwordValue.trim()) || isVerifying" (click)="onConfirm()">
-          <span *ngIf="!isVerifying">{{ showPasswordStep ? 'Đăng nhập' : 'Xác nhận' }}</span>
+        <button class="identity-confirm-btn" [disabled]="!inputValue.trim() || isVerifying" (click)="onConfirm()">
+          <span *ngIf="!isVerifying">Đăng nhập</span>
           <span *ngIf="isVerifying">Đang xác minh...</span>
-        </button>
-
-        <button class="back-btn" *ngIf="showPasswordStep" (click)="resetToIdentity()">
-          ← Nhập lại mã/SĐT
         </button>
       </div>
     </div>
@@ -190,13 +184,7 @@ export interface IdentityConfirmedEvent {
       background: #1565c0;
     }
     .password-section {
-      margin-top: 12px;
-    }
-    .password-label {
-      font-size: 13px;
-      color: #444;
-      margin: 0 0 8px;
-      text-align: left;
+      margin-top: 10px;
     }
     .password-input-wrap {
       position: relative;
@@ -220,19 +208,6 @@ export interface IdentityConfirmedEvent {
     .eye-btn:hover {
       opacity: 1;
     }
-    .back-btn {
-      display: block;
-      margin: 10px auto 0;
-      background: none;
-      border: none;
-      color: #666;
-      font-size: 13px;
-      cursor: pointer;
-      padding: 4px 8px;
-    }
-    .back-btn:hover {
-      color: #1976d2;
-    }
   `]
 })
 export class CustomerIdentityDialogComponent {
@@ -244,9 +219,7 @@ export class CustomerIdentityDialogComponent {
   passwordValue = '';
   errorMessage = '';
   isVerifying = false;
-  showPasswordStep = false;
   showPassword = false;
-  pendingName = '';
 
   static getStoredIdentity(): string | null {
     return localStorage.getItem(IDENTITY_KEY);
@@ -265,7 +238,8 @@ export class CustomerIdentityDialogComponent {
 
     try {
       const body: any = { identity: val };
-      if (this.showPasswordStep) {
+      // Always send password if provided
+      if (this.passwordValue) {
         body.password = this.passwordValue;
       }
 
@@ -274,10 +248,9 @@ export class CustomerIdentityDialogComponent {
         body
       ));
 
-      if (res?.requirePassword && !this.showPasswordStep) {
-        // Customer has password → show password step
-        this.showPasswordStep = true;
-        this.pendingName = res.name || val;
+      if (res?.requirePassword) {
+        // Customer has password but user didn't provide one
+        this.errorMessage = 'Vui lòng nhập mật khẩu';
         this.isVerifying = false;
         return;
       }
@@ -299,14 +272,6 @@ export class CustomerIdentityDialogComponent {
     }
 
     this.isVerifying = false;
-  }
-
-  resetToIdentity(): void {
-    this.showPasswordStep = false;
-    this.passwordValue = '';
-    this.showPassword = false;
-    this.errorMessage = '';
-    this.pendingName = '';
   }
 
   onRegister(): void {
