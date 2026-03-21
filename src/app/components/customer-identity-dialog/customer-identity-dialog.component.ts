@@ -8,6 +8,7 @@ import { environment } from '../../../environments/environment';
 const IDENTITY_KEY = 'sm_customer_identity';
 const IDENTITY_NAME_KEY = 'sm_customer_name';
 const IDENTITY_PHONE_KEY = 'sm_customer_phone';
+const IDENTITY_CODE_KEY = 'sm_customer_code';
 const GIFT_POINT_KEY = 'sm_customer_giftpoint';
 const REGISTER_URL = 'https://songminhdangkythanhvien.onrender.com/';
 
@@ -16,6 +17,7 @@ interface VerifyResponse {
   name?: string;
   identity?: string;
   phone?: string;
+  code?: string;
   type?: string;
   message?: string;
   giftPoint?: number;
@@ -260,6 +262,9 @@ export class CustomerIdentityDialogComponent {
         localStorage.setItem(IDENTITY_NAME_KEY, res.name || val);
         if (res.phone) {
           localStorage.setItem(IDENTITY_PHONE_KEY, res.phone);
+        }
+        if (res.code) {
+          localStorage.setItem(IDENTITY_CODE_KEY, res.code);
         }
         localStorage.setItem(GIFT_POINT_KEY, String(res.giftPoint || 0));
         this.confirmed.emit({ identity: res.identity || val, hasPassword: res.hasPassword ?? false });

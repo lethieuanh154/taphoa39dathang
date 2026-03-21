@@ -63,7 +63,7 @@ export class ProfileBubbleComponent implements OnInit {
   private loadFromLocalStorage(): void {
     this.customerName = localStorage.getItem('sm_customer_name') || '';
     this.customerPhone = localStorage.getItem('sm_customer_phone') || '';
-    this.customerCode = localStorage.getItem('sm_customer_identity') || '';
+    this.customerCode = localStorage.getItem('sm_customer_code') || localStorage.getItem('sm_customer_identity') || '';
     this.giftPoint = Number(localStorage.getItem('sm_customer_giftpoint')) || 0;
   }
 
@@ -81,6 +81,10 @@ export class ProfileBubbleComponent implements OnInit {
           if (res.phone) {
             this.customerPhone = res.phone;
             localStorage.setItem('sm_customer_phone', res.phone);
+          }
+          if (res.code) {
+            this.customerCode = res.code;
+            localStorage.setItem('sm_customer_code', res.code);
           }
           if (res.giftPoint != null) {
             this.giftPoint = res.giftPoint;
