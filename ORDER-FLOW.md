@@ -130,7 +130,7 @@ Body: {
 ## 6. Firestore Structure
 
 ```
-taphoa39hoadon1 (Project)
+taphoa39hoadon (Project)
 └── orders (Collection)
     └── {orderId} (Document)
         ├── id: string

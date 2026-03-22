@@ -14,7 +14,8 @@ import { ProfileBubbleComponent } from '../components/profile-bubble/profile-bub
 import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
 import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
-import { Product } from '../models/product';
+import { PromotionService } from '../services/promotion.service';
+import { Product, Promotion } from '../models/product';
 
 interface Category {
   Id: number;
@@ -53,9 +54,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   detailProduct: Product | null = null;
   detailGroup: Product[] = [];
   isDetailSale = false;
+  detailPromotion: Promotion | null = null;
 
-  // Discount bar - random 10 products, reset daily
-  discountProducts: Product[] = [];
+  // Discount bar - replaced by real promotions
+  discountProducts: Product[] = []; // kept for backward compat in template
 
   // Customer identity
   showIdentityDialog = false;
@@ -77,9 +79,13 @@ export class HomeComponent implements OnInit, OnDestroy {
   private lastSearchTerm = '';
   private updateSub?: Subscription;
 
+  // Promotion bar - products with active promotions
+  promotionProducts: { product: Product; promotion: Promotion }[] = [];
+
   constructor(
     private productApi: ProductApiService,
     private groupService: GroupService,
+    private promotionService: PromotionService,
     private cdr: ChangeDetectorRef,
     private http: HttpClient
   ) {}
@@ -153,12 +159,12 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.loadCategories();
       // Show featured products on initial load (no search needed)
       this.loadFeaturedDisplay();
-      this.loadDiscountProducts();
+      this.loadPromotionProducts();
     });
 
     this.updateSub = this.productApi.getProductUpdated$().subscribe(() => {
-      // Just refresh discount products on WS update (don't reload main grid to preserve scroll)
-      this.refreshDiscountProducts();
+      // Refresh promotion products on WS update
+      this.refreshPromotionProducts();
     });
   }
 
@@ -342,72 +348,127 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.detailProduct = null;
     this.detailGroup = [];
     this.isDetailSale = false;
+    this.detailPromotion = null;
     this.cdr.markForCheck();
   }
 
-  // ======================== Discount bar ========================
+  // ======================== Promotion bar ========================
 
-  private async loadDiscountProducts(): Promise<void> {
-    const today = new Date().toISOString().slice(0, 10);
-    const cacheKey = 'dh_discountProducts';
-    const cacheDateKey = 'dh_discountDate';
-
-    const cachedDate = localStorage.getItem(cacheDateKey);
-    const cachedData = localStorage.getItem(cacheKey);
-
-    if (cachedDate === today && cachedData) {
-      try {
-        const codes: string[] = JSON.parse(cachedData);
-        const allProducts = await this.productApi.getAllCachedProducts();
-        this.discountProducts = codes
-          .map(code => allProducts.find(p => p.Code === code))
-          .filter((p): p is Product => !!p);
-        this.cdr.markForCheck();
-        return;
-      } catch { /* fall through to regenerate */ }
+  private async loadPromotionProducts(): Promise<void> {
+    await this.promotionService.loadActivePromotions();
+    const promos = this.promotionService.getActivePromotions();
+    console.log('[Promo] Active promotions from API:', promos.length, promos);
+    if (promos.length === 0) {
+      this.promotionProducts = [];
+      this.discountProducts = [];
+      this.cdr.markForCheck();
+      return;
     }
 
     const allProducts = await this.productApi.getAllCachedProducts();
-    if (allProducts.length === 0) return;
+    console.log('[Promo] Cached products count:', allProducts.length);
+    const productMap = new Map(allProducts.map(p => [String(p.Id), p]));
 
-    const shuffled = this.seededShuffle([...allProducts], today);
-    this.discountProducts = shuffled.slice(0, 10);
+    // Build promotion-product pairs (deduplicate by targetProductId)
+    const seen = new Set<string>();
+    this.promotionProducts = [];
+    for (const promo of promos) {
+      const pid = String(promo.targetProductId);
+      const product = productMap.get(pid);
+      console.log('[Promo] Matching pid:', pid, '→ found:', !!product);
+      if (seen.has(pid)) continue;
+      if (product) {
+        seen.add(pid);
+        this.promotionProducts.push({ product, promotion: promo });
+      }
+    }
 
-    localStorage.setItem(cacheDateKey, today);
-    localStorage.setItem(cacheKey, JSON.stringify(this.discountProducts.map(p => p.Code)));
+    console.log('[Promo] Final promotionProducts:', this.promotionProducts.length);
+    // Keep discountProducts for template backward compat
+    this.discountProducts = this.promotionProducts.map(pp => pp.product);
     this.cdr.markForCheck();
   }
 
-  private seededShuffle(arr: Product[], seed: string): Product[] {
-    let hash = 0;
-    for (let i = 0; i < seed.length; i++) {
-      hash = ((hash << 5) - hash) + seed.charCodeAt(i);
-      hash |= 0;
-    }
-    for (let i = arr.length - 1; i > 0; i--) {
-      hash = (hash * 16807 + 12345) & 0x7fffffff;
-      const j = hash % (i + 1);
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  /**
-   * Refresh discount products with latest data from IndexedDB (after WS update).
-   * Keeps the same product codes, just updates prices/stock.
-   */
-  private async refreshDiscountProducts(): Promise<void> {
-    if (this.discountProducts.length === 0) return;
-    const codes = this.discountProducts.map(p => p.Code);
+  private async refreshPromotionProducts(): Promise<void> {
+    if (this.promotionProducts.length === 0) return;
     const allProducts = await this.productApi.getAllCachedProducts();
-    this.discountProducts = codes
-      .map(code => allProducts.find(p => p.Code === code))
-      .filter((p): p is Product => !!p);
+    const productMap = new Map(allProducts.map(p => [String(p.Id), p]));
+
+    this.promotionProducts = this.promotionProducts
+      .map(pp => {
+        const updated = productMap.get(String(pp.product.Id));
+        return updated ? { product: updated, promotion: pp.promotion } : pp;
+      });
+    this.discountProducts = this.promotionProducts.map(pp => pp.product);
     this.cdr.markForCheck();
   }
 
   onDiscountProductClick(product: Product): void {
+    const pp = this.promotionProducts.find(p => p.product.Id === product.Id);
+    this.detailPromotion = pp ? pp.promotion : null;
     this.onProductClick(product, true);
+  }
+
+  isGiftOnlyPromo(promo: Promotion): boolean {
+    const hasGift = promo.hasGift ?? promo.type === 'gift';
+    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
+    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
+    return hasGift && !hasPct && !hasFixed;
+  }
+
+  hasDiscountPromo(promo: Promotion): boolean {
+    return (promo.hasPercentDiscount ?? promo.type === 'percentage')
+      || (promo.hasFixedDiscount ?? promo.type === 'fixed_amount');
+  }
+
+  getPromotionBadge(product: Product): string {
+    const pp = this.promotionProducts.find(p => p.product.Id === product.Id);
+    if (!pp) return 'SALE';
+    const promo = pp.promotion;
+    const hasGift = promo.hasGift ?? promo.type === 'gift';
+    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
+    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
+
+    const parts: string[] = [];
+    if (hasGift) parts.push('TẶNG');
+    if (hasPct) parts.push(`-${promo.discountPercent}%`);
+    if (hasFixed) {
+      const amt = promo.discountAmount || 0;
+      parts.push(amt >= 1000 ? `-${Math.round(amt / 1000)}K` : `-${amt} đ`);
+    }
+    return parts.join(' + ') || 'SALE';
+  }
+
+  getPromotionDetail(product: Product): string {
+    const pp = this.promotionProducts.find(p => p.product.Id === product.Id);
+    if (!pp) return '';
+    const promo = pp.promotion;
+    const hasGift = promo.hasGift ?? promo.type === 'gift';
+    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
+    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
+
+    const parts: string[] = [];
+    if (hasGift && promo.giftProductName) parts.push(`Tặng ${promo.giftProductName}`);
+    if (hasPct && promo.discountPercent) parts.push(`Giảm ${promo.discountPercent}%`);
+    if (hasFixed && promo.discountAmount) parts.push(`Giảm ${promo.discountAmount.toLocaleString()}d`);
+    return parts.join(' + ') || '';
+  }
+
+  getDiscountedPrice(product: Product): number {
+    const pp = this.promotionProducts.find(p => p.product.Id === product.Id);
+    if (!pp) return product.BasePrice;
+    const promo = pp.promotion;
+    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
+    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
+
+    let price = product.BasePrice;
+    if (hasPct && promo.discountPercent) {
+      price = Math.round(price * (1 - promo.discountPercent / 100));
+    }
+    if (hasFixed && promo.discountAmount) {
+      price = Math.max(0, price - promo.discountAmount);
+    }
+    return price;
   }
 
   // ======================== Category bubble menu ========================
@@ -442,9 +503,6 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   getMarketPrice(basePrice: number): number {
     return Math.round((basePrice * 1.10) / 500) * 500;
-  }
-  getOriginalPrice(basePrice: number): number {
-    return Math.round((basePrice * 1.05) / 500) * 500;
   }
   trackByProductCode(_: number, product: Product): string {
     return product.Code;

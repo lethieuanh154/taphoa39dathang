@@ -152,6 +152,45 @@
   opacity: 1;
 }
 
+/* Promotion Banner */
+.promo-banner {
+  background: linear-gradient(135deg, #ff6b35, #e53935);
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.promo-badge {
+  background: #fff;
+  color: #e53935;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.promo-detail {
+  font-size: 14px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+
+.promo-condition {
+  font-size: 12px;
+  opacity: 0.9;
+  width: 100%;
+}
+
+/* Promo price highlight */
+.price-promo .price-value {
+  color: #e53935 !important;
+}
+
 /* Body */
 .detail-body {
   padding: 20px;

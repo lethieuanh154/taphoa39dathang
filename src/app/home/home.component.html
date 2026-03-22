@@ -7,26 +7,34 @@
 <app-header (search)="onSearch($event)"></app-header>
 
 <main class="main-content">
-  <!-- Discount Bar - Random 10 products, reset daily -->
-  <section class="discount-bar" *ngIf="discountProducts.length > 0">
+  <!-- Promotion Bar - Real promotions from database -->
+  <section class="discount-bar" *ngIf="promotionProducts.length > 0">
     <div class="discount-header">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
         <line x1="7" y1="7" x2="7.01" y2="7"/>
       </svg>
-      <span>Giảm giá hôm nay</span>
+      <span>Khuyến mại</span>
     </div>
     <div class="discount-scroll-wrap">
       <div class="discount-scroll">
-        <div class="discount-item" *ngFor="let p of discountProducts; trackBy: trackByProductCode"
-             (click)="onDiscountProductClick(p)">
+        <div class="discount-item" *ngFor="let pp of promotionProducts"
+             (click)="onDiscountProductClick(pp.product)">
           <div class="discount-img-wrap">
-            <img [src]="p.Image || 'assets/no-image.svg'" [alt]="p.Name" class="discount-img" loading="lazy">
-            <span class="sale-badge">SALE</span>
+            <img [src]="pp.product.Image || 'assets/no-image.svg'" [alt]="pp.product.Name" class="discount-img" loading="lazy">
+            <span class="sale-badge" [class.sale-badge-gift]="isGiftOnlyPromo(pp.promotion)">{{ getPromotionBadge(pp.product) }}</span>
           </div>
-          <div class="discount-name">{{ p.Name }}</div>
-          <div class="discount-market-price">{{ getOriginalPrice(p.BasePrice) | number:'1.0-0' }}đ</div>
-          <div class="discount-price">{{ p.BasePrice | number:'1.0-0' }}đ</div>
+          <div class="discount-name">{{ pp.product.Name }}</div>
+          <div class="discount-gift-info">{{ getPromotionDetail(pp.product) }}</div>
+          <!-- Show discounted price if has percentage or fixed discount -->
+          <ng-container *ngIf="hasDiscountPromo(pp.promotion)">
+            <div class="discount-market-price">{{ pp.product.BasePrice | number:'1.0-0' }}d</div>
+            <div class="discount-price">{{ getDiscountedPrice(pp.product) | number:'1.0-0' }}d</div>
+          </ng-container>
+          <!-- Gift-only: just show base price -->
+          <ng-container *ngIf="!hasDiscountPromo(pp.promotion)">
+            <div class="discount-price">{{ pp.product.BasePrice | number:'1.0-0' }}d</div>
+          </ng-container>
         </div>
       </div>
       <div class="scroll-arrow scroll-arrow-right">
@@ -72,6 +80,7 @@
   [product]="detailProduct"
   [group]="detailGroup"
   [isSale]="isDetailSale"
+  [promotion]="detailPromotion"
   (close)="onDetailClose()">
 </app-product-detail>
 
@@ -159,7 +168,7 @@
     <p class="footer-address"> <span class="fa fa-map-marker"> &nbsp;</span>25 Nguyễn Phước Tần, Cẩm Lệ, Đà Nẵng</p>
     <p class="footer-phone"><span class="fa fa-phone"> &nbsp;</span>SDT: 0703.863.690</p>
     <p class="footer-cr"> Copyright © 2026 Song Minh. All rights reserved.
-      <br>developing...
+      <br>Đang được phát triển...
     </p>
   </div>
 </footer>

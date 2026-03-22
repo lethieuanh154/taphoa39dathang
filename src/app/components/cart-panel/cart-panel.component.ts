@@ -18,6 +18,8 @@ export class CartPanelComponent implements OnDestroy {
   isOpen = false;
   private subs: Subscription[] = [];
 
+  totalDiscount = 0;
+
   constructor(
     private cartService: CartService,
     private router: Router,
@@ -30,6 +32,10 @@ export class CartPanelComponent implements OnDestroy {
       }),
       this.cartService.panelOpen$.subscribe(open => {
         this.isOpen = open;
+        this.cdr.markForCheck();
+      }),
+      this.cartService.totalDiscount$.subscribe(d => {
+        this.totalDiscount = d;
         this.cdr.markForCheck();
       })
     );

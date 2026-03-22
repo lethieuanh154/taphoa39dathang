@@ -13,13 +13,27 @@
   </div>
 
   <div class="panel-body" *ngIf="items.length > 0">
-    <div class="cart-item" *ngFor="let item of items; trackBy: trackByCartItem">
+    <div class="cart-item" *ngFor="let item of items; trackBy: trackByCartItem"
+         [class.gift-item]="item.isGift">
       <img [src]="item.product.Image || 'assets/no-image.svg'" [alt]="item.product.FullName" class="item-img" />
       <div class="item-info">
-        <div class="item-name">{{ item.product.FullName }}</div>
-        <div class="item-price">{{ formatPrice(item.product.BasePrice) }} đ</div>
+        <div class="item-name">
+          <span *ngIf="item.isGift" class="gift-badge">TẶNG</span>
+          {{ item.product.FullName }}
+        </div>
+        <div class="item-price" *ngIf="!item.isGift && item.unitPriceSaleOff > 0">
+          <span class="price-original">{{ formatPrice(item.product.BasePrice) }} đ</span>
+          <span class="price-discounted">{{ formatPrice(item.product.BasePrice - item.unitPriceSaleOff) }}d</span>
+        </div>
+        <div class="item-price" *ngIf="!item.isGift && !item.unitPriceSaleOff">
+          {{ formatPrice(item.product.BasePrice) }} d
+        </div>
+        <div class="item-price gift-price" *ngIf="item.isGift">
+          <span class="price-original" *ngIf="item.product.BasePrice > 0">{{ formatPrice(item.product.BasePrice) }}đ</span>
+          0đ (tặng kèm)
+        </div>
       </div>
-      <div class="item-actions">
+      <div class="item-actions" *ngIf="!item.isGift">
         <div class="qty-control">
           <button class="qty-btn" (click)="decrease(item.product.Code)" aria-label="Giam">-</button>
           <span class="qty-value">{{ item.quantity }}</span>
@@ -31,6 +45,9 @@
           </svg>
         </button>
       </div>
+      <div class="item-actions gift-qty" *ngIf="item.isGift">
+        <span class="qty-value">x{{ item.quantity }}</span>
+      </div>
     </div>
   </div>
 
@@ -39,9 +56,13 @@
   </div>
 
   <div class="panel-footer" *ngIf="items.length > 0">
+    <div class="discount-row" *ngIf="totalDiscount > 0">
+      <span class="discount-label">Giảm giá:</span>
+      <span class="discount-value">-{{ formatPrice(totalDiscount) }} đ</span>
+    </div>
     <div class="total-row">
       <span class="total-label">Tổng cộng:</span>
-      <span class="total-value">{{ formatPrice(totalPrice) }}d</span>
+      <span class="total-value">{{ formatPrice(totalPrice) }} đ</span>
     </div>
     <button class="checkout-btn" (click)="goToCheckout()">
       Đã đặt ({{ totalItems }} sản phẩm)

@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { Product } from '../../models/product';
+import { Product, Promotion } from '../../models/product';
 import { CartService } from '../../services/cart.service';
 import { environment } from '../../../environments/environment';
 
@@ -17,6 +17,7 @@ export class ProductDetailComponent {
   @Input() product!: Product;
   @Input() group: Product[] = [];
   @Input() isSale = false;
+  @Input() promotion: Promotion | null = null;
   @Output() close = new EventEmitter<void>();
 
   selectedProduct!: Product;
@@ -189,6 +190,72 @@ export class ProductDetailComponent {
       this.snackbarVisible = false;
       this.cdr.markForCheck();
     }, 2500);
+  }
+
+  // Promotion helpers
+  get hasGift(): boolean {
+    if (!this.promotion) return false;
+    return this.promotion.hasGift ?? this.promotion.type === 'gift';
+  }
+
+  get hasPercentDiscount(): boolean {
+    if (!this.promotion) return false;
+    return this.promotion.hasPercentDiscount ?? this.promotion.type === 'percentage';
+  }
+
+  get hasFixedDiscount(): boolean {
+    if (!this.promotion) return false;
+    return this.promotion.hasFixedDiscount ?? this.promotion.type === 'fixed_amount';
+  }
+
+  get hasAnyDiscount(): boolean {
+    return this.hasPercentDiscount || this.hasFixedDiscount;
+  }
+
+  get promotionBadge(): string {
+    if (!this.promotion) return '';
+    const parts: string[] = [];
+    if (this.hasGift) parts.push('TẶNG');
+    if (this.hasPercentDiscount) parts.push(`-${this.promotion.discountPercent}%`);
+    if (this.hasFixedDiscount) {
+      const amt = this.promotion.discountAmount || 0;
+      parts.push(amt >= 1000 ? `-${Math.round(amt / 1000)}K` : `-${amt}đ`);
+    }
+    return parts.join(' + ') || '';
+  }
+
+  get promotionDetail(): string {
+    if (!this.promotion) return '';
+    const parts: string[] = [];
+    if (this.hasGift && this.promotion.giftProductName) {
+      const qty = this.promotion.giftQuantity || 1;
+      parts.push(`Tặng ${qty > 1 ? qty + ' ' : ''}${this.promotion.giftProductName}`);
+    }
+    if (this.hasPercentDiscount && this.promotion.discountPercent) {
+      parts.push(`Giảm ${this.promotion.discountPercent}%`);
+    }
+    if (this.hasFixedDiscount && this.promotion.discountAmount) {
+      parts.push(`Giảm ${this.promotion.discountAmount.toLocaleString('vi-VN')}đ`);
+    }
+    return parts.join(' + ') || '';
+  }
+
+  get discountedPrice(): number {
+    if (!this.promotion) return this.selectedProduct.BasePrice;
+    let price = this.selectedProduct.BasePrice;
+    if (this.hasPercentDiscount && this.promotion.discountPercent) {
+      price = Math.round(price * (1 - this.promotion.discountPercent / 100));
+    }
+    if (this.hasFixedDiscount && this.promotion.discountAmount) {
+      price = Math.max(0, price - this.promotion.discountAmount);
+    }
+    return price;
+  }
+
+  get promotionCondition(): string {
+    if (!this.promotion) return '';
+    const min = this.promotion.minQuantity || 1;
+    return min > 1 ? `Mua từ ${min} sản phẩm` : '';
   }
 
   onBackdropClick(): void {

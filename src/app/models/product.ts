@@ -34,6 +34,66 @@ export interface CartItem {
   product: Product;
   quantity: number;
   unitPriceSaleOff: number;
+  isGift?: boolean;
+  promotionId?: string;
+}
+
+export interface Promotion {
+  id: string;
+  name: string;
+  type: 'gift' | 'percentage' | 'fixed_amount'; // backward compat - primary type
+  isEnabled: boolean;
+  priority: number;
+  allowStacking: boolean;
+
+  // Type flags (checkbox-based, can combine multiple)
+  hasGift?: boolean;
+  hasPercentDiscount?: boolean;
+  hasFixedDiscount?: boolean;
+
+  targetProductId: string;
+  targetProductCode: string;
+  targetProductName: string;
+  minQuantity: number;
+  discountPercent?: number;
+  discountAmount?: number;
+  giftProductId?: string;
+  giftProductCode?: string;
+  giftProductName?: string;
+  giftProductBasePrice?: number;
+  giftQuantity?: number;
+  fromDate: string;
+  toDate: string;
+  createdDate: string;
+  modifiedDate: string;
+}
+
+export interface ApplyPromotionResult {
+  appliedPromotions: AppliedPromotion[];
+  giftItems: GiftItem[];
+  totalDiscount: number;
+}
+
+export interface AppliedPromotion {
+  promotionId: string;
+  promotionName: string;
+  type: string;
+  targetProductId: string;
+  discountAmount: number;
+  discountPercent?: number;
+  giftProductId?: string;
+  giftProductName?: string;
+  giftQuantity?: number;
+}
+
+export interface GiftItem {
+  productId: string;
+  code: string;
+  name: string;
+  quantity: number;
+  basePrice: number;
+  isGift: boolean;
+  promotionId: string;
 }
 
 export interface OrderData {
@@ -54,6 +114,7 @@ export interface OrderData {
   createdDate: string;
   deliveryTime: string;
   source: 'online';
+  appliedPromotions?: AppliedPromotion[];
   wantDelivery: boolean;
   shipCost: number;
   distanceKm: number;

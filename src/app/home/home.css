@@ -140,6 +140,22 @@
   margin-top: 1px;
 }
 
+.sale-badge-gift {
+  background: #2e7d32;
+}
+
+.discount-gift-info {
+  font-size: 10px;
+  color: #2e7d32;
+  font-weight: 600;
+  margin-top: 2px;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 /* ========== Product Grid ========== */
 .product-grid {
   display: grid;

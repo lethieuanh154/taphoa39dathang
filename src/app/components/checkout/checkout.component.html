@@ -24,13 +24,21 @@
     <section class="section">
       <h2 class="section-title">Đơn hàng ({{ totalItems }} sản phẩm)</h2>
       <div class="order-items" *ngIf="items.length > 0">
-        <div class="order-item" *ngFor="let item of items; trackBy: trackByCartItem">
+        <div class="order-item" *ngFor="let item of items; trackBy: trackByCartItem"
+             [class.gift-item]="item.isGift">
           <img [src]="item.product.Image || 'assets/no-image.svg'" class="order-item-img" />
           <div class="order-item-info">
-            <div class="order-item-name">{{ item.product.FullName }}</div>
+            <div class="order-item-name">
+              <span *ngIf="item.isGift" class="gift-badge">TẶNG</span>
+              {{ item.product.FullName }}
+            </div>
             <div class="order-item-qty">x{{ item.quantity }} {{ item.product.Unit }}</div>
           </div>
-          <div class="order-item-price">{{ formatPrice(item.product.BasePrice * item.quantity) }}đ</div>
+          <div class="order-item-price" *ngIf="!item.isGift">{{ formatPrice(item.product.BasePrice * item.quantity) }}đ</div>
+          <div class="order-item-price gift-price" *ngIf="item.isGift">
+            <span class="price-original" *ngIf="item.product.BasePrice > 0">{{ formatPrice(item.product.BasePrice * item.quantity) }}đ</span>
+            <span>0đ</span>
+          </div>
         </div>
       </div>
       <div class="order-total">

@@ -364,6 +364,11 @@ export class ProductApiService implements OnDestroy {
     return all.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
   }
 
+  /** Get ALL cached products unfiltered (includes KM, clone, inactive). For lookups only. */
+  async getAllRawCachedProducts(): Promise<Product[]> {
+    return this.getCachedProducts();
+  }
+
   // ======================== Helpers ========================
 
   private isCloneProduct(product: Product): boolean {

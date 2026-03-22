@@ -39,6 +39,13 @@
            loading="lazy" />
     </div>
 
+    <!-- Promotion Banner -->
+    <div class="promo-banner" *ngIf="promotion">
+      <div class="promo-badge">{{ promotionBadge }}</div>
+      <div class="promo-detail">{{ promotionDetail }}</div>
+      <div class="promo-condition" *ngIf="promotionCondition">{{ promotionCondition }}</div>
+    </div>
+
     <!-- Product Info -->
     <div class="detail-body">
       <h2 class="detail-name">{{ selectedProduct.FullName }}</h2>
@@ -60,18 +67,34 @@
 
       <!-- Pricing -->
       <div class="pricing">
-        <div class="price-row price-market" *ngIf="!isSale">
-          <span class="price-label">Giá thị trường:</span>
-          <span class="price-value strikethrough">{{ formatPrice(marketPrice) }} đ</span>
-        </div>
-        <div class="price-row price-market" *ngIf="isSale">
-          <span class="price-label">Giá gốc:</span>
-          <span class="price-value strikethrough">{{ formatPrice(originalPrice) }} đ</span>
-        </div>
-        <div class="price-row price-sale">
-          <span class="price-label">Giá bán:</span>
-          <span class="price-value">{{ formatPrice(salePrice) }} đ</span>
-        </div>
+        <ng-container *ngIf="!promotion">
+          <div class="price-row price-market" *ngIf="!isSale">
+            <span class="price-label">Giá thị trường:</span>
+            <span class="price-value strikethrough">{{ formatPrice(marketPrice) }} đ</span>
+          </div>
+          <div class="price-row price-market" *ngIf="isSale">
+            <span class="price-label">Giá gốc:</span>
+            <span class="price-value strikethrough">{{ formatPrice(originalPrice) }} đ</span>
+          </div>
+          <div class="price-row price-sale">
+            <span class="price-label">Giá bán:</span>
+            <span class="price-value">{{ formatPrice(salePrice) }} đ</span>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="promotion">
+          <div class="price-row price-market" *ngIf="hasAnyDiscount">
+            <span class="price-label">Giá gốc:</span>
+            <span class="price-value strikethrough">{{ formatPrice(salePrice) }} đ</span>
+          </div>
+          <div class="price-row price-sale price-promo" *ngIf="hasAnyDiscount">
+            <span class="price-label">Giá khuyến mại:</span>
+            <span class="price-value">{{ formatPrice(discountedPrice) }} đ</span>
+          </div>
+          <div class="price-row price-sale" *ngIf="!hasAnyDiscount">
+            <span class="price-label">Giá bán:</span>
+            <span class="price-value">{{ formatPrice(salePrice) }} đ</span>
+          </div>
+        </ng-container>
       </div>
 
       <!-- Stock Status -->
