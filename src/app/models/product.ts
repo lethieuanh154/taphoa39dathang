@@ -66,6 +66,9 @@ export interface Promotion {
   toDate: string;
   createdDate: string;
   modifiedDate: string;
+
+  // Embedded product data from /promotions/active API
+  targetProduct?: Product;
 }
 
 export interface ApplyPromotionResult {

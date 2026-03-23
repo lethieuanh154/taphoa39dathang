@@ -369,6 +369,16 @@ export class ProductApiService implements OnDestroy {
     return this.getCachedProducts();
   }
 
+  /**
+   * Cache products into IndexedDB (used by promotion bar to persist target products).
+   */
+  async cacheProducts(products: Product[]): Promise<void> {
+    if (products.length === 0) return;
+    await this.initDB();
+    await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
+    this.invalidateCache();
+  }
+
   // ======================== Helpers ========================
 
   private isCloneProduct(product: Product): boolean {

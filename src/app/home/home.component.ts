@@ -357,7 +357,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   private async loadPromotionProducts(): Promise<void> {
     await this.promotionService.loadActivePromotions();
     const promos = this.promotionService.getActivePromotions();
-    console.log('[Promo] Active promotions from API:', promos.length, promos);
     if (promos.length === 0) {
       this.promotionProducts = [];
       this.discountProducts = [];
@@ -365,28 +364,30 @@ export class HomeComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const allProducts = await this.productApi.getAllCachedProducts();
-    console.log('[Promo] Cached products count:', allProducts.length);
-    const productMap = new Map(allProducts.map(p => [String(p.Id), p]));
-
-    // Build promotion-product pairs (deduplicate by targetProductId)
+    // Use embedded targetProduct from API (no IndexedDB dependency)
     const seen = new Set<string>();
     this.promotionProducts = [];
+    const productsToCache: Product[] = [];
+
     for (const promo of promos) {
       const pid = String(promo.targetProductId);
-      const product = productMap.get(pid);
-      console.log('[Promo] Matching pid:', pid, '→ found:', !!product);
       if (seen.has(pid)) continue;
-      if (product) {
+      const product = promo.targetProduct;
+      if (product && !product.isDeleted && product.isActive !== false) {
         seen.add(pid);
         this.promotionProducts.push({ product, promotion: promo });
+        productsToCache.push(product);
       }
     }
 
-    console.log('[Promo] Final promotionProducts:', this.promotionProducts.length);
     // Keep discountProducts for template backward compat
     this.discountProducts = this.promotionProducts.map(pp => pp.product);
     this.cdr.markForCheck();
+
+    // Cache promotion products to IndexedDB (fire-and-forget for cart/detail use)
+    if (productsToCache.length > 0) {
+      this.productApi.cacheProducts(productsToCache).catch(() => {});
+    }
   }
 
   private async refreshPromotionProducts(): Promise<void> {
