@@ -336,7 +336,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       },
       cartItems: this.items.map(item => {
         const saleOff = item.unitPriceSaleOff || 0;
-        const unitPrice = item.isGift ? 0 : (item.product.BasePrice - saleOff);
+        const unitPrice = item.product.BasePrice - saleOff;
         return {
           product: { ...item.product },
           quantity: item.quantity,
