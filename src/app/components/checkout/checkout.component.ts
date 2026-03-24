@@ -334,13 +334,19 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       },
       cartItems: this.items.map(item => {
         const saleOff = item.unitPriceSaleOff || 0;
-        const unitPrice = item.product.BasePrice - saleOff;
+        const unitPrice = item.isGift ? 0 : (item.product.BasePrice - saleOff);
         return {
           product: { ...item.product },
           quantity: item.quantity,
           unitPriceSaleOff: saleOff,
           unitPrice,
-          totalPrice: unitPrice * item.quantity
+          totalPrice: item.isGift ? 0 : unitPrice * item.quantity,
+          // Promotion fields - giữ nguyên qua Order
+          isGift: item.isGift,
+          isPromotionItem: item.isPromotionItem,
+          promotionId: item.promotionId,
+          promotionName: item.promotionName,
+          parentProductId: item.parentProductId,
         };
       }),
       totalPrice: calc.finalTotal,

@@ -28,12 +28,22 @@ const LAST_READ_KEY = 'sm_chat_last_read';
 
     <!-- Chatbox -->
     <div class="chatbox" *ngIf="isOpen">
-      <div class="chatbox-header">
+      <div class="zalo-header">
         <span>Chat với Song Minh</span>
         <a class="zalo-link" [href]="zaloUrl" target="_blank" rel="noopener">
           <i style="font-size: 20px;" class="fa-solid fa-hand-point-right"></i><img src="https://page.widget.zalo.me/static/images/2.0/Logo.svg" alt="Zalo" width="20" height="20" />
          Chat qua Zalo
         </a>
+      </div>
+         <div class="call-header">
+        <span>Gọi đến Song Minh</span>
+        <a class="call-link" target="_blank" rel="noopener">
+          <i style="font-size: 20px;" class="fa-solid fa-hand-point-right"></i>  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6.62 10.79a15.05 15.05 0 006.59 6.59l2.2-2.2a1 1 0 011.01-.24 11.36 11.36 0 003.58.57 1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1 11.36 11.36 0 00.57 3.58 1 1 0 01-.25 1.01l-2.2 2.2z"/></svg>
+        <a  href="tel:0703863690">0703.863.690</a>
+        </a>
+      </div>
+      <div class="call-bar">
+      
       </div>
 
       <div class="chatbox-messages" #messagesContainer>
@@ -42,7 +52,7 @@ const LAST_READ_KEY = 'sm_chat_last_read';
           <div class="msg-time">{{ formatTime(msg.timestamp) }}</div>
         </div>
         <div *ngIf="messages.length === 0" class="chat-empty">
-          Gửi tin nhắn cho chúng tôi!
+          Hoặc gửi tin nhắn trực tiếp cho chúng tôi!
         </div>
       </div>
 
@@ -109,7 +119,7 @@ const LAST_READ_KEY = 'sm_chat_last_read';
       overflow: hidden;
     }
 
-    .chatbox-header {
+    .zalo-header {
       background: #1976d2;
       color: #fff;
       padding: 14px 16px;
@@ -119,7 +129,16 @@ const LAST_READ_KEY = 'sm_chat_last_read';
       align-items: center;
       justify-content: space-between;
     }
-
+    .call-header {
+      background: #ce7e34;
+      color: #fff;
+      padding: 14px 16px;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
     .zalo-link {
       display: flex;
       align-items: center;
@@ -134,6 +153,22 @@ const LAST_READ_KEY = 'sm_chat_last_read';
       transition: background 0.2s;
     }
     .zalo-link:hover { background: rgba(255,255,255,0.3); }
+
+ 
+    .call-link {
+     display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      background: rgba(255,255,255,0.15);
+      padding: 4px 10px;
+      border-radius: 20px;
+      transition: background 0.2s;
+    }
+    .call-link:hover { text-decoration: underline; }
 
     .chatbox-messages {
       flex: 1;
@@ -234,7 +269,7 @@ export class ChatBubbleComponent implements OnInit, OnDestroy {
   private identity = '';
   private customerName = '';
 
-  constructor(private chatService: ChatService, private cdr: ChangeDetectorRef) {}
+  constructor(private chatService: ChatService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit(): void {
     this.identity = localStorage.getItem(IDENTITY_KEY) || '';

@@ -46,13 +46,19 @@ export class CartService {
     return this.items.filter(i => i.isGift);
   }
 
+  /** Chỉ đếm real items (không phải gift/promo) */
   getTotalItems(): number {
-    return this.items.filter(i => !i.isGift).reduce((sum, item) => sum + item.quantity, 0);
+    return this.items.filter(i => !i.isGift && !i.isPromotionItem).reduce((sum, item) => sum + item.quantity, 0);
   }
 
   getTotalPrice(): number {
     return this.items.reduce((sum, item) => {
-      if (item.isGift) return sum; // Gift items are free
+      if (item.isGift) return sum; // Gift = free
+      if (item.isPromotionItem) {
+        // Type 3: discounted item — use calculated unitPrice or totalPrice
+        return sum + (item.totalPrice ?? ((item.product.BasePrice - (item.unitPriceSaleOff || 0)) * item.quantity));
+      }
+      // Normal + Type 2 direct discount
       const price = item.product.BasePrice - (item.unitPriceSaleOff || 0);
       return sum + price * item.quantity;
     }, 0);
@@ -102,9 +108,9 @@ export class CartService {
   }
 
   removeFromCart(code: string): void {
-    // Don't allow removing gift items directly
+    // Don't allow removing gift/promo items directly
     const item = this.items.find(i => i.product.Code === code);
-    if (item?.isGift) return;
+    if (item?.isGift || item?.isPromotionItem) return;
 
     this.items = this.items.filter(i => i.product.Code !== code);
     this.emit();
@@ -138,10 +144,10 @@ export class CartService {
   }
 
   private async doRecalculatePromotions(): Promise<void> {
-    const nonGiftItems = this.items.filter(i => !i.isGift);
-    if (nonGiftItems.length === 0) {
-      // Clear all promotions
-      this.items = nonGiftItems;
+    // Lọc items thực (không phải gift/promo)
+    const realItems = this.items.filter(i => !i.isGift && !i.isPromotionItem);
+    if (realItems.length === 0) {
+      this.items = realItems;
       this.appliedPromotions = [];
       this.totalDiscount = 0;
       this.appliedPromotionsSubject.next([]);
@@ -151,60 +157,113 @@ export class CartService {
     }
 
     try {
-      const result = await this.promotionService.applyPromotionsToCart(nonGiftItems);
+      const result = await this.promotionService.applyPromotionsToCart(realItems);
 
-      // Remove old gift items and reset discounts
-      this.items = nonGiftItems.map(item => ({
+      // Reset: giữ real items, clear discount + promo fields
+      this.items = realItems.map(item => ({
         ...item,
-        unitPriceSaleOff: 0
+        unitPriceSaleOff: 0,
+        promotionId: undefined,
+        promotionName: undefined,
       }));
 
-      // Look up cached products for extra info (Image, Unit, FullName)
       const allProducts = await this.productApiService.getAllRawCachedProducts();
 
-      // Add gift items
+      // Build product helper
+      const buildProduct = (id: string, code: string, name: string, basePrice: number) => {
+        const realProduct = allProducts.find(p => p.Code === code);
+        return {
+          Id: Number(id),
+          Code: code,
+          Name: realProduct?.Name || name,
+          FullName: realProduct?.FullName || name,
+          Image: realProduct?.Image || null,
+          BasePrice: basePrice || realProduct?.BasePrice || 0,
+          Cost: 0,
+          OnHand: 0,
+          Unit: realProduct?.Unit || '',
+          Description: '',
+          CategoryId: null,
+          ConversionValue: 1,
+          MasterUnitId: null,
+          MasterProductId: null,
+          NormalizedName: '',
+          NormalizedCode: '',
+          isActive: true,
+          isDeleted: false,
+          ModifiedDate: '',
+        };
+      };
+
+      // Process giftItems from backend (includes Type 1 gifts AND Type 3 discounted)
       for (const gift of result.giftItems) {
-        const realProduct = allProducts.find(p => p.Code === gift.code);
-        this.items.push({
-          product: {
-            Id: Number(gift.productId),
-            Code: gift.code,
-            Name: realProduct?.Name || gift.name,
-            FullName: realProduct?.FullName || gift.name,
-            Image: realProduct?.Image || null,
-            BasePrice: gift.basePrice || realProduct?.BasePrice || 0,
-            Cost: 0,
-            OnHand: 0,
-            Unit: realProduct?.Unit || '',
-            Description: '',
-            CategoryId: null,
-            ConversionValue: 1,
-            MasterUnitId: null,
-            MasterProductId: null,
-            NormalizedName: '',
-            NormalizedCode: '',
-            isActive: true,
-            isDeleted: false,
-            ModifiedDate: '',
-          },
-          quantity: gift.quantity,
-          unitPriceSaleOff: 0,
-          isGift: true,
-          promotionId: gift.promotionId
-        });
+        if (gift.isGift) {
+          // Type 1: Gift item — free
+          const triggerPromo = result.appliedPromotions.find(
+            a => a.promotionId === gift.promotionId && a.type === 'gift'
+          );
+          this.items.push({
+            product: buildProduct(gift.productId, gift.code, gift.name, gift.basePrice),
+            quantity: gift.quantity,
+            unitPriceSaleOff: 0,
+            unitPrice: 0,
+            totalPrice: 0,
+            isGift: true,
+            isPromotionItem: true,
+            promotionId: gift.promotionId,
+            promotionName: triggerPromo?.promotionName || '',
+            parentProductId: triggerPromo?.targetProductId,
+          });
+        } else if ((gift as any).isDiscounted) {
+          // Type 3: Buy A get B discounted — separate CartItem
+          const basePrice = gift.basePrice || 0;
+          let discPerUnit = 0;
+          if ((gift as any).discountPercent) {
+            // Floor to nearest 1,000 → price rounds up
+            discPerUnit = Math.floor(basePrice * (gift as any).discountPercent / 100 / 1000) * 1000;
+          } else if ((gift as any).discountAmount) {
+            discPerUnit = (gift as any).discountAmount;
+          }
+          const unitPrice = Math.max(0, basePrice - discPerUnit);
+          const triggerPromo = result.appliedPromotions.find(
+            a => a.promotionId === (gift as any).promotionId
+          );
+
+          this.items.push({
+            product: buildProduct(gift.productId, gift.code, gift.name, basePrice),
+            quantity: gift.quantity,
+            unitPriceSaleOff: discPerUnit,
+            unitPrice,
+            totalPrice: unitPrice * gift.quantity,
+            isGift: false,
+            isPromotionItem: true,
+            promotionId: (gift as any).promotionId,
+            promotionName: (gift as any).promotionName || triggerPromo?.promotionName || '',
+            parentProductId: triggerPromo?.targetProductId,
+          });
+        }
       }
 
-      // Apply discounts to items
+      // Type 2: Direct discount — apply trên chính trigger item
       for (const applied of result.appliedPromotions) {
         if (applied.type === 'gift' || applied.discountAmount <= 0) continue;
+        // Skip Type 3 (đã xử lý ở trên qua giftItems)
+        const isType3 = result.giftItems.some(
+          g => (g as any).promotionId === applied.promotionId && (g as any).isDiscounted
+        );
+        if (isType3) continue;
+
+        // Type 2: modify trigger item
         const idx = this.items.findIndex(
-          i => String(i.product.Id) === applied.targetProductId && !i.isGift
+          i => String(i.product.Id) === applied.targetProductId && !i.isGift && !i.isPromotionItem
         );
         if (idx >= 0) {
           const item = this.items[idx];
           this.items[idx] = {
             ...item,
-            unitPriceSaleOff: Math.round(applied.discountAmount / item.quantity)
+            unitPriceSaleOff: Math.round(applied.discountAmount / item.quantity),
+            promotionId: applied.promotionId,
+            promotionName: applied.promotionName,
           };
         }
       }

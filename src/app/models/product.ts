@@ -34,8 +34,15 @@ export interface CartItem {
   product: Product;
   quantity: number;
   unitPriceSaleOff: number;
-  isGift?: boolean;
-  promotionId?: string;
+  unitPrice?: number;            // giá bán thực tế (sau giảm giá)
+  totalPrice?: number;           // unitPrice * quantity
+
+  // Promotion fields (thống nhất với BanHang)
+  isGift?: boolean;              // true = hàng tặng, Price=0 khi gửi KiotViet
+  isPromotionItem?: boolean;     // true = hàng KM (gift hoặc discounted)
+  promotionId?: string;          // ID promotion đã apply
+  promotionName?: string;        // tên KM để hiển thị
+  parentProductId?: string;      // ID sản phẩm trigger
 }
 
 export interface Promotion {
@@ -44,9 +51,8 @@ export interface Promotion {
   type: 'gift' | 'percentage' | 'fixed_amount'; // backward compat - primary type
   isEnabled: boolean;
   priority: number;
-  allowStacking: boolean;
 
-  // Type flags (checkbox-based, can combine multiple)
+  // Type flags
   hasGift?: boolean;
   hasPercentDiscount?: boolean;
   hasFixedDiscount?: boolean;
@@ -66,6 +72,11 @@ export interface Promotion {
   toDate: string;
   createdDate: string;
   modifiedDate: string;
+
+  // KiotViet sync
+  kiotVietCampaignId?: number;
+  kiotVietPromotionType?: 5 | 6;
+  kiotVietSynced?: boolean;
 
   // Embedded product data from /promotions/active API
   targetProduct?: Product;

@@ -82,15 +82,17 @@
           </div>
         </ng-container>
         <ng-container *ngIf="promotion">
-          <div class="price-row price-market" *ngIf="hasAnyDiscount">
+          <!-- Type 2: Direct discount — show discounted price for THIS product -->
+          <div class="price-row price-market" *ngIf="isType2DirectDiscount">
             <span class="price-label">Giá gốc:</span>
             <span class="price-value strikethrough">{{ formatPrice(salePrice) }} đ</span>
           </div>
-          <div class="price-row price-sale price-promo" *ngIf="hasAnyDiscount">
+          <div class="price-row price-sale price-promo" *ngIf="isType2DirectDiscount">
             <span class="price-label">Giá khuyến mại:</span>
             <span class="price-value">{{ formatPrice(discountedPrice) }} đ</span>
           </div>
-          <div class="price-row price-sale" *ngIf="!hasAnyDiscount">
+          <!-- Type 1 (Gift) or Type 3 (Buy A Get B) — show normal price for THIS product -->
+          <div class="price-row price-sale" *ngIf="!isType2DirectDiscount">
             <span class="price-label">Giá bán:</span>
             <span class="price-value">{{ formatPrice(salePrice) }} đ</span>
           </div>

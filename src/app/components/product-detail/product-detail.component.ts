@@ -212,6 +212,16 @@ export class ProductDetailComponent {
     return this.hasPercentDiscount || this.hasFixedDiscount;
   }
 
+  /** Type 3: discount applies to product B, NOT this product */
+  get isType3BuyAGetB(): boolean {
+    return this.hasAnyDiscount && !!this.promotion?.giftProductId;
+  }
+
+  /** Type 2: discount applies to THIS product */
+  get isType2DirectDiscount(): boolean {
+    return this.hasAnyDiscount && !this.promotion?.giftProductId;
+  }
+
   get promotionBadge(): string {
     if (!this.promotion) return '';
     const parts: string[] = [];
@@ -231,25 +241,37 @@ export class ProductDetailComponent {
       const qty = this.promotion.giftQuantity || 1;
       parts.push(`Tặng ${qty > 1 ? qty + ' ' : ''}${this.promotion.giftProductName}`);
     }
-    if (this.hasPercentDiscount && this.promotion.discountPercent) {
-      parts.push(`Giảm ${this.promotion.discountPercent}%`);
-    }
-    if (this.hasFixedDiscount && this.promotion.discountAmount) {
-      parts.push(`Giảm ${this.promotion.discountAmount.toLocaleString('vi-VN')}đ`);
+    if (this.isType3BuyAGetB && this.promotion.giftProductName) {
+      // Type 3: discount applies to product B
+      const qty = this.promotion.giftQuantity || 1;
+      const discText = this.hasPercentDiscount && this.promotion.discountPercent
+        ? `${this.promotion.discountPercent}%`
+        : `${(this.promotion.discountAmount || 0).toLocaleString('vi-VN')}đ`;
+      parts.push(`Giảm ${discText} cho ${qty} x ${this.promotion.giftProductName}`);
+    } else if (this.isType2DirectDiscount) {
+      // Type 2: discount applies to this product
+      if (this.hasPercentDiscount && this.promotion.discountPercent) {
+        parts.push(`Giảm ${this.promotion.discountPercent}%`);
+      }
+      if (this.hasFixedDiscount && this.promotion.discountAmount) {
+        parts.push(`Giảm ${this.promotion.discountAmount.toLocaleString('vi-VN')}đ`);
+      }
     }
     return parts.join(' + ') || '';
   }
 
   get discountedPrice(): number {
     if (!this.promotion) return this.selectedProduct.BasePrice;
-    let price = this.selectedProduct.BasePrice;
+    const base = this.selectedProduct.BasePrice;
     if (this.hasPercentDiscount && this.promotion.discountPercent) {
-      price = Math.round(price * (1 - this.promotion.discountPercent / 100));
+      // Floor discount to nearest 1,000 → price rounds up
+      const disc = Math.floor(base * this.promotion.discountPercent / 100 / 1000) * 1000;
+      return Math.max(0, base - disc);
     }
     if (this.hasFixedDiscount && this.promotion.discountAmount) {
-      price = Math.max(0, price - this.promotion.discountAmount);
+      return Math.max(0, base - this.promotion.discountAmount);
     }
-    return price;
+    return base;
   }
 
   get promotionCondition(): string {
