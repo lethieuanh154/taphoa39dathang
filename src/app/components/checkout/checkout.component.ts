@@ -10,6 +10,7 @@ import { ShippingService } from '../../services/shipping.service';
 import { RewardService } from '../../services/reward.service';
 import { CartItem, OrderData, FinalCalculation, ShipCostResult } from '../../models/product';
 import { environment } from '../../../environments/environment';
+import { SnackbarService } from '../../services/snackbar.service';
 
 @Component({
   selector: 'app-checkout',
@@ -62,7 +63,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     private rewardService: RewardService,
     private router: Router,
     private cdr: ChangeDetectorRef,
-    private http: HttpClient
+    private http: HttpClient,
+    private snackbar: SnackbarService
   ) {}
 
   ngOnInit(): void {
@@ -389,6 +391,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       error: (err) => {
         console.error('Order submission failed:', err);
         this.errorMessage = 'Không thể đặt hàng. Vui lòng thử lại sau.';
+        this.snackbar.error('Đặt hàng thất bại. Vui lòng thử lại.');
         this.isSubmitting = false;
         this.cdr.markForCheck();
       }

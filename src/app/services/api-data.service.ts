@@ -2,13 +2,14 @@ import { Injectable } from '@angular/core';
 import { Product } from '../models/product';
 import { environment } from '../../environments/environment';
 import { map, catchError, of } from 'rxjs';
+import { SnackbarService } from './snackbar.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiDataService {
 
-  constructor() { }
+  constructor(private snackbar: SnackbarService) { }
 
   fetchFromAPI(
     http: any,
@@ -31,7 +32,8 @@ export class ApiDataService {
         return products;
       }),
       catchError((err) => {
-        console.error('❌ Lỗi khi tìm kiếm:', err);
+        console.error('Lỗi khi tìm kiếm:', err);
+        this.snackbar.error('Tìm kiếm thất bại. Vui lòng thử lại.');
         isLoading = false;
         return of([]);
       })

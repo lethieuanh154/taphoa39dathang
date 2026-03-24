@@ -1,9 +1,10 @@
 import { Component, EventEmitter, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { SnackbarService } from '../../services/snackbar.service';
 
 const IDENTITY_KEY = 'sm_customer_identity';
 const IDENTITY_NAME_KEY = 'sm_customer_name';
@@ -216,6 +217,7 @@ export class CustomerIdentityDialogComponent {
   @Output() confirmed = new EventEmitter<IdentityConfirmedEvent>();
 
   private http = inject(HttpClient);
+  private snackbar = inject(SnackbarService);
 
   inputValue = '';
   passwordValue = '';
@@ -272,8 +274,15 @@ export class CustomerIdentityDialogComponent {
         this.errorMessage = res?.message || 'Không tìm thấy khách hàng';
       }
     } catch (err: any) {
-      const msg = err?.error?.message;
-      this.errorMessage = msg || 'Không tìm thấy khách hàng với mã/SĐT này';
+      if (err instanceof HttpErrorResponse && err.status >= 500) {
+        this.errorMessage = 'Lỗi máy chủ. Vui lòng thử lại sau.';
+      } else if (err instanceof HttpErrorResponse && err.status === 0) {
+        this.errorMessage = 'Không thể kết nối máy chủ.';
+        this.snackbar.error('Không thể kết nối máy chủ.');
+      } else {
+        const msg = err?.error?.message;
+        this.errorMessage = msg || 'Không tìm thấy khách hàng với mã/SĐT này';
+      }
     }
 
     this.isVerifying = false;

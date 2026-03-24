@@ -1,6 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Subject, BehaviorSubject, firstValueFrom } from 'rxjs';
+import { SnackbarService } from './snackbar.service';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import {
   getFirestore, collection, onSnapshot, query, where, orderBy,
@@ -37,7 +38,7 @@ export class ChatService implements OnDestroy {
   // IndexedDB cache
   private idbPromise: Promise<IDBPDatabase> | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private snackbar: SnackbarService) {}
 
   /**
    * Kết nối Firestore realtime cho conversation của customer.
@@ -70,14 +71,21 @@ export class ChatService implements OnDestroy {
       message,
       conversationId: senderId
     };
-    const res = await firstValueFrom(this.http.post<{ status: string; message: ChatMessage }>(
-      `${environment.domainUrl}/api/chat/send`, body
-    ));
-    // Cache sent message
-    if (res.message?.id) {
-      this.saveMessagesToIDB([res.message]);
+    try {
+      const res = await firstValueFrom(this.http.post<{ status: string; message: ChatMessage }>(
+        `${environment.domainUrl}/api/chat/send`, body
+      ));
+      // Cache sent message
+      if (res.message?.id) {
+        this.saveMessagesToIDB([res.message]);
+      }
+      return res.message;
+    } catch (err) {
+      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+        this.snackbar.error('Gửi tin nhắn thất bại. Vui lòng thử lại.');
+      }
+      throw err;
     }
-    return res.message;
   }
 
   async loadMessages(conversationId: string): Promise<ChatMessage[]> {

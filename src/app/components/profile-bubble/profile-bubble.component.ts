@@ -4,9 +4,10 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import JsBarcode from 'jsbarcode';
 import { environment } from '../../../environments/environment';
+import { SnackbarService } from '../../services/snackbar.service';
 
 @Component({
   selector: 'app-profile-bubble',
@@ -39,7 +40,7 @@ export class ProfileBubbleComponent implements OnInit {
     return this.customerName?.charAt(0)?.toUpperCase() || '?';
   }
 
-  constructor(private cdr: ChangeDetectorRef, private http: HttpClient) {}
+  constructor(private cdr: ChangeDetectorRef, private http: HttpClient, private snackbar: SnackbarService) {}
 
   ngOnInit(): void {
     this.loadFromLocalStorage();
@@ -93,7 +94,11 @@ export class ProfileBubbleComponent implements OnInit {
           this.cdr.markForCheck();
         }
       },
-      error: () => {}
+      error: (err) => {
+        if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+          this.snackbar.error('Không tải được thông tin tài khoản.');
+        }
+      }
     });
   }
 
@@ -131,7 +136,14 @@ export class ProfileBubbleComponent implements OnInit {
       },
       error: (err) => {
         this.cpwSubmitting = false;
-        this.cpwError = err?.error?.message || 'Lỗi kết nối';
+        if (err instanceof HttpErrorResponse && err.status >= 500) {
+          this.cpwError = 'Lỗi máy chủ. Vui lòng thử lại sau.';
+        } else {
+          this.cpwError = err?.error?.message || 'Lỗi kết nối';
+          if (!err?.error?.message) {
+            this.snackbar.error('Đổi mật khẩu thất bại. Kiểm tra kết nối mạng.');
+          }
+        }
         this.cdr.markForCheck();
       }
     });

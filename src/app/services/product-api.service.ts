@@ -1,10 +1,11 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, Subject, Subscription, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Product } from '../models/product';
 import { IndexedDBService } from './indexed-db.service';
 import { WebSocketService, ProductWSUpdate } from './websocket.service';
+import { SnackbarService } from './snackbar.service';
 
 interface Category {
   Id: number;
@@ -48,7 +49,8 @@ export class ProductApiService implements OnDestroy {
   constructor(
     private http: HttpClient,
     private idb: IndexedDBService,
-    private ws: WebSocketService
+    private ws: WebSocketService,
+    private snackbar: SnackbarService
   ) {}
 
   /**
@@ -122,6 +124,9 @@ export class ProductApiService implements OnDestroy {
       return { products, hasMore: response?.hasMore ?? false };
     } catch (err) {
       console.error('[ProductApi] Featured products load failed:', err);
+      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+        this.snackbar.error('Không tải được sản phẩm. Đang dùng dữ liệu đã lưu.');
+      }
       // Fallback: use IndexedDB cache
       const all = await this.getAllCachedProducts();
       this.productsReady$.next(all.length > 0);
@@ -151,6 +156,9 @@ export class ProductApiService implements OnDestroy {
       return { products, hasMore: response?.hasMore ?? false };
     } catch (err) {
       console.error(`[ProductApi] Load category ${categoryId} failed:`, err);
+      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+        this.snackbar.error('Không tải được danh mục. Đang dùng dữ liệu đã lưu.');
+      }
       // Fallback: try IndexedDB cache
       const cached = await this.idb.getAllByIndex<Product>(
         this.DB_NAME, this.DB_VERSION, this.STORE_NAME, 'CategoryId', categoryId
@@ -186,6 +194,9 @@ export class ProductApiService implements OnDestroy {
       return products;
     } catch (err) {
       console.warn('[ProductApi] Server search failed, falling back to local:', err);
+      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+        this.snackbar.warning('Tìm kiếm online thất bại. Đang tìm từ dữ liệu đã lưu.');
+      }
       return this.searchLocal(term);
     }
   }
@@ -256,6 +267,9 @@ export class ProductApiService implements OnDestroy {
       return this.categoriesCache || [];
     } catch (err) {
       console.error('[ProductApi] Categories load failed:', err);
+      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+        this.snackbar.error('Không tải được danh mục sản phẩm.');
+      }
       return this.categoriesCache || [];
     }
   }

@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { BehaviorSubject, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Promotion, ApplyPromotionResult, CartItem } from '../models/product';
+import { SnackbarService } from './snackbar.service';
 
 @Injectable({ providedIn: 'root' })
 export class PromotionService {
@@ -12,7 +13,7 @@ export class PromotionService {
   private promotionsSubject = new BehaviorSubject<Promotion[]>([]);
   promotions$ = this.promotionsSubject.asObservable();
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private snackbar: SnackbarService) {}
 
   async loadActivePromotions(): Promise<void> {
     try {
@@ -23,6 +24,9 @@ export class PromotionService {
       this.promotionsSubject.next(this.activePromotions);
     } catch (err) {
       console.error('Failed to load promotions:', err);
+      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+        this.snackbar.error('Không tải được chương trình khuyến mãi.');
+      }
       this.activePromotions = [];
       this.promotionsSubject.next([]);
     }
@@ -80,6 +84,9 @@ export class PromotionService {
       );
     } catch (err) {
       console.error('Apply promotions error:', err);
+      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
+        this.snackbar.error('Không áp dụng được khuyến mãi. Vui lòng thử lại.');
+      }
       return { appliedPromotions: [], giftItems: [], totalDiscount: 0 };
     }
   }
