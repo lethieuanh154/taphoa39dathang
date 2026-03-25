@@ -150,6 +150,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  onLogout(): void {
+    this.customerIdentity = null;
+    this.showIdentityDialog = true;
+    this.detailProduct = null;
+    this.cdr.markForCheck();
+  }
+
   private initProducts(): void {
     this.isLoading = true;
     this.cdr.markForCheck();
@@ -511,5 +518,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   trackByCategoryId(_: number, cat: Category): number {
     return cat.Id;
+  }
+
+  getFanFontSize(name: string): string {
+    const len = name.length;
+    if (len <= 8) return '12px';
+    if (len <= 12) return '11px';
+    if (len <= 16) return '10px';
+    return '9px';
   }
 }

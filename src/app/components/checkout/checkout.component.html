@@ -91,7 +91,7 @@
           <div class="form-group" style="flex:1;margin-bottom:0">
             <label class="form-label" for="pickupDate">Ngày lấy hàng</label>
             <input id="pickupDate" type="date" class="form-input" [min]="minDeliveryDate"
-              [(ngModel)]="desiredPickupDate" />
+              [(ngModel)]="desiredPickupDate" (change)="onPickupTimeChange()" />
           </div>
           <div class="form-group" style="flex:1;margin-bottom:0">
             <label class="form-label" for="pickupTime">Giờ</label>
@@ -213,26 +213,9 @@
           </div>
         </div>
 
-        <!-- Delivery date & time -->
-        <div *ngIf="distanceKm > 0 && shipResult.canShip" style="margin-top: 12px;">
-          <div class="delivery-datetime">
-            <div class="form-group" style="flex:1;margin-bottom:0">
-              <label class="form-label" for="deliveryDate">Ngày giao</label>
-              <input id="deliveryDate" type="date" class="form-input" [min]="minDeliveryDate"
-                [(ngModel)]="desiredDeliveryDate" (ngModelChange)="onDesiredTimeChange()" />
-            </div>
-            <div class="form-group" style="flex:1;margin-bottom:0">
-              <label class="form-label" for="deliveryTime">Giờ giao</label>
-              <input id="deliveryTime" type="text" inputmode="numeric" class="form-input" placeholder="HH:mm"
-                maxlength="5" [(ngModel)]="desiredDeliveryTime" (input)="onTimeInput($event)"
-                (blur)="onDesiredTimeChange()" />
-            </div>
-          </div>
-          <div class="ship-error" *ngIf="deliveryTimeError" style="margin-top:8px">{{ deliveryTimeError }}</div>
-          <div class="ship-start-time"
-            *ngIf="estimatedStartTime && desiredDeliveryTime && desiredDeliveryDate && !deliveryTimeError">
-            Bắt đầu giao lúc: <strong>{{ estimatedStartTime }}, {{ formatDeliveryDate(desiredDeliveryDate) }}</strong>
-          </div>
+        <!-- Estimated delivery time (auto-calculated) -->
+        <div class="ship-start-time" *ngIf="estimatedDeliveryTime && estimatedDeliveryDate" style="margin-top: 12px;">
+          Thời gian dự kiến giao đến nơi: <strong>{{ estimatedDeliveryTime }}, {{ formatDeliveryDate(estimatedDeliveryDate) }}</strong>
         </div>
       </div>
     </section>

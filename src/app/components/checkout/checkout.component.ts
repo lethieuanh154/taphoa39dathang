@@ -37,11 +37,11 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   durationMinutes = 0;
   shipResult: ShipCostResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
   shipError = '';
-  desiredDeliveryDate = '';
-  desiredDeliveryTime = '';
-  deliveryTimeError = '';
-  estimatedStartTime = '';
   minDeliveryDate = '';
+
+  // Auto-calculated estimated delivery
+  estimatedDeliveryDate = '';
+  estimatedDeliveryTime = '';
 
   // Pickup (customer đến lấy hàng)
   desiredPickupDate = '';
@@ -77,7 +77,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     // Set min delivery date to today
     const today = new Date();
     this.minDeliveryDate = today.toISOString().split('T')[0];
-    this.desiredDeliveryDate = this.minDeliveryDate;
     this.desiredPickupDate = this.minDeliveryDate;
 
     // Load saved customer info
@@ -139,7 +138,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       this.durationMinutes = result.durationMinutes+5;
       this.shipResult = this.shippingService.calculateShipCost(this.orderSubtotal, this.distanceKm);
       this.isCalculatingShip = false;
-      this.updateStartTime();
+      this.calculateEstimatedDelivery();
       this.cdr.markForCheck();
     });
   }
@@ -182,7 +181,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         && this.customerAddress.trim().length > 0
         && this.shipResult.canShip
         && !this.shipError
-        && !this.deliveryTimeError
         && !this.isCalculatingShip
         && this.distanceKm > 0;
     }
@@ -202,8 +200,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.distanceKm = 0;
     this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
     this.shipError = '';
-    this.desiredDeliveryTime = '';
-    this.estimatedStartTime = '';
+    this.estimatedDeliveryDate = '';
+    this.estimatedDeliveryTime = '';
     this.desiredPickupDate = this.minDeliveryDate;
     this.desiredPickupTime = '';
     this.pickupTimeError = '';
@@ -225,40 +223,37 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  onTimeInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    // Only allow digits and colon
-    let val = input.value.replace(/[^\d]/g, '');
-    // Auto-insert colon after 2 digits
-    if (val.length > 2) {
-      val = val.slice(0, 2) + ':' + val.slice(2, 4);
+  /** Auto-calculate estimated delivery: now + travel + 6h. If > 16:00 → next day 10:00 */
+  private calculateEstimatedDelivery(): void {
+    if (this.durationMinutes <= 0) {
+      this.estimatedDeliveryDate = '';
+      this.estimatedDeliveryTime = '';
+      return;
     }
-    // Clamp hours 0-23, minutes 0-59
-    if (val.length >= 2) {
-      const h = Math.min(23, parseInt(val.slice(0, 2), 10));
-      val = h.toString().padStart(2, '0') + val.slice(2);
-    }
-    if (val.length === 5) {
-      const m = Math.min(59, parseInt(val.slice(3, 5), 10));
-      val = val.slice(0, 3) + m.toString().padStart(2, '0');
-    }
-    input.value = val;
-    this.desiredDeliveryTime = val;
-    if (val.length === 5) {
-      this.onDesiredTimeChange();
-    }
-  }
 
-  onDesiredTimeChange(): void {
-    this.deliveryTimeError = '';
-    if (this.desiredDeliveryTime) {
-      const [h, m] = this.desiredDeliveryTime.split(':').map(Number);
-      const minutes = h * 60 + m;
-      if (minutes < 480 || minutes > 960) { // 8:00 = 480, 17:00 = 1020
-        this.deliveryTimeError = 'Giờ giao hàng chỉ từ 8:00 đến 16:00. Vui lòng chọn lại.';
+    const now = new Date();
+    const estimatedMs = now.getTime() + (this.durationMinutes + 360) * 60_000; // +travel +6h
+    const estimated = new Date(estimatedMs);
+
+    const estMinutes = estimated.getHours() * 60 + estimated.getMinutes();
+    const maxMinutes = 16 * 60; // 16:00
+
+    if (estMinutes > maxMinutes || estimated.getHours() < 8) {
+      // Push to next business day 10:00 AM
+      const nextDay = new Date(estimated);
+      // If estimated is before 8AM, it's already "next day" from overnight calc
+      if (estimated.getHours() >= 8) {
+        nextDay.setDate(nextDay.getDate() + 1);
       }
+      nextDay.setHours(10, 0, 0, 0);
+      this.estimatedDeliveryDate = nextDay.toISOString().split('T')[0];
+      this.estimatedDeliveryTime = '10:00';
+    } else {
+      this.estimatedDeliveryDate = estimated.toISOString().split('T')[0];
+      const h = estimated.getHours().toString().padStart(2, '0');
+      const m = estimated.getMinutes().toString().padStart(2, '0');
+      this.estimatedDeliveryTime = `${h}:${m}`;
     }
-    this.updateStartTime();
   }
 
   onPickupTimeInput(event: Event): void {
@@ -287,8 +282,23 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     if (this.desiredPickupTime) {
       const [h, m] = this.desiredPickupTime.split(':').map(Number);
       const minutes = h * 60 + m;
-      if (minutes < 480 || minutes > 960) {
-        this.pickupTimeError = 'Giờ lấy hàng chỉ từ 8:00 đến 16:00. Vui lòng chọn lại.';
+      const maxMinutes = 20 * 60; // 20:00 = 8:00 PM
+
+      // If pickup date is today, don't allow time before now
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0];
+      const isToday = this.desiredPickupDate === todayStr;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+      const minMinutes = isToday ? Math.max(480, nowMinutes) : 480;
+
+      if (isToday && nowMinutes >= maxMinutes) {
+        this.pickupTimeError = 'Đã quá 20:00, vui lòng chọn ngày khác.';
+      } else if (minutes < minMinutes) {
+        const minH = Math.floor(minMinutes / 60).toString().padStart(2, '0');
+        const minM = (minMinutes % 60).toString().padStart(2, '0');
+        this.pickupTimeError = `Giờ lấy hàng phải từ ${minH}:${minM} trở đi.`;
+      } else if (minutes > maxMinutes) {
+        this.pickupTimeError = 'Giờ lấy hàng không quá 20:00. Vui lòng chọn lại.';
       }
     }
   }
@@ -302,13 +312,6 @@ export class CheckoutComponent implements OnInit, OnDestroy {
 
   onPointsForOrderToggle(): void {
     this.cdr.markForCheck();
-  }
-
-  private updateStartTime(): void {
-    this.estimatedStartTime = this.shippingService.calculateStartTime(
-      this.desiredDeliveryTime,
-      this.durationMinutes
-    );
   }
 
   formatDeliveryDate(dateStr: string): string {
@@ -367,9 +370,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       distanceKm: this.distanceKm,
       pointsUsedForShip: calc.pointsUsedForShip,
       pointsUsedForOrder: calc.pointsUsedForOrder,
-      desiredDeliveryDate: this.desiredDeliveryDate,
-      desiredDeliveryTime: this.desiredDeliveryTime,
-      estimatedStartTime: this.estimatedStartTime,
+      desiredDeliveryDate: this.estimatedDeliveryDate,
+      desiredDeliveryTime: this.estimatedDeliveryTime,
+      estimatedStartTime: '',
       desiredPickupDate: !this.wantDelivery ? this.desiredPickupDate : '',
       desiredPickupTime: !this.wantDelivery ? this.desiredPickupTime : ''
     };

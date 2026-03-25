@@ -1,6 +1,6 @@
 import {
   Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef,
-  ViewChild, ElementRef
+  ViewChild, ElementRef, Output, EventEmitter
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -19,6 +19,7 @@ import { SnackbarService } from '../../services/snackbar.service';
 })
 export class ProfileBubbleComponent implements OnInit {
   @ViewChild('barcodeEl') barcodeEl?: ElementRef<SVGSVGElement>;
+  @Output() loggedOut = new EventEmitter<void>();
 
   isOpen = false;
   customerName = '';
@@ -158,6 +159,16 @@ export class ProfileBubbleComponent implements OnInit {
     this.showCurrentPw = false;
     this.showNewPw = false;
     this.cdr.markForCheck();
+  }
+
+  logout(): void {
+    const keys = [
+      'sm_customer', 'sm_customer_code', 'sm_customer_giftpoint',
+      'sm_customer_identity', 'sm_customer_name', 'sm_customer_phone'
+    ];
+    keys.forEach(k => localStorage.removeItem(k));
+    this.isOpen = false;
+    this.loggedOut.emit();
   }
 
   private renderBarcode(): void {

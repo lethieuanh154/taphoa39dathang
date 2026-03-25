@@ -280,10 +280,15 @@
   left: 0;
   display: flex;
   flex-direction: column-reverse;
-  gap: 6px;
+  gap: 5px;
   padding-bottom: 8px;
   max-height: 70vh;
   overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.fan-menu::-webkit-scrollbar {
+  display: none;
 }
 
 .fan-item {
@@ -292,20 +297,21 @@
   justify-content: center;
   border: none;
   background: #fff;
-  border-radius: 40px;
-  padding: 5px 20px;
-  font-size: 11px;
+  border-radius: 22px;
+  padding: 0 14px;
+  width: 130px;
+  height: 44px;
+  font-size: 12px;
   font-weight: 600;
   color: #333;
   white-space: normal;
   text-align: center;
-  line-height: 1.2;
-  max-width: 120px;
+  line-height: 1.15;
   cursor: pointer;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
-  transition: background 0.15s, color 0.15s, transform 0.15s;
-  animation: fanItemIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  animation-delay: calc(var(--fan-index) * 0.025s);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.13);
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fanItemIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation-delay: calc(var(--fan-index) * 0.04s);
   opacity: 0;
   transform: translateY(20px) scale(0.5);
 }
@@ -317,6 +323,8 @@
 
 .fan-item-all {
   border: 1.5px dashed #999;
+  width: 130px;
+  height: 44px;
 }
 
 .fan-item:hover {
@@ -371,7 +379,7 @@ app-profile-bubble {
   position: fixed;
   right: 20px;
   bottom: 84px;
-  z-index: 1000;
+  z-index: 2100;
 }
 
 /* ========== Footer ========== */
