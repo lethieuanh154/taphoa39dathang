@@ -18,6 +18,41 @@ const routeConfig: Routes = [
     title: 'Song Minh - Xác nhận đơn hàng'
   },
   {
+    path: 'gioi-thieu',
+    loadComponent: () => import('./components/policy/gioi-thieu/gioi-thieu.component').then(m => m.GioiThieuComponent),
+    title: 'Song Minh - Giới thiệu'
+  },
+  {
+    path: 'huong-dan-mua-hang',
+    loadComponent: () => import('./components/policy/huong-dan-mua-hang/huong-dan-mua-hang.component').then(m => m.HuongDanMuaHangComponent),
+    title: 'Song Minh - Hướng dẫn mua hàng'
+  },
+  {
+    path: 'chinh-sach-doi-tra',
+    loadComponent: () => import('./components/policy/chinh-sach-doi-tra/chinh-sach-doi-tra.component').then(m => m.ChinhSachDoiTraComponent),
+    title: 'Song Minh - Chính sách đổi trả'
+  },
+  {
+    path: 'chinh-sach-van-chuyen',
+    loadComponent: () => import('./components/policy/chinh-sach-van-chuyen/chinh-sach-van-chuyen.component').then(m => m.ChinhSachVanChuyenComponent),
+    title: 'Song Minh - Chính sách vận chuyển'
+  },
+  {
+    path: 'phuong-thuc-thanh-toan',
+    loadComponent: () => import('./components/policy/phuong-thuc-thanh-toan/phuong-thuc-thanh-toan.component').then(m => m.PhuongThucThanhToanComponent),
+    title: 'Song Minh - Phương thức thanh toán'
+  },
+  {
+    path: 'chinh-sach-bao-mat',
+    loadComponent: () => import('./components/policy/chinh-sach-bao-mat/chinh-sach-bao-mat.component').then(m => m.ChinhSachBaoMatComponent),
+    title: 'Song Minh - Chính sách bảo mật'
+  },
+  {
+    path: 'dieu-khoan-su-dung',
+    loadComponent: () => import('./components/policy/dieu-khoan-su-dung/dieu-khoan-su-dung.component').then(m => m.DieuKhoanSuDungComponent),
+    title: 'Song Minh - Điều khoản sử dụng'
+  },
+  {
     path: '**',
     redirectTo: ''
   }

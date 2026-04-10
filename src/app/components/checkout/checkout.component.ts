@@ -11,11 +11,12 @@ import { RewardService } from '../../services/reward.service';
 import { CartItem, OrderData, FinalCalculation, ShipCostResult } from '../../models/product';
 import { environment } from '../../../environments/environment';
 import { SnackbarService } from '../../services/snackbar.service';
+import { PolicyFooterComponent } from '../policy-footer/policy-footer.component';
 
 @Component({
   selector: 'app-checkout',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PolicyFooterComponent],
   templateUrl: './checkout.component.html',
   styleUrls: ['./checkout.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush

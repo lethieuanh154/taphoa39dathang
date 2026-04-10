@@ -1,0 +1,107 @@
+.policy-footer {
+  background: var(--green-800, #1a3d1e);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 20px 24px 12px;
+  margin-top: 40px;
+}
+
+.footer-inner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+/* ===== Two-column row: Company (left) + Links (right) ===== */
+.footer-row {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+/* Left column: Company Info */
+.footer-company {
+  flex: 1;
+  min-width: 0;
+}
+
+.footer-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 6px;
+}
+
+.footer-company p {
+  font-size: 12px;
+  margin: 2px 0;
+  line-height: 1.5;
+}
+
+.footer-company a {
+  color: var(--green-200, #a5d6a7);
+  text-decoration: underline;
+}
+
+/* Right column: Policy Links — 2 sub-columns */
+.footer-links {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 24px;
+}
+
+.footer-links a {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  padding: 2px 0;
+  transition: color 0.2s;
+  white-space: nowrap;
+}
+
+.footer-links a:hover {
+  color: var(--orange-400, #FFA726);
+  text-decoration: underline;
+}
+
+/* ===== Bottom: BCT logo + copyright (single line) ===== */
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.footer-bct {
+  display: inline-flex;
+}
+
+.bct-logo {
+  height: 28px;
+  width: auto;
+}
+
+.footer-cr {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+}
+
+/* ===== Mobile: stack vertically ===== */
+@media (max-width: 768px) {
+  .footer-row {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .footer-links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 12px;
+  }
+}

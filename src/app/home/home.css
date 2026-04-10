@@ -3,7 +3,12 @@
   margin: 0 auto;
   padding: 16px;
   min-height: 60vh;
-  padding-bottom: 120px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-bottom: 50px;
+  }
 }
 
 /* ========== Discount Bar ========== */
@@ -382,41 +387,112 @@ app-profile-bubble {
   z-index: 2100;
 }
 
-/* ========== Footer ========== */
-.site-footer {
+/* ========== Desktop Footer (fixed bottom, hide on scroll) ========== */
+.desktop-footer {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 99;
-  background: var(--green-800);
-  color: rgba(255,255,255,0.85);
   transition: transform 0.3s ease;
+  max-height: 50vh;
+  overflow-y: auto;
 }
 
-.site-footer.footer-hidden {
+.desktop-footer.footer-hidden {
   transform: translateY(100%);
 }
 
-.footer-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  text-align: center;
+/* Override PolicyFooter margin when inside fixed wrapper */
+.desktop-footer ::ng-deep .policy-footer {
+  margin-top: 0;
 }
 
-.footer-name {
+/* ========== Compact Footer Bar (mobile only) ========== */
+.home-footer-bar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
+  background: var(--green-800, #1a3d1e);
+  transition: transform 0.3s ease;
+  overflow: hidden;
+}
+
+/* Mobile: swap footers + adjust bubbles */
+@media (max-width: 768px) {
+  .desktop-footer {
+    display: none;
+  }
+  .home-footer-bar {
+    display: block;
+  }
+  .bubble-container {
+    bottom: 60px !important;
+  }
+  app-profile-bubble {
+    bottom: 120px;
+  }
+}
+
+.home-footer-bar.footer-hidden {
+  transform: translateY(100%);
+}
+
+.footer-bar-scroll {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  gap: 0;
+  padding: 0 4px;
+}
+
+.footer-bar-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.footer-bar-scroll a {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: none;
+  white-space: nowrap;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background 0.15s;
+}
+
+.footer-bar-scroll a:last-child {
+  border-right: none;
+}
+
+.footer-bar-scroll a:hover,
+.footer-bar-scroll a:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Scroll hint arrow */
+.footer-bar-hint {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
   font-size: 18px;
-  font-weight: 700;
-  color: #fff;
-  margin: 0 0 8px 0;
+  color: rgba(255, 255, 255, 0.9);
+  background: linear-gradient(to right, transparent, var(--green-800, #1a3d1e) 40%);
+  pointer-events: none;
+  animation: hintPulse 1.5s ease-in-out infinite;
 }
 
-.footer-address,
-.footer-phone,
-.footer-email,
-.footer-cr {
-  font-size: 11px;
-  margin: 4px 0;
+@keyframes hintPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
 /* ========== Change Password Popup ========== */

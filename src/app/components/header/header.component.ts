@@ -1,13 +1,14 @@
 import { Component, EventEmitter, Output, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CartService } from '../../services/cart.service';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush

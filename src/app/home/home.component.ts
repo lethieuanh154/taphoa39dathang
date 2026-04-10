@@ -12,9 +12,12 @@ import { CustomerIdentityDialogComponent, IdentityConfirmedEvent } from '../comp
 import { ChatBubbleComponent } from '../components/chat-bubble/chat-bubble.component';
 import { ProfileBubbleComponent } from '../components/profile-bubble/profile-bubble.component';
 import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
+import { RouterModule } from '@angular/router';
+import { PolicyFooterComponent } from '../components/policy-footer/policy-footer.component';
 import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
 import { PromotionService } from '../services/promotion.service';
+import { CartService } from '../services/cart.service';
 import { Product, Promotion } from '../models/product';
 
 interface Category {
@@ -26,7 +29,7 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent, ProfileBubbleComponent, DraggableBubbleDirective] as const,
+  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent, ProfileBubbleComponent, DraggableBubbleDirective, PolicyFooterComponent] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -44,7 +47,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   isLoadingMore = false;
   hasSearched = false;
   footerHidden = false;
-
   // Pagination state for API-based infinite scroll
   private currentOffset = 0;
   private hasMore = true;
@@ -78,6 +80,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private readonly PAGE_SIZE = 20;
   private lastSearchTerm = '';
   private updateSub?: Subscription;
+  private promoSub?: Subscription;
 
   // Promotion bar - products with active promotions
   promotionProducts: { product: Product; promotion: Promotion }[] = [];
@@ -86,6 +89,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     private productApi: ProductApiService,
     private groupService: GroupService,
     private promotionService: PromotionService,
+    private cartService: CartService,
     private cdr: ChangeDetectorRef,
     private http: HttpClient
   ) {}
@@ -173,17 +177,25 @@ export class HomeComponent implements OnInit, OnDestroy {
       // Refresh promotion products on WS update
       this.refreshPromotionProducts();
     });
+
+    // Listen for promotion changes via WebSocket (created/updated/deleted/toggled in BanHang)
+    this.promoSub = this.productApi.getPromotionsUpdated$().subscribe(() => {
+      this.loadPromotionProducts();
+      // Recalculate cart promotions with updated promotion data
+      this.cartService.recalculatePromotions();
+    });
   }
 
   ngOnDestroy(): void {
     this.updateSub?.unsubscribe();
+    this.promoSub?.unsubscribe();
   }
 
   @HostListener('window:scroll')
   onWindowScroll(): void {
     const scrollY = window.scrollY;
 
-    // Footer: hide when scrolling down, only show when scrolled back near the top (header area)
+    // Footer: hide when scrolling down, show when near top
     this.footerHidden = scrollY > 100;
 
     // Infinite scroll - load more from API

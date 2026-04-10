@@ -162,14 +162,21 @@
 <!-- Chat Bubble -->
 <app-chat-bubble *ngIf="customerIdentity" appDraggableBubble [storageKey]="'chat-bubble-pos'"></app-chat-bubble>
 
-<!-- Footer -->
-<footer class="site-footer" [class.footer-hidden]="footerHidden">
-  <div class="footer-inner">
-    <p class="footer-name">Bách Hóa Tổng Hợp Song Minh</p>
-    <p class="footer-address"> <span class="fa fa-map-marker"> &nbsp;</span>25 Nguyễn Phước Tần, Cẩm Lệ, Đà Nẵng</p>
-    <p class="footer-phone"><span class="fa fa-phone"> &nbsp;</span>SDT: 0703.863.690</p>
-    <p class="footer-cr"> Copyright © 2026 Song Minh. All rights reserved.
-      <br>Đang được phát triển...
-    </p>
+<!-- Desktop: full footer (fixed bottom, hide on scroll) -->
+<div class="desktop-footer" [class.footer-hidden]="footerHidden">
+  <app-policy-footer />
+</div>
+
+<!-- Mobile: compact footer bar (fixed bottom, hide on scroll) -->
+<nav class="home-footer-bar" [class.footer-hidden]="footerHidden" aria-label="Chính sách">
+  <div class="footer-bar-scroll">
+    <a routerLink="/gioi-thieu">Giới thiệu</a>
+    <a routerLink="/huong-dan-mua-hang">Hướng dẫn mua hàng</a>
+    <a routerLink="/chinh-sach-doi-tra">Đổi trả</a>
+    <a routerLink="/chinh-sach-van-chuyen">Vận chuyển</a>
+    <a routerLink="/phuong-thuc-thanh-toan">Thanh toán</a>
+    <a routerLink="/chinh-sach-bao-mat">Bảo mật</a>
+    <a routerLink="/dieu-khoan-su-dung">Điều khoản</a>
   </div>
-</footer>
+  <span class="footer-bar-hint">&#8250;</span>
+</nav>

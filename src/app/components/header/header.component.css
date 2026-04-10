@@ -199,6 +199,33 @@
   margin: 8px 20px;
 }
 
+/* Policy links in About modal */
+.about-policy-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 4px 20px 0;
+}
+
+.about-policy-links a {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--green-700, #1B5E20);
+  text-decoration: none;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background 0.15s;
+}
+
+.about-policy-links a:last-child {
+  border-bottom: none;
+}
+
+.about-policy-links a:hover {
+  background: #e8f5e9;
+}
+
 .about-promo {
   padding: 8px 20px 20px;
   max-height: 200px;

@@ -1,11 +1,12 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { PolicyFooterComponent } from '../policy-footer/policy-footer.component';
 
 @Component({
   selector: 'app-order-confirm',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PolicyFooterComponent],
   templateUrl: './order-confirm.component.html',
   styleUrls: ['./order-confirm.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush

@@ -27,6 +27,11 @@ export interface ProductsUpdatedPayload {
   count: number;
 }
 
+export interface PromotionsUpdatedPayload {
+  action: 'created' | 'updated' | 'deleted' | 'toggled';
+  promotionId?: string;
+}
+
 export interface BonusUpdatedPayload {
   code: string;
   giftPoint: number;
@@ -40,6 +45,7 @@ export class WebSocketService implements OnDestroy {
 
   private productUpdates$ = new Subject<ProductWSUpdate[]>();
   private productsAdded$ = new Subject<ProductWSUpdate[]>();
+  private promotionsUpdated$ = new Subject<PromotionsUpdatedPayload>();
   private bonusUpdated$ = new Subject<BonusUpdatedPayload>();
   private connectionStatus$ = new BehaviorSubject<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
@@ -78,6 +84,10 @@ export class WebSocketService implements OnDestroy {
       if (payload?.products?.length) {
         this.productsAdded$.next(payload.products);
       }
+    });
+
+    this.socket.on('promotions_updated', (payload: PromotionsUpdatedPayload) => {
+      this.promotionsUpdated$.next(payload);
     });
 
     this.socket.on('notify', (payload: any) => {
@@ -131,6 +141,10 @@ export class WebSocketService implements OnDestroy {
     return this.productsAdded$.asObservable();
   }
 
+  getPromotionsUpdated$() {
+    return this.promotionsUpdated$.asObservable();
+  }
+
   getBonusUpdated$() {
     return this.bonusUpdated$.asObservable();
   }
@@ -151,6 +165,7 @@ export class WebSocketService implements OnDestroy {
     this.disconnect();
     this.productUpdates$.complete();
     this.productsAdded$.complete();
+    this.promotionsUpdated$.complete();
     this.bonusUpdated$.complete();
     this.connectionStatus$.complete();
   }

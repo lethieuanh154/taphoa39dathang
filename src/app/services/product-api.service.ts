@@ -369,6 +369,10 @@ export class ProductApiService implements OnDestroy {
     return this.productsReady$.asObservable();
   }
 
+  getPromotionsUpdated$() {
+    return this.ws.getPromotionsUpdated$();
+  }
+
   /**
    * Get all cached products (active, non-clone) from IndexedDB.
    * Used for discount bar etc.
