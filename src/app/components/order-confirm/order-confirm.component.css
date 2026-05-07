@@ -2,9 +2,15 @@
   min-height: 100vh;
   background: var(--bg-page);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
+  justify-content: flex-start;
+  padding: 20px 20px 0;
+}
+
+.footer-wrapper {
+  width: 100%;
+  margin-top: auto;
 }
 
 .confirm-card {
@@ -96,4 +102,117 @@
 
 .home-btn:hover {
   background: var(--green-700);
+}
+
+/* Tracking Section */
+.tracking-section {
+  margin: 24px 0;
+  padding: 20px 16px;
+  background: #f8f9ff;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.tracking-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1976D2;
+  margin: 0 0 12px 0;
+  text-align: center;
+}
+
+.tracking-driver {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/* Status Timeline */
+.status-timeline {
+  display: flex;
+  justify-content: space-between;
+  margin: 16px 0 20px;
+  position: relative;
+}
+
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 1;
+  transition: all 0.3s;
+}
+
+.timeline-step.completed .step-dot {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.timeline-step.active .step-dot {
+  background: #1976D2;
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2);
+  animation: pulse-dot 1.5s infinite;
+}
+
+.timeline-step.pending .step-dot {
+  background: #e0e0e0;
+  color: #999;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { box-shadow: 0 0 0 4px rgba(25, 118, 210, 0.2); }
+  50% { box-shadow: 0 0 0 8px rgba(25, 118, 210, 0.1); }
+}
+
+.step-label {
+  font-size: 10px;
+  color: #666;
+  margin-top: 6px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.timeline-step.active .step-label {
+  color: #1976D2;
+  font-weight: 600;
+}
+
+.step-line {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  width: 100%;
+  height: 2px;
+  background: #e0e0e0;
+  z-index: 0;
+}
+
+.timeline-step.completed .step-line {
+  background: #4CAF50;
+}
+
+.timeline-step.active .step-line {
+  background: linear-gradient(to right, #1976D2, #e0e0e0);
+}
+
+.tracking-info {
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+  margin-top: 12px;
 }

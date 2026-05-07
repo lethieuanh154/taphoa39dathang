@@ -33,6 +33,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   // Shipping
   showShipRates = false;
   wantDelivery = false;
+  customerLat = 0;
+  customerLng = 0;
   isCalculatingShip = false;
   distanceKm = 0;
   durationMinutes = 0;
@@ -40,9 +42,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   shipError = '';
   minDeliveryDate = '';
 
-  // Auto-calculated estimated delivery
+  // Auto-calculated estimated delivery (time-slot based)
   estimatedDeliveryDate = '';
   estimatedDeliveryTime = '';
+  estimatedDeliveryTimeSlot = '';
 
   // Pickup (customer đến lấy hàng)
   desiredPickupDate = '';
@@ -122,7 +125,11 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         this.shipError = '';
         this.cdr.markForCheck();
         return this.shippingService.geocodeAddress(address).pipe(
-          switchMap(({ lat, lng }) => this.shippingService.calculateDistance(lat, lng)),
+          switchMap(({ lat, lng }) => {
+            this.customerLat = lat;
+            this.customerLng = lng;
+            return this.shippingService.calculateDistance(lat, lng);
+          }),
           catchError(err => {
             this.shipError = err?.message || 'Lỗi tính khoảng cách';
             this.isCalculatingShip = false;
@@ -203,6 +210,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.shipError = '';
     this.estimatedDeliveryDate = '';
     this.estimatedDeliveryTime = '';
+    this.estimatedDeliveryTimeSlot = '';
     this.desiredPickupDate = this.minDeliveryDate;
     this.desiredPickupTime = '';
     this.pickupTimeError = '';
@@ -224,37 +232,19 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     }
   }
 
-  /** Auto-calculate estimated delivery: now + travel + 6h. If > 16:00 → next day 10:00 */
+  /** Calculate delivery time slot based on current time */
   private calculateEstimatedDelivery(): void {
     if (this.durationMinutes <= 0) {
       this.estimatedDeliveryDate = '';
       this.estimatedDeliveryTime = '';
+      this.estimatedDeliveryTimeSlot = '';
       return;
     }
 
-    const now = new Date();
-    const estimatedMs = now.getTime() + (this.durationMinutes + 360) * 60_000; // +travel +6h
-    const estimated = new Date(estimatedMs);
-
-    const estMinutes = estimated.getHours() * 60 + estimated.getMinutes();
-    const maxMinutes = 16 * 60; // 16:00
-
-    if (estMinutes > maxMinutes || estimated.getHours() < 8) {
-      // Push to next business day 10:00 AM
-      const nextDay = new Date(estimated);
-      // If estimated is before 8AM, it's already "next day" from overnight calc
-      if (estimated.getHours() >= 8) {
-        nextDay.setDate(nextDay.getDate() + 1);
-      }
-      nextDay.setHours(10, 0, 0, 0);
-      this.estimatedDeliveryDate = nextDay.toISOString().split('T')[0];
-      this.estimatedDeliveryTime = '10:00';
-    } else {
-      this.estimatedDeliveryDate = estimated.toISOString().split('T')[0];
-      const h = estimated.getHours().toString().padStart(2, '0');
-      const m = estimated.getMinutes().toString().padStart(2, '0');
-      this.estimatedDeliveryTime = `${h}:${m}`;
-    }
+    const slot = this.shippingService.calculateDeliveryTimeSlot(new Date());
+    this.estimatedDeliveryDate = slot.date;
+    this.estimatedDeliveryTime = slot.startTime;
+    this.estimatedDeliveryTimeSlot = slot.timeSlot;
   }
 
   onPickupTimeInput(event: Event): void {
@@ -375,7 +365,9 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       desiredDeliveryTime: this.estimatedDeliveryTime,
       estimatedStartTime: '',
       desiredPickupDate: !this.wantDelivery ? this.desiredPickupDate : '',
-      desiredPickupTime: !this.wantDelivery ? this.desiredPickupTime : ''
+      desiredPickupTime: !this.wantDelivery ? this.desiredPickupTime : '',
+      lat: this.wantDelivery ? this.customerLat : undefined,
+      lng: this.wantDelivery ? this.customerLng : undefined,
     };
 
     // Save customer info for next time

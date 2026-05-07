@@ -124,15 +124,48 @@ export class ShippingService {
     return { shipCost, freeKm, ratePerKm, canShip: true, message: '' };
   }
 
-  /** Calculate estimated departure time: desiredTime - travelDuration */
-  calculateStartTime(desiredTime: string, durationMinutes: number): string {
-    if (!desiredTime) return '';
-    const [h, m] = desiredTime.split(':').map(Number);
-    const desiredMinutes = h * 60 + m;
-    const startMinutes = desiredMinutes - durationMinutes;
-    if (startMinutes < 0) return '00:00';
-    const sh = Math.floor(startMinutes / 60);
-    const sm = startMinutes % 60;
-    return `${sh.toString().padStart(2, '0')}:${sm.toString().padStart(2, '0')}`;
+  /**
+   * Calculate delivery time slot based on when the order is placed.
+   * Working hours: 08:00 - 17:00. Prep time: 30 min.
+   *
+   * - Order 00:00-07:59 (ngoài giờ sáng) → giao 08:30-10:00 cùng ngày
+   * - Order 08:00-11:29 → giao 10:30-12:00 cùng ngày
+   * - Order 11:30-14:59 → giao 14:30-16:00 cùng ngày
+   * - Order 15:00-16:29 → giao 16:30-17:00 cùng ngày
+   * - Order 16:30-23:59 (ngoài giờ chiều) → giao 08:30-10:00 ngày hôm sau
+   *
+   * Thời gian chính xác hơn sẽ được cập nhật từ Management khi tối ưu lộ trình.
+   */
+  calculateDeliveryTimeSlot(orderTime: Date): { date: string; timeSlot: string; startTime: string; endTime: string } {
+    const h = orderTime.getHours();
+    const m = orderTime.getMinutes();
+    const totalMin = h * 60 + m;
+    const toLocalDateStr = (d: Date) => {
+      const y = d.getFullYear();
+      const mo = (d.getMonth() + 1).toString().padStart(2, '0');
+      const da = d.getDate().toString().padStart(2, '0');
+      return `${y}-${mo}-${da}`;
+    };
+
+    // Ngoài giờ sáng (trước 08:00) → giao 08:30-10:00 cùng ngày
+    if (totalMin < 480) {
+      return { date: toLocalDateStr(orderTime), timeSlot: '08:30 - 10:00', startTime: '08:30', endTime: '10:00' };
+    }
+    // 08:00-11:29 → giao 10:30-12:00
+    if (totalMin < 690) {
+      return { date: toLocalDateStr(orderTime), timeSlot: '10:30 - 12:00', startTime: '10:30', endTime: '12:00' };
+    }
+    // 11:30-14:59 → giao 14:30-16:00
+    if (totalMin < 900) {
+      return { date: toLocalDateStr(orderTime), timeSlot: '14:30 - 16:00', startTime: '14:30', endTime: '16:00' };
+    }
+    // 15:00-16:29 → giao 16:30-17:00
+    if (totalMin < 990) {
+      return { date: toLocalDateStr(orderTime), timeSlot: '16:30 - 17:00', startTime: '16:30', endTime: '17:00' };
+    }
+    // 16:30-23:59 (ngoài giờ chiều) → giao 08:30-10:00 ngày hôm sau
+    const nextDay = new Date(orderTime);
+    nextDay.setDate(nextDay.getDate() + 1);
+    return { date: toLocalDateStr(nextDay), timeSlot: '08:30 - 10:00', startTime: '08:30', endTime: '10:00' };
   }
 }

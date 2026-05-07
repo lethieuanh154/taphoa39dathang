@@ -165,7 +165,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.markForCheck();
 
-    this.productApi.initialize().then(() => {
+    this.productApi.initialize().then(async () => {
+      // Purge hidden-category products (e.g. "Thuốc lá") from IndexedDB
+      await this.productApi.purgeHiddenCategoryProducts();
       // Load categories after DB is initialized to avoid race condition
       this.loadCategories();
       // Show featured products on initial load (no search needed)
@@ -392,7 +394,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       const pid = String(promo.targetProductId);
       if (seen.has(pid)) continue;
       const product = promo.targetProduct;
-      if (product && !product.isDeleted && product.isActive !== false) {
+      if (product && !product.isDeleted && product.isActive !== false && product.CategoryId !== 1440125) {
         seen.add(pid);
         this.promotionProducts.push({ product, promotion: promo });
         productsToCache.push(product);
@@ -495,7 +497,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private async loadCategories(): Promise<void> {
     try {
-      this.categories = await this.productApi.loadCategories();
+      this.categories = (await this.productApi.loadCategories()).filter(c => c.Id !== 1440125);
       this.cdr.markForCheck();
     } catch {
       this.categories = [];

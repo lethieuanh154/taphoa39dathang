@@ -18,6 +18,39 @@
       <span class="order-id-value">{{ orderId }}</span>
     </div>
 
+    <!-- Delivery Tracking Section -->
+    <div class="tracking-section" *ngIf="hasTracking">
+      <h3 class="tracking-title">Theo dõi giao hàng</h3>
+
+      <div class="tracking-driver" *ngIf="tracking?.driverName">
+        Người giao: <strong>{{ tracking!.driverName }}</strong>
+        <span *ngIf="tracking!.estimatedArrival"> — Dự kiến: <strong>{{ tracking!.estimatedArrival }}</strong></span>
+      </div>
+
+      <!-- Status Timeline -->
+      <div class="status-timeline">
+        <div class="timeline-step" *ngFor="let step of statusSteps; let i = index"
+             [class.completed]="i < currentStepIndex"
+             [class.active]="i === currentStepIndex"
+             [class.pending]="i > currentStepIndex">
+          <div class="step-dot">
+            <span class="step-icon" *ngIf="i < currentStepIndex">✓</span>
+            <span class="step-icon" *ngIf="i === currentStepIndex">{{ step.icon }}</span>
+            <span class="step-icon" *ngIf="i > currentStepIndex">{{ i + 1 }}</span>
+          </div>
+          <div class="step-label">{{ step.label }}</div>
+          <div class="step-line" *ngIf="i < statusSteps.length - 1"></div>
+        </div>
+      </div>
+
+      <!-- Map -->
+      <app-tracking-map [tracking]="tracking"></app-tracking-map>
+
+      <div class="tracking-info" *ngIf="tracking?.sequence">
+        Đơn hàng của bạn: thứ tự giao <strong>#{{ tracking!.sequence }}</strong> / {{ tracking!.totalOrders }} đơn
+      </div>
+    </div>
+
     <div class="confirm-info">
       <div class="info-item">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -39,5 +72,7 @@
     </button>
   </div>
 
-  <app-policy-footer />
+  <div class="footer-wrapper">
+    <app-policy-footer />
+  </div>
 </div>

@@ -139,6 +139,8 @@ export interface OrderData {
   estimatedStartTime: string;
   desiredPickupDate?: string;
   desiredPickupTime?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface ShipCostResult {

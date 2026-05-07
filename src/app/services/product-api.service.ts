@@ -214,6 +214,7 @@ export class ProductApiService implements OnDestroy {
     for (const product of allProducts) {
       if (product.isDeleted || !product.isActive) continue;
       if (this.isCloneProduct(product)) continue;
+      if (ProductApiService.HIDDEN_CATEGORY_IDS.has(product.CategoryId!)) continue;
 
       const name = (product.NormalizedName || product.Name || product.FullName || '').toLowerCase();
       const code = (product.NormalizedCode || product.Code || '').toLowerCase();
@@ -379,7 +380,7 @@ export class ProductApiService implements OnDestroy {
    */
   async getAllCachedProducts(): Promise<Product[]> {
     const all = await this.getCachedProducts();
-    return all.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
+    return all.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p) && !ProductApiService.HIDDEN_CATEGORY_IDS.has(p.CategoryId!));
   }
 
   /** Get ALL cached products unfiltered (includes KM, clone, inactive). For lookups only. */
@@ -397,6 +398,24 @@ export class ProductApiService implements OnDestroy {
     this.invalidateCache();
   }
 
+  /**
+   * Purge hidden-category products from IndexedDB (e.g. "Thuốc lá").
+   */
+  async purgeHiddenCategoryProducts(): Promise<void> {
+    await this.initDB();
+    for (const catId of ProductApiService.HIDDEN_CATEGORY_IDS) {
+      const products = await this.idb.getAllByIndex<Product>(
+        this.DB_NAME, this.DB_VERSION, this.STORE_NAME, 'CategoryId', catId
+      );
+      for (const p of products) {
+        await this.idb.delete(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, p.Id);
+      }
+    }
+    if (ProductApiService.HIDDEN_CATEGORY_IDS.size > 0) {
+      this.invalidateCache();
+    }
+  }
+
   // ======================== Helpers ========================
 
   private isCloneProduct(product: Product): boolean {
@@ -404,6 +423,8 @@ export class ProductApiService implements OnDestroy {
     if ((product.OnHandNV || 0) > 0 && product.OnHand === 0) return true;
     return false;
   }
+
+  private static readonly HIDDEN_CATEGORY_IDS = new Set([1440125]);
 
   private filterOriginalProducts(raw: any[]): Product[] {
     if (!Array.isArray(raw)) return [];
@@ -415,6 +436,7 @@ export class ProductApiService implements OnDestroy {
         if (item.isActive === false) return false;
         if (item.isClone === true) return false;
         if ((item.OnHandNV || 0) > 0 && (item.OnHand || 0) === 0) return false;
+        if (ProductApiService.HIDDEN_CATEGORY_IDS.has(item.CategoryId)) return false;
         return true;
       })
       .map(item => this.mapProduct(item));

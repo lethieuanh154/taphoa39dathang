@@ -213,9 +213,9 @@
           </div>
         </div>
 
-        <!-- Estimated delivery time (auto-calculated) -->
-        <div class="ship-start-time" *ngIf="estimatedDeliveryTime && estimatedDeliveryDate" style="margin-top: 12px;">
-          Thời gian dự kiến giao đến nơi: <strong>{{ estimatedDeliveryTime }}, {{ formatDeliveryDate(estimatedDeliveryDate) }}</strong>
+        <!-- Estimated delivery time slot -->
+        <div class="ship-start-time" *ngIf="estimatedDeliveryTimeSlot && estimatedDeliveryDate" style="margin-top: 12px;">
+          Dự kiến giao: <strong>{{ estimatedDeliveryTimeSlot }}, {{ formatDeliveryDate(estimatedDeliveryDate) }}</strong>
         </div>
       </div>
     </section>
