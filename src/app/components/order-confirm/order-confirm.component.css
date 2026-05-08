@@ -85,6 +85,45 @@
   flex-shrink: 0;
 }
 
+.tracking-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 24px;
+  min-height: 48px;
+  background: #1976D2;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-family: inherit;
+  margin-bottom: 10px;
+}
+
+.tracking-btn:hover {
+  background: #1565C0;
+}
+
+.history-btn {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 24px;
+  background: #fff;
+  color: #1976D2;
+  border: 2px solid #1976D2;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.history-btn:hover {
+  background: #e3f2fd;
+}
+
 .home-btn {
   display: inline-block;
   padding: 14px 40px;

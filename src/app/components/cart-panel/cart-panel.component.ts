@@ -80,6 +80,11 @@ export class CartPanelComponent implements OnDestroy {
     this.router.navigate(['/checkout']);
   }
 
+  goToMyOrders(): void {
+    this.cartService.closePanel();
+    this.router.navigate(['/don-hang-cua-toi']);
+  }
+
   trackByCartItem(_: number, item: CartItem): string {
     return item.product.Code;
   }

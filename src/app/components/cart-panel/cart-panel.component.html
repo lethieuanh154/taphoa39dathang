@@ -65,7 +65,11 @@
       <span class="total-value">{{ formatPrice(totalPrice) }} đ</span>
     </div>
     <button class="checkout-btn" (click)="goToCheckout()">
-      Đã đặt ({{ totalItems }} sản phẩm)
+      Đặt hàng ({{ totalItems }} sản phẩm)
     </button>
+  </div>
+
+  <div class="panel-my-orders">
+    <button class="my-orders-link" (click)="goToMyOrders()">📋 Xem đơn hàng của tôi</button>
   </div>
 </div>

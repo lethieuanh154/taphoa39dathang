@@ -72,6 +72,14 @@ export class OrderConfirmComponent implements OnInit, OnDestroy {
     return this.tracking != null;
   }
 
+  goToTracking(): void {
+    this.router.navigate(['/tracking', this.orderId]);
+  }
+
+  goToHistory(): void {
+    this.router.navigate(['/don-hang-cua-toi']);
+  }
+
   goHome(): void {
     this.router.navigate(['/']);
   }

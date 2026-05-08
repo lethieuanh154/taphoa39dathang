@@ -1,7 +1,7 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { Observable } from 'rxjs';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, doc, onSnapshot, Firestore, Unsubscribe } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, Firestore } from 'firebase/firestore';
 import { environment } from '../../environments/environment';
 
 export interface DeliveryTrackingDoc {
@@ -28,7 +28,6 @@ const COLLECTION = 'deliveryTracking';
 export class DeliveryTrackingService implements OnDestroy {
   private firebaseApp: FirebaseApp | null = null;
   private db: Firestore | null = null;
-  private unsub: Unsubscribe | null = null;
 
   constructor() {
     this.initFirestore();
@@ -48,32 +47,28 @@ export class DeliveryTrackingService implements OnDestroy {
     }
   }
 
-  /** Listen to tracking doc for a specific order (real-time) */
+  /** Listen to tracking doc — each subscriber gets its own Firestore listener */
   listenToTracking(orderId: string): Observable<DeliveryTrackingDoc | null> {
-    const subject = new BehaviorSubject<DeliveryTrackingDoc | null>(null);
-    if (!this.db) return subject.asObservable();
-
-    this.disconnect();
-    const docRef = doc(this.db, COLLECTION, orderId);
-    this.unsub = onSnapshot(docRef, snapshot => {
-      if (snapshot.exists()) {
-        subject.next(snapshot.data() as DeliveryTrackingDoc);
-      } else {
-        subject.next(null);
+    return new Observable(subscriber => {
+      if (!this.db) {
+        subscriber.next(null);
+        return;
       }
-    }, err => {
-      console.error('[DeliveryTracking] Listen error:', err);
+      const docRef = doc(this.db, COLLECTION, orderId);
+      const unsub = onSnapshot(
+        docRef,
+        snapshot => subscriber.next(snapshot.exists() ? (snapshot.data() as DeliveryTrackingDoc) : null),
+        err => {
+          console.error('[DeliveryTracking] Listen error:', err);
+          subscriber.error(err);
+        }
+      );
+      return () => unsub();
     });
-
-    return subject.asObservable();
   }
 
-  disconnect(): void {
-    this.unsub?.();
-    this.unsub = null;
-  }
+  /** @deprecated Use RxJS unsubscribe instead */
+  disconnect(): void {}
 
-  ngOnDestroy(): void {
-    this.disconnect();
-  }
+  ngOnDestroy(): void {}
 }

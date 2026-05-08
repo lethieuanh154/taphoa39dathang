@@ -280,6 +280,34 @@
   background: var(--orange-600);
 }
 
+.panel-my-orders {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: #fff;
+  border-top: 1px solid #eee;
+}
+
+.my-orders-link {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background: none;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #555;
+  cursor: pointer;
+  text-align: center;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.my-orders-link:hover {
+  background: #f5f5f5;
+  color: #1976D2;
+  border-color: #1976D2;
+}
+
 @media (max-width: 420px) {
   .cart-panel {
     width: 100vw;

@@ -53,6 +53,16 @@ const routeConfig: Routes = [
     title: 'Song Minh - Điều khoản sử dụng'
   },
   {
+    path: 'don-hang-cua-toi',
+    loadComponent: () => import('./components/my-orders/my-orders.component').then(m => m.MyOrdersComponent),
+    title: 'Song Minh - Đơn hàng của tôi'
+  },
+  {
+    path: 'tracking/:orderId',
+    loadComponent: () => import('./components/order-tracking/order-tracking.component').then(m => m.OrderTrackingComponent),
+    title: 'Song Minh - Theo dõi đơn hàng'
+  },
+  {
     path: '**',
     redirectTo: ''
   }

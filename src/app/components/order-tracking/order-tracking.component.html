@@ -1,0 +1,52 @@
+<div class="tracking-page">
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <button class="back-btn" (click)="goBack()">&#8592; Quay lại</button>
+    <span class="order-id-label">#{{ orderId }}</span>
+  </div>
+
+  <!-- Status card — always visible -->
+  <div class="status-card" [style.border-left-color]="displayStatus.color">
+    <div class="status-icon" [style.background]="displayStatus.color">
+      <span *ngIf="displayStatus.step === 0">⏳</span>
+      <span *ngIf="displayStatus.step === 1">🏪</span>
+      <span *ngIf="displayStatus.step === 2">📦</span>
+      <span *ngIf="displayStatus.step === 3">🛵</span>
+      <span *ngIf="displayStatus.step === 4">📍</span>
+      <span *ngIf="displayStatus.step === 5">✅</span>
+      <span *ngIf="displayStatus.step === -1">❌</span>
+    </div>
+    <div class="status-info">
+      <div class="status-label" [style.color]="displayStatus.color">{{ displayStatus.label }}</div>
+      <ng-container *ngIf="tracking; else preparingInfo">
+        <div class="status-sub" *ngIf="tracking.driverName">Tài xế: {{ tracking.driverName }}</div>
+        <div class="status-sub" *ngIf="tracking.estimatedArrival && displayStatus.step >= 1 && displayStatus.step < 5">
+          Dự kiến: {{ tracking.estimatedArrival }}
+        </div>
+        <div class="status-sub" *ngIf="tracking.sequence">
+          Đơn {{ tracking.sequence }}/{{ tracking.totalOrders }}
+        </div>
+      </ng-container>
+      <ng-template #preparingInfo>
+        <div class="status-sub">Đơn hàng đang được chuẩn bị</div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Progress steps — always visible -->
+  <div class="progress-steps" *ngIf="displayStatus.step >= 0">
+    <div class="step" *ngFor="let s of steps; let i = index"
+         [class.done]="displayStatus.step > i"
+         [class.active]="displayStatus.step === i">
+      <div class="step-dot"></div>
+      <div class="step-label">{{ s }}</div>
+    </div>
+  </div>
+
+  <!-- Map — always in DOM (hidden via CSS until tracking doc exists) -->
+  <div class="map-wrap" [class.map-hidden]="!tracking">
+    <div #mapEl class="tracking-map"></div>
+  </div>
+
+</div>

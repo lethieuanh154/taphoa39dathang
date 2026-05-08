@@ -1,0 +1,72 @@
+<div class="my-orders-page">
+
+  <div class="page-header">
+    <button class="back-btn" (click)="goHome()">&#8592; Trang chủ</button>
+    <h2>Đơn hàng của tôi</h2>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="!entries.length">
+    <span class="empty-icon">🛒</span>
+    <p>Bạn chưa có đơn hàng nào</p>
+    <button class="shop-btn" (click)="goHome()">Mua sắm ngay</button>
+  </div>
+
+  <!-- Order list -->
+  <div class="order-list" *ngIf="entries.length">
+    <div class="order-card" *ngFor="let e of entries">
+
+      <div class="order-header">
+        <span class="order-id">#{{ e.orderId }}</span>
+        <span class="status-badge"
+              [style.background]="statusColor(e.liveStatus)"
+              [style.color]="'#fff'">
+          {{ statusLabel(e.liveStatus) }}
+        </span>
+      </div>
+
+      <div class="order-date">{{ formatDate(e.createdDate) }}</div>
+
+      <div class="order-items" *ngIf="e.items?.length">
+        <ng-container *ngFor="let item of e.items; let last = last">
+          {{ item.name }} x{{ item.qty }}<span *ngIf="!last">, </span>
+        </ng-container>
+        <span class="more-items" *ngIf="e.itemCount > e.items.length">
+          &nbsp;+{{ e.itemCount - e.items.length }} sản phẩm khác
+        </span>
+      </div>
+
+      <div class="order-footer">
+        <span class="order-total">{{ formatPrice(e.totalPrice) }}đ</span>
+        <div class="order-tags">
+          <span class="tag delivery-tag" *ngIf="e.wantDelivery">🛵 Giao hàng</span>
+          <span class="tag pickup-tag" *ngIf="!e.wantDelivery">🏪 Lấy tại cửa hàng</span>
+          <button class="track-btn" *ngIf="e.wantDelivery" (click)="viewTracking(e.orderId)">
+            Theo dõi
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Desktop: full footer -->
+  <div class="footer-wrapper">
+    <app-policy-footer />
+  </div>
+
+</div>
+
+<!-- Mobile: compact footer bar (fixed bottom) -->
+<nav class="orders-footer-bar" aria-label="Chính sách">
+  <div class="footer-bar-scroll">
+    <a routerLink="/gioi-thieu">Giới thiệu</a>
+    <a routerLink="/huong-dan-mua-hang">Hướng dẫn mua hàng</a>
+    <a routerLink="/chinh-sach-doi-tra">Đổi trả</a>
+    <a routerLink="/chinh-sach-van-chuyen">Vận chuyển</a>
+    <a routerLink="/phuong-thuc-thanh-toan">Thanh toán</a>
+    <a routerLink="/chinh-sach-bao-mat">Bảo mật</a>
+    <a routerLink="/dieu-khoan-su-dung">Điều khoản</a>
+  </div>
+  <span class="footer-bar-hint">&#8250;</span>
+</nav>
