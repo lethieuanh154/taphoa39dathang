@@ -36,12 +36,14 @@ export class DeliveryTrackingService implements OnDestroy {
   private initFirestore(): void {
     try {
       const config = (environment as any).firebaseChat;
+      console.log('[DeliveryTracking] config:', config ? `projectId=${config.projectId}` : 'MISSING');
       if (!config?.projectId) return;
 
       const appName = 'delivery-tracking-customer';
       const existing = getApps().find(app => app.name === appName);
       this.firebaseApp = existing || initializeApp(config, appName);
       this.db = getFirestore(this.firebaseApp);
+      console.log('[DeliveryTracking] Firestore initialized OK, db:', !!this.db);
     } catch (e) {
       console.error('[DeliveryTracking] Init error:', e);
     }
@@ -49,15 +51,23 @@ export class DeliveryTrackingService implements OnDestroy {
 
   /** Listen to tracking doc — each subscriber gets its own Firestore listener */
   listenToTracking(orderId: string): Observable<DeliveryTrackingDoc | null> {
+    console.log('[DeliveryTracking] listenToTracking called, orderId:', orderId, 'db:', !!this.db);
     return new Observable(subscriber => {
       if (!this.db) {
+        console.warn('[DeliveryTracking] db is NULL — cannot listen');
         subscriber.next(null);
         return;
       }
       const docRef = doc(this.db, COLLECTION, orderId);
+      console.log('[DeliveryTracking] onSnapshot registered for:', COLLECTION + '/' + orderId);
       const unsub = onSnapshot(
         docRef,
-        snapshot => subscriber.next(snapshot.exists() ? (snapshot.data() as DeliveryTrackingDoc) : null),
+        snapshot => {
+          const exists = snapshot.exists();
+          const data = exists ? snapshot.data() : null;
+          console.log('[DeliveryTracking] snapshot:', exists ? 'EXISTS' : 'NOT_FOUND', data ? `status=${data['status']} driverLat=${data['driverLat']} customerLat=${data['customerLat']}` : '');
+          subscriber.next(exists ? (data as DeliveryTrackingDoc) : null);
+        },
         err => {
           console.error('[DeliveryTracking] Listen error:', err);
           subscriber.error(err);

@@ -44,8 +44,8 @@
     </div>
   </div>
 
-  <!-- Map — always in DOM (hidden via CSS until tracking doc exists) -->
-  <div class="map-wrap" [class.map-hidden]="!tracking">
+  <!-- Map — always visible, shows store marker even before delivery starts -->
+  <div class="map-wrap">
     <div #mapEl class="tracking-map"></div>
   </div>
 

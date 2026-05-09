@@ -44,7 +44,6 @@ export class OrderTrackingComponent implements OnInit, AfterViewInit, OnDestroy 
   private myMarker: L.Marker | null = null;
   private routeLine: L.Polyline | null = null;
   private sub: Subscription | null = null;
-  private mapReady = false;
 
   readonly steps = ['Chuẩn bị', 'Lấy hàng', 'Đã lấy', 'Đang đi', 'Đã đến', 'Đã giao'];
 
@@ -57,30 +56,19 @@ export class OrderTrackingComponent implements OnInit, AfterViewInit, OnDestroy 
 
   ngOnInit(): void {
     this.orderId = this.route.snapshot.paramMap.get('orderId') || '';
+    console.log('[Tracking] ngOnInit, orderId:', this.orderId);
     if (!this.orderId) return;
 
     this.sub = this.trackingService.listenToTracking(this.orderId).subscribe(doc => {
-      const firstDoc = !this.tracking && !!doc;
+      console.log('[Tracking] subscribe fired, doc:', doc ? `status=${doc.status} customerLat=${doc.customerLat}` : 'NULL', 'mapExists:', !!this.map);
       this.tracking = doc;
       this.displayStatus = doc
         ? this.computeStatus(doc)
         : { label: 'Đang chuẩn bị hàng', color: '#9C27B0', step: 0 };
       this.cdr.markForCheck();
 
-      if (this.mapReady && doc) {
-        if (!this.map) {
-          // First time: wait for Angular to remove map-hidden, then init + render
-          setTimeout(() => {
-            this.initMap();
-            this.refreshMap(doc);
-          }, 50);
-        } else {
-          this.refreshMap(doc);
-          if (firstDoc) {
-            // Container just became visible — recalculate size
-            setTimeout(() => this.map?.invalidateSize(), 50);
-          }
-        }
+      if (this.map && doc) {
+        this.refreshMap(doc);
       }
     });
 
@@ -88,9 +76,7 @@ export class OrderTrackingComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   ngAfterViewInit(): void {
-    this.mapReady = true;
-    // Do NOT init map here — container is hidden (map-hidden) when tracking === null.
-    // Map is initialized lazily in the subscribe handler when first doc arrives.
+    this.initMap();
   }
 
   ngOnDestroy(): void {
@@ -139,7 +125,10 @@ export class OrderTrackingComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private initMap(): void {
-    if (!this.mapEl?.nativeElement) return;
+    if (!this.mapEl?.nativeElement) {
+      console.error('[Tracking] initMap ABORTED — mapEl not available');
+      return;
+    }
     const storeLat = (environment as any).storeLat ?? 16.019693;
     const storeLng = (environment as any).storeLng ?? 108.197694;
 
@@ -161,10 +150,37 @@ export class OrderTrackingComponent implements OnInit, AfterViewInit, OnDestroy 
     L.marker([storeLat, storeLng], { icon: storeIcon })
       .addTo(this.map)
       .bindPopup('<strong>Cửa hàng Song Minh</strong>');
+
+    this.showDestFromHistory();
+  }
+
+  private showDestFromHistory(): void {
+    if (!this.map || !this.orderId) return;
+    try {
+      const history: any[] = JSON.parse(localStorage.getItem('sm_order_history') || '[]');
+      const entry = history.find((e: any) => e.orderId === this.orderId);
+      if (entry?.customerLat && entry?.customerLng) {
+        const destIcon = L.divIcon({
+          html: `<div style="background:#1976D2;color:#fff;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff;">📦</div>`,
+          className: '', iconSize: [30, 30], iconAnchor: [15, 15]
+        });
+        this.destMarker = L.marker([entry.customerLat, entry.customerLng], { icon: destIcon })
+          .addTo(this.map!).bindPopup('<strong>Địa chỉ giao hàng của bạn</strong>');
+
+        const storeLat = (environment as any).storeLat ?? 16.019693;
+        const storeLng = (environment as any).storeLng ?? 108.197694;
+        const bounds = L.latLngBounds([[storeLat, storeLng], [entry.customerLat, entry.customerLng]]);
+        this.map!.fitBounds(bounds, { padding: [40, 40] });
+      }
+    } catch {}
   }
 
   private refreshMap(doc: DeliveryTrackingDoc): void {
-    if (!this.map) return;
+    if (!this.map) {
+      console.warn('[Tracking] refreshMap SKIPPED — map is null');
+      return;
+    }
+    console.log('[Tracking] refreshMap, customerLat:', doc.customerLat, 'customerLng:', doc.customerLng, 'driverLat:', doc.driverLat, 'driverLng:', doc.driverLng);
 
     if (doc.customerLat && doc.customerLng) {
       const destIcon = L.divIcon({

@@ -383,7 +383,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         }
         this.cartService.clearCart();
         try {
-          const entry = {
+          const entry: any = {
             orderId,
             createdDate: now.toISOString(),
             totalPrice: calc.finalTotal,
@@ -391,6 +391,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
             wantDelivery: this.wantDelivery,
             items: this.items.slice(0, 3).map(i => ({ name: i.product.Name, qty: i.quantity }))
           };
+          if (this.wantDelivery && this.customerLat && this.customerLng) {
+            entry.customerLat = this.customerLat;
+            entry.customerLng = this.customerLng;
+          }
           const history: any[] = JSON.parse(localStorage.getItem('sm_order_history') || '[]');
           history.unshift(entry);
           localStorage.setItem('sm_order_history', JSON.stringify(history.slice(0, 20)));
