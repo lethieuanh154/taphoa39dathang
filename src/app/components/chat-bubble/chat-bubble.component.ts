@@ -341,9 +341,12 @@ export class ChatBubbleComponent implements OnInit, OnDestroy {
 
   formatTime(timestamp: string): string {
     if (!timestamp) return '';
-    // Backend lưu UTC nhưng không có 'Z', thêm 'Z' để JS parse đúng UTC → convert local
     const d = new Date(timestamp.endsWith('Z') ? timestamp : timestamp + 'Z');
-    return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const time = d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    if (d.getFullYear() === new Date().getFullYear()) return `${day}/${month} ${time}`;
+    return `${day}/${month}/${d.getFullYear()} ${time}`;
   }
 
   private scrollToBottom(): void {
