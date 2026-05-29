@@ -55,7 +55,7 @@ export class WebSocketService implements OnDestroy {
     this.connectionStatus$.next('connecting');
 
     this.socket = io(`${environment.domainUrl}/api/websocket/products`, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 2000,
@@ -104,7 +104,7 @@ export class WebSocketService implements OnDestroy {
     if (this.customerSocket?.connected) return;
 
     this.customerSocket = io(`${environment.domainUrl}/api/websocket/customers`, {
-      transports: ['websocket', 'polling'],
+      transports: ['polling'],
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 2000,
