@@ -131,8 +131,8 @@
                   <thead>
                     <tr>
                       <th>Giá trị đơn</th>
-                      <th>Free ship</th>
-                      <th>Phí vượt</th>
+                      <th>Miễn phí ship</th>
+                      <th>Phí km vượt</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -143,30 +143,44 @@
                     <tr>
                       <td>200k – 500k</td>
                       <td>0 km</td>
-                      <td>13.000đ/km</td>
+                      <td>12.000đ/km</td>
                     </tr>
                     <tr>
                       <td>500k – 1 tr</td>
                       <td>≤ 2km</td>
-                      <td>7.000đ/km</td>
+                      <td>6.000đ/km</td>
                     </tr>
                     <tr>
                       <td>1 tr – 2 tr</td>
                       <td>≤ 3km</td>
-                      <td>6.000đ/km</td>
+                      <td>5.000đ/km</td>
                     </tr>
                     <tr>
                       <td>&gt;2 tr – 10 tr</td>
                       <td>≤ 5km</td>
-                      <td>6.000đ/km</td>
+                      <td>5.000đ/km</td>
                     </tr>
                     <tr>
                       <td>&gt; 10 triệu</td>
                       <td>≤ 7km</td>
-                      <td>5.000đ/km</td>
+                      <td>4.000đ/km</td>
                     </tr>
                   </tbody>
                 </table>
+                <div style="margin-top:8px">
+                  <strong>Phụ phí hàng nặng</strong> <br><span style="font-size: 10px;">(các loại thùng bia, nước suối, sữa, nước ngọt, dầu ăn, nước tẩy rửa giặt)</span>:
+                  <table style="margin-top:4px">
+                    <thead>
+                      <tr><th>Số thùng</th><th>Phụ phí</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>≤ 5 thùng</td><td>Miễn phí</td></tr>
+                      <tr><td>6 – 10 thùng</td><td>20.000đ</td></tr>
+                      <tr><td>11 – 20 thùng</td><td>50.000đ</td></tr>
+                      <tr><td>21 – 50 thùng</td><td>100.000đ</td></tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
@@ -210,6 +224,10 @@
           <div class="ship-note" *ngIf="shipResult.freeKm > 0">
             Miễn phí ship cho {{ shipResult.freeKm }}km đầu. <i style="font-size: 20px;"
               class="fa-regular fa-hand-point-left"></i>
+          </div>
+          <div class="ship-row" *ngIf="shipResult.heavySurcharge > 0" style="color:#e65100">
+            <span>Phụ phí hàng nặng:</span>
+            <strong>{{ formatPrice(shipResult.heavySurcharge) }} đ</strong>
           </div>
         </div>
 

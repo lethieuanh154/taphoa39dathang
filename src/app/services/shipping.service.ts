@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map, of } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { ShipCostResult } from '../models/product';
+import { CartItem, ShipCostResult } from '../models/product';
 
 const STORE_LAT = environment.storeLat;
 const STORE_LNG = environment.storeLng;
@@ -91,9 +91,9 @@ export class ShippingService {
   }
 
   /** Calculate shipping cost based on order subtotal and distance */
-  calculateShipCost(orderSubtotal: number, distanceKm: number): ShipCostResult {
+  calculateShipCost(orderSubtotal: number, distanceKm: number, items: CartItem[] = []): ShipCostResult {
     if (orderSubtotal < 200000) {
-      return { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: false, message: 'Đơn tối thiểu 200.000đ để giao hàng' };
+      return { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: false, message: 'Đơn tối thiểu 200.000đ để giao hàng', heavySurcharge: 0 };
     }
 
     let freeKm = 0;
@@ -101,27 +101,42 @@ export class ShippingService {
 
     if (orderSubtotal < 500000) {
       freeKm = 0;
-      ratePerKm = 13000;
+      ratePerKm = 12000;
     } else if (orderSubtotal < 1000000) {
       freeKm = 2;
-      ratePerKm = 7000;
+      ratePerKm = 6000;
     } else if (orderSubtotal < 2000000) {
       freeKm = 3;
-      ratePerKm = 6000;
+      ratePerKm = 5000;
     } else if (orderSubtotal < 10000000){
       freeKm = 5;
-      ratePerKm = 6000;
+      ratePerKm = 5000;
     } else {
       freeKm = 7;
-      ratePerKm = 5000;
+      ratePerKm = 4000;
     }
 
     const chargeableKm = Math.max(0, distanceKm - freeKm);
     const rawCost = chargeableKm * ratePerKm;
-
     const shipCost = Math.round(rawCost / 1000) * 1000;
+    const heavySurcharge = this.calculateHeavySurcharge(items);
 
-    return { shipCost, freeKm, ratePerKm, canShip: true, message: '' };
+    return { shipCost: shipCost + heavySurcharge, freeKm, ratePerKm, canShip: true, message: '', heavySurcharge };
+  }
+
+  /** Calculate surcharge for heavy bulk items (thùng bia, nước suối, sữa, nước ngọt) */
+  calculateHeavySurcharge(items: CartItem[]): number {
+    const heavyPattern = /\b(bia|nước suối|nước khoáng|sữa|nước ngọt|nước tăng lực|nước giải khát)\b/i;
+    let totalCases = 0;
+    for (const item of items) {
+      if (item.product.Unit?.toLowerCase() === 'thùng' && heavyPattern.test(item.product.FullName || item.product.Name)) {
+        totalCases += item.quantity;
+      }
+    }
+    if (totalCases > 20) return 100000;
+    if (totalCases > 10) return 50000;
+    if (totalCases > 5) return 20000;
+    return 0;
   }
 
   /**

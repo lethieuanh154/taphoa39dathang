@@ -38,7 +38,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   isCalculatingShip = false;
   distanceKm = 0;
   durationMinutes = 0;
-  shipResult: ShipCostResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
+  shipResult: ShipCostResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '', heavySurcharge: 0 };
   shipError = '';
   minDeliveryDate = '';
 
@@ -134,7 +134,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
             this.shipError = err?.message || 'Lỗi tính khoảng cách';
             this.isCalculatingShip = false;
             this.distanceKm = 0;
-            this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
+            this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '', heavySurcharge: 0 };
             this.cdr.markForCheck();
             return EMPTY;
           })
@@ -144,7 +144,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     ).subscribe(result => {
       this.distanceKm = result.distanceKm;
       this.durationMinutes = result.durationMinutes+5;
-      this.shipResult = this.shippingService.calculateShipCost(this.orderSubtotal, this.distanceKm);
+      this.shipResult = this.shippingService.calculateShipCost(this.orderSubtotal, this.distanceKm, this.items);
       this.isCalculatingShip = false;
       this.calculateEstimatedDelivery();
       this.cdr.markForCheck();
@@ -206,7 +206,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.wantDelivery = false;
     this.usePointsForShip = false;
     this.distanceKm = 0;
-    this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '' };
+    this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '', heavySurcharge: 0 };
     this.shipError = '';
     this.estimatedDeliveryDate = '';
     this.estimatedDeliveryTime = '';

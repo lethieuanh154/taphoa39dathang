@@ -149,6 +149,7 @@ export interface ShipCostResult {
   ratePerKm: number;
   canShip: boolean;
   message: string;
+  heavySurcharge: number;
 }
 
 export interface FinalCalculation {
