@@ -9,7 +9,6 @@ import { ProductCardComponent } from '../components/product-card/product-card.co
 import { CartPanelComponent } from '../components/cart-panel/cart-panel.component';
 import { ProductDetailComponent } from '../components/product-detail/product-detail.component';
 import { CustomerIdentityDialogComponent, IdentityConfirmedEvent } from '../components/customer-identity-dialog/customer-identity-dialog.component';
-import { ChatBubbleComponent } from '../components/chat-bubble/chat-bubble.component';
 import { ProfileBubbleComponent } from '../components/profile-bubble/profile-bubble.component';
 import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
 import { RouterModule } from '@angular/router';
@@ -29,7 +28,7 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ChatBubbleComponent, ProfileBubbleComponent, DraggableBubbleDirective, PolicyFooterComponent] as const,
+  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ProfileBubbleComponent, DraggableBubbleDirective, PolicyFooterComponent] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush

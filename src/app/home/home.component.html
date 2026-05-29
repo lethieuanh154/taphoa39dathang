@@ -159,9 +159,6 @@
 <!-- Profile Bubble -->
 <app-profile-bubble *ngIf="customerIdentity" appDraggableBubble [storageKey]="'profile-bubble-pos'" (loggedOut)="onLogout()"></app-profile-bubble>
 
-<!-- Chat Bubble -->
-<app-chat-bubble *ngIf="customerIdentity" appDraggableBubble [storageKey]="'chat-bubble-pos'"></app-chat-bubble>
-
 <!-- Desktop: full footer (fixed bottom, hide on scroll) -->
 <div class="desktop-footer" [class.footer-hidden]="footerHidden">
   <app-policy-footer />
