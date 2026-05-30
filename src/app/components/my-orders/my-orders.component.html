@@ -14,7 +14,7 @@
 
   <!-- Order list -->
   <div class="order-list" *ngIf="entries.length">
-    <div class="order-card" *ngFor="let e of entries">
+    <div class="order-card" *ngFor="let e of entries" (click)="openOrderDetail(e)">
 
       <div class="order-header">
         <span class="order-id">#{{ e.orderId }}</span>
@@ -28,12 +28,20 @@
       <div class="order-date">{{ formatDate(e.createdDate) }}</div>
 
       <div class="order-items" *ngIf="e.items?.length">
-        <ng-container *ngFor="let item of e.items; let last = last">
-          {{ item.name }} x{{ item.qty }}<span *ngIf="!last">, </span>
-        </ng-container>
-        <span class="more-items" *ngIf="e.itemCount > e.items.length">
-          &nbsp;+{{ e.itemCount - e.items.length }} sản phẩm khác
-        </span>
+        <div class="order-item-row" *ngFor="let item of e.items">
+          <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="item-thumb" loading="lazy" />
+          <div class="item-thumb item-thumb-placeholder" *ngIf="!item.image">?</div>
+          <div class="item-info">
+            <span class="item-name">{{ item.name }}</span>
+            <span class="item-detail">
+              <span class="item-price" *ngIf="item.price">{{ formatPrice(item.price) }}đ</span>
+              <span class="item-qty">x{{ item.qty }}</span>
+            </span>
+          </div>
+        </div>
+        <div class="more-items" *ngIf="e.itemCount > e.items.length">
+          +{{ e.itemCount - e.items.length }} sản phẩm khác
+        </div>
       </div>
 
       <div class="order-footer">
@@ -41,12 +49,48 @@
         <div class="order-tags">
           <span class="tag delivery-tag" *ngIf="e.wantDelivery">🛵 Giao hàng</span>
           <span class="tag pickup-tag" *ngIf="!e.wantDelivery">🏪 Lấy tại cửa hàng</span>
-          <button class="track-btn" *ngIf="e.wantDelivery" (click)="viewTracking(e.orderId)">
+          <button class="track-btn" *ngIf="e.wantDelivery" (click)="$event.stopPropagation(); viewTracking(e.orderId)">
             Theo dõi
           </button>
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- Order detail dialog -->
+  <div class="dialog-overlay" *ngIf="selectedOrder" (click)="closeOrderDetail()">
+    <div class="dialog-panel" (click)="$event.stopPropagation()">
+      <div class="dialog-header">
+        <span class="dialog-title">Chi tiết đơn #{{ selectedOrder.orderId }}</span>
+        <button class="dialog-close" (click)="closeOrderDetail()">&times;</button>
+      </div>
+      <div class="dialog-meta">
+        <span>{{ formatDate(selectedOrder.createdDate) }}</span>
+        <span class="status-badge"
+              [style.background]="statusColor(selectedOrder.liveStatus)"
+              [style.color]="'#fff'">
+          {{ statusLabel(selectedOrder.liveStatus) }}
+        </span>
+      </div>
+      <div class="dialog-items">
+        <div class="dialog-item-row" *ngFor="let item of (selectedOrder.allItems || selectedOrder.items)">
+          <img *ngIf="item.image" [src]="item.image" [alt]="item.name" class="dialog-item-img" loading="lazy" />
+          <div class="dialog-item-img dialog-item-placeholder" *ngIf="!item.image">?</div>
+          <div class="dialog-item-info">
+            <span class="dialog-item-name">{{ item.name }}</span>
+            <span class="dialog-item-detail">
+              <span class="dialog-item-price" *ngIf="item.price">{{ formatPrice(item.price) }}đ</span>
+              <span class="dialog-item-qty">x{{ item.qty }}</span>
+              <span class="dialog-item-subtotal" *ngIf="item.price">= {{ formatPrice(item.price * item.qty) }}đ</span>
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer-row">
+        <span>Tổng cộng:</span>
+        <span class="dialog-total">{{ formatPrice(selectedOrder.totalPrice) }}đ</span>
+      </div>
     </div>
   </div>
 

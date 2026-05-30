@@ -321,6 +321,58 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     const orderId = 'DH' + now.getTime().toString();
     const calc = this.calculation;
 
+    const cartItems = this.items.map(item => {
+      const saleOff = item.unitPriceSaleOff || 0;
+      const unitPrice = item.product.BasePrice - saleOff;
+      return {
+        product: { ...item.product },
+        quantity: item.quantity,
+        unitPriceSaleOff: saleOff,
+        unitPrice,
+        totalPrice: item.isGift ? 0 : unitPrice * item.quantity,
+        isGift: item.isGift,
+        isPromotionItem: item.isPromotionItem,
+        promotionId: item.promotionId,
+        promotionName: item.promotionName,
+        parentProductId: item.parentProductId,
+      };
+    });
+
+    // Add shipping fee as a product line item when delivery is selected
+    if (this.wantDelivery && calc.shipCost > 0) {
+      cartItems.push({
+        product: {
+          Id: 43370064,
+          Code: 'SP170288',
+          Name: 'Phí Giao hàng (Dịch vụ)',
+          FullName: 'Phí Giao hàng (Dịch vụ)',
+          Image: null,
+          BasePrice: calc.shipCost,
+          Cost: 0,
+          OnHand: 999,
+          Unit: 'Dịch vụ',
+          Description: '',
+          CategoryId: null,
+          ConversionValue: 1,
+          MasterUnitId: null,
+          MasterProductId: null,
+          NormalizedName: 'phi giao hang dich vu',
+          NormalizedCode: 'sp170288',
+          isActive: true,
+          isDeleted: false,
+        } as any,
+        quantity: 1,
+        unitPriceSaleOff: 0,
+        unitPrice: calc.shipCost,
+        totalPrice: calc.shipCost,
+        isGift: false,
+        isPromotionItem: false,
+        promotionId: undefined,
+        promotionName: undefined,
+        parentProductId: undefined,
+      });
+    }
+
     const order: OrderData = {
       id: orderId,
       customer: {
@@ -328,23 +380,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         ContactNumber: this.customerPhone.trim(),
         Address: this.customerAddress.trim()
       },
-      cartItems: this.items.map(item => {
-        const saleOff = item.unitPriceSaleOff || 0;
-        const unitPrice = item.product.BasePrice - saleOff;
-        return {
-          product: { ...item.product },
-          quantity: item.quantity,
-          unitPriceSaleOff: saleOff,
-          unitPrice,
-          totalPrice: item.isGift ? 0 : unitPrice * item.quantity,
-          // Promotion fields - giữ nguyên qua Order
-          isGift: item.isGift,
-          isPromotionItem: item.isPromotionItem,
-          promotionId: item.promotionId,
-          promotionName: item.promotionName,
-          parentProductId: item.parentProductId,
-        };
-      }),
+      cartItems,
       totalPrice: calc.finalTotal,
       totalQuantity: this.totalItems,
       discountAmount: calc.pointsUsedForOrder + (this.cartService.getTotalDiscount() || 0),
@@ -389,7 +425,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
             totalPrice: calc.finalTotal,
             itemCount: this.totalItems,
             wantDelivery: this.wantDelivery,
-            items: this.items.slice(0, 3).map(i => ({ name: i.product.Name, qty: i.quantity }))
+            items: this.items.slice(0, 3).map(i => ({ name: i.product.Name, qty: i.quantity, image: i.product.Image || null, price: i.product.BasePrice - (i.unitPriceSaleOff || 0) }))
           };
           if (this.wantDelivery && this.customerLat && this.customerLng) {
             entry.customerLat = this.customerLat;

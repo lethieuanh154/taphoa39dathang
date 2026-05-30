@@ -4,13 +4,21 @@ import { Router, RouterModule } from '@angular/router';
 import { OrderApiService } from '../../services/order-api.service';
 import { PolicyFooterComponent } from '../policy-footer/policy-footer.component';
 
+export interface OrderItemInfo {
+  name: string;
+  qty: number;
+  image?: string | null;
+  price?: number;
+}
+
 export interface OrderHistoryEntry {
   orderId: string;
   createdDate: string;
   totalPrice: number;
   itemCount: number;
   wantDelivery: boolean;
-  items: { name: string; qty: number }[];
+  items: OrderItemInfo[];
+  allItems?: OrderItemInfo[];
   liveStatus?: string;
 }
 
@@ -38,6 +46,7 @@ const STATUS_COLORS: Record<string, string> = {
 })
 export class MyOrdersComponent implements OnInit {
   entries: OrderHistoryEntry[] = [];
+  selectedOrder: OrderHistoryEntry | null = null;
 
   constructor(
     private orderApi: OrderApiService,
@@ -58,12 +67,27 @@ export class MyOrdersComponent implements OnInit {
     this.entries.forEach((entry, i) => {
       this.orderApi.getOrderById(entry.orderId).subscribe({
         next: (data: any) => {
-          if (data?.status) {
-            this.entries = this.entries.map((e, j) =>
-              j === i ? { ...e, liveStatus: data.status } : e
-            );
-            this.cdr.markForCheck();
+          if (!data) return;
+          const patch: Partial<OrderHistoryEntry> = {};
+          if (data.status) patch.liveStatus = data.status;
+
+          // Build full items list from cartItems
+          if (data.cartItems?.length) {
+            const allItems: OrderItemInfo[] = data.cartItems.map((ci: any) => ({
+              name: ci.product?.Name || '',
+              qty: ci.quantity || 0,
+              image: ci.product?.Image || null,
+              price: ci.unitPrice || (ci.product?.BasePrice - (ci.unitPriceSaleOff || 0)) || 0
+            }));
+            patch.allItems = allItems;
+            patch.items = allItems.slice(0, 3);
+            patch.itemCount = allItems.length;
           }
+
+          this.entries = this.entries.map((e, j) =>
+            j === i ? { ...e, ...patch } : e
+          );
+          this.cdr.markForCheck();
         },
         error: () => {}
       });
@@ -89,6 +113,16 @@ export class MyOrdersComponent implements OnInit {
 
   formatPrice(n: number): string {
     return n.toLocaleString('vi-VN');
+  }
+
+  openOrderDetail(entry: OrderHistoryEntry): void {
+    this.selectedOrder = entry;
+    this.cdr.markForCheck();
+  }
+
+  closeOrderDetail(): void {
+    this.selectedOrder = null;
+    this.cdr.markForCheck();
   }
 
   viewTracking(orderId: string): void {
