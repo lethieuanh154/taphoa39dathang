@@ -393,7 +393,7 @@ export class HomeComponent implements OnInit, OnDestroy {
       const pid = String(promo.targetProductId);
       if (seen.has(pid)) continue;
       const product = promo.targetProduct;
-      if (product && !product.isDeleted && product.isActive !== false && product.CategoryId !== 1440125) {
+      if (product && !product.isDeleted && product.isActive !== false && product.CategoryId !== 1440125 && product.CategoryId !== 1787413) {
         seen.add(pid);
         this.promotionProducts.push({ product, promotion: promo });
         productsToCache.push(product);
@@ -496,7 +496,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private async loadCategories(): Promise<void> {
     try {
-      this.categories = (await this.productApi.loadCategories()).filter(c => c.Id !== 1440125);
+      this.categories = (await this.productApi.loadCategories()).filter(c => c.Id !== 1440125 && c.Id !== 1787413);
       this.cdr.markForCheck();
     } catch {
       this.categories = [];

@@ -424,7 +424,7 @@ export class ProductApiService implements OnDestroy {
     return false;
   }
 
-  private static readonly HIDDEN_CATEGORY_IDS = new Set([1440125]);
+  private static readonly HIDDEN_CATEGORY_IDS = new Set([1440125, 1787413]);
 
   private filterOriginalProducts(raw: any[]): Product[] {
     if (!Array.isArray(raw)) return [];
