@@ -163,7 +163,7 @@ export class ProductApiService implements OnDestroy {
       const cached = await this.idb.getAllByIndex<Product>(
         this.DB_NAME, this.DB_VERSION, this.STORE_NAME, 'CategoryId', categoryId
       );
-      const filtered = cached.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p));
+      const filtered = cached.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p) && !this.isKmProduct(p));
       return { products: filtered.slice(offset, offset + limit), hasMore: offset + limit < filtered.length };
     }
   }
@@ -214,6 +214,7 @@ export class ProductApiService implements OnDestroy {
     for (const product of allProducts) {
       if (product.isDeleted || !product.isActive) continue;
       if (this.isCloneProduct(product)) continue;
+      if (this.isKmProduct(product)) continue;
       if (ProductApiService.HIDDEN_CATEGORY_IDS.has(product.CategoryId!)) continue;
 
       const name = (product.NormalizedName || product.Name || product.FullName || '').toLowerCase();
@@ -380,7 +381,7 @@ export class ProductApiService implements OnDestroy {
    */
   async getAllCachedProducts(): Promise<Product[]> {
     const all = await this.getCachedProducts();
-    return all.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p) && !ProductApiService.HIDDEN_CATEGORY_IDS.has(p.CategoryId!));
+    return all.filter(p => !p.isDeleted && p.isActive && !this.isCloneProduct(p) && !this.isKmProduct(p) && !ProductApiService.HIDDEN_CATEGORY_IDS.has(p.CategoryId!));
   }
 
   /** Get ALL cached products unfiltered (includes KM, clone, inactive). For lookups only. */
@@ -424,6 +425,11 @@ export class ProductApiService implements OnDestroy {
     return false;
   }
 
+  private isKmProduct(product: Product): boolean {
+    const name = (product.FullName || product.Name || '').toLowerCase();
+    return (name.includes('(km)')) && (product.Cost === 0 || !product.Cost);
+  }
+
   private static readonly HIDDEN_CATEGORY_IDS = new Set([1440125, 1787413]);
 
   private filterOriginalProducts(raw: any[]): Product[] {
@@ -437,6 +443,9 @@ export class ProductApiService implements OnDestroy {
         if (item.isClone === true) return false;
         if ((item.OnHandNV || 0) > 0 && (item.OnHand || 0) === 0) return false;
         if (ProductApiService.HIDDEN_CATEGORY_IDS.has(item.CategoryId)) return false;
+        // Hide KM (gift/promotional) products — not for sale
+        const itemName = (item.FullName || item.Name || '').toLowerCase();
+        if (itemName.includes('(km)') && (item.Cost === 0 || !item.Cost)) return false;
         return true;
       })
       .map(item => this.mapProduct(item));
