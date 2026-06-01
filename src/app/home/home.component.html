@@ -88,23 +88,31 @@
 <div class="bubble-backdrop" *ngIf="isBubbleMenuOpen" (click)="closeBubbleMenu()"></div>
 <div class="bubble-container" [class.bubble-open]="isBubbleMenuOpen" appDraggableBubble [storageKey]="'menu-bubble-pos'">
   <!-- Fan items -->
-  <div class="fan-menu" *ngIf="isBubbleMenuOpen">
-    <!-- Nút "Tất cả" để quay về featured -->
-    <button class="fan-item fan-item-all"
-            [class.fan-active]="!activeCategory"
-            [style.--fan-index]="0"
-            (click)="onShowAllClick()">
-      <span class="fan-label">Tất cả</span>
-    </button>
-    <button class="fan-item"
-            *ngFor="let cat of categories; let i = index; trackBy: trackByCategoryId"
-            [class.fan-active]="activeCategory?.Id === cat.Id"
-            [style.--fan-index]="i + 1"
-            [style.--fan-total]="categories.length + 1"
-            [style.font-size]="getFanFontSize(cat.Name)"
-            (click)="onCategoryClick(cat)">
-      <span class="fan-label">{{ cat.Name }}</span>
-    </button>
+  <div class="fan-menu-wrap" *ngIf="isBubbleMenuOpen">
+    <div class="fan-scroll-hint fan-scroll-hint-up">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
+    </div>
+    <div class="fan-menu">
+      <!-- Nút "Tất cả" để quay về featured -->
+      <button class="fan-item fan-item-all"
+              [class.fan-active]="!activeCategory"
+              [style.--fan-index]="0"
+              (click)="onShowAllClick()">
+        <span class="fan-label">Tất cả</span>
+      </button>
+      <button class="fan-item"
+              *ngFor="let cat of categories; let i = index; trackBy: trackByCategoryId"
+              [class.fan-active]="activeCategory?.Id === cat.Id"
+              [style.--fan-index]="i + 1"
+              [style.--fan-total]="categories.length + 1"
+              [style.font-size]="getFanFontSize(cat.Name)"
+              (click)="onCategoryClick(cat)">
+        <span class="fan-label">{{ cat.Name }}</span>
+      </button>
+    </div>
+    <div class="fan-scroll-hint fan-scroll-hint-down">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
+    </div>
   </div>
   <!-- Bubble button: hiện tên category nếu đang active -->
   <button class="bubble-btn" (click)="toggleBubbleMenu()" [class.bubble-active]="isBubbleMenuOpen">

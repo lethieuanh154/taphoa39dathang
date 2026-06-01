@@ -259,7 +259,7 @@
   height: 52px;
   border-radius: 50%;
   border: none;
-  background: var(--green-600, #2e7d32);
+  background: #1bb9be;
   color: #fff;
   display: flex;
   align-items: center;
@@ -278,16 +278,24 @@
   transform: rotate(0deg);
 }
 
-/* Fan menu - vertical column spreading upward from bubble */
-.fan-menu {
+/* Fan menu wrapper - positions the scroll area + hints */
+.fan-menu-wrap {
   position: absolute;
   bottom: 60px;
   left: 0;
   display: flex;
-  flex-direction: column-reverse;
-  gap: 5px;
-  padding-bottom: 8px;
+  flex-direction: column;
+  align-items: center;
   max-height: 70vh;
+}
+
+/* Fan menu - vertical column spreading upward from bubble */
+.fan-menu {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 6px;
+  padding: 4px 0;
+  max-height: calc(70vh - 48px);
   overflow-y: auto;
   scrollbar-width: none;
 }
@@ -296,22 +304,44 @@
   display: none;
 }
 
+/* Scroll hint arrows */
+.fan-scroll-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 22px;
+  color: #fff;
+  background: rgba(46, 125, 50, 0.75);
+  border-radius: 12px;
+  animation: hintPulse 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.fan-scroll-hint-up { margin-bottom: 2px; }
+.fan-scroll-hint-down { margin-top: 2px; }
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
 .fan-item {
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: #fff;
-  border-radius: 22px;
-  padding: 0 14px;
-  width: 130px;
-  height: 44px;
-  font-size: 12px;
+  border-radius: 24px;
+  padding: 0 16px;
+  width: 155px;
+  min-height: 52px;
+  font-size: 14px;
   font-weight: 600;
   color: #333;
   white-space: normal;
   text-align: center;
-  line-height: 1.15;
+  line-height: 1.2;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.13);
   transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -328,8 +358,8 @@
 
 .fan-item-all {
   border: 1.5px dashed #999;
-  width: 130px;
-  height: 44px;
+  width: 155px;
+  min-height: 52px;
 }
 
 .fan-item:hover {
