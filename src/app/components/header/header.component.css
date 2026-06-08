@@ -1,9 +1,5 @@
 .site-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
   background: var(--green-600);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 .header-inner {
@@ -40,7 +36,7 @@
 .search-box {
   flex: 1;
   display: flex;
-  max-width: 500px;
+  max-width: auto;
   border-radius: 8px;
   overflow: hidden;
   background: #fff;
@@ -107,141 +103,6 @@
   border-radius: 10px;
   padding: 0 4px;
 }
-
-/* About Modal */
-.about-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.about-modal {
-  background: #fff;
-  border-radius: 16px;
-  width: 90%;
-  max-width: 420px;
-  max-height: 85vh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  animation: slideUp 0.25s ease;
-}
-
-@keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
-
-.about-close {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: #666;
-  cursor: pointer;
-  line-height: 1;
-  padding: 4px 8px;
-  z-index: 1;
-}
-
-.about-close:hover {
-  color: #333;
-}
-
-.about-header {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 24px 20px 12px;
-  background: #dcecdc;
-  color: #fff;
-}
-
-.about-banner {
-  max-width: 70%;
-  max-height: 80px;
-  object-fit: contain;
-}
-
-.about-info {
-  padding: 16px 20px 8px;
-  font-size: 14px;
-  color: #333;
-  line-height: 1.6;
-}
-
-.about-info p {
-  margin: 4px 0;
-}
-
-.about-info a {
-  color: var(--green-600);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.about-divider {
-  border: none;
-  border-top: 1px solid #e5e5e5;
-  margin: 8px 20px;
-}
-
-/* Policy links in About modal */
-.about-policy-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  padding: 4px 20px 0;
-}
-
-.about-policy-links a {
-  display: block;
-  width: 100%;
-  padding: 10px 12px;
-  font-size: 14px;
-  color: var(--green-700, #1B5E20);
-  text-decoration: none;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background 0.15s;
-}
-
-.about-policy-links a:last-child {
-  border-bottom: none;
-}
-
-.about-policy-links a:hover {
-  background: #e8f5e9;
-}
-
-.about-promo {
-  padding: 12px 20px 24px;
-  overflow: visible;
-  position: relative;
-}
-
-.about-promo-scroll {
-  font-size: 15px;
-  color: #555;
-  line-height: 1.8;
-}
-
-.about-promo-scroll p {
-  margin: 0 0 10px;
-}
-
 
 @media (max-width: 600px) {
   .logo-text {

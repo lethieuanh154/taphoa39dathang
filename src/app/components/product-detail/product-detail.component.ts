@@ -177,7 +177,20 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  get selectedProductStock(): number {
+    return this.selectedProduct.OnHand + (this.selectedProduct.CloneOnHandNV || 0);
+  }
+
+  get remainingStock(): number {
+    const inCart = this.cartService.getCartQuantity(this.selectedProduct.Code);
+    return Math.max(0, this.selectedProductStock - inCart);
+  }
+
   increaseQuantity(): void {
+    if (this.selectedProductStock > 0 && this.quantity >= this.remainingStock) {
+      this.showSnackbar(`Chỉ còn ${this.selectedProductStock} sản phẩm trong kho`);
+      return;
+    }
     this.quantity++;
     this.cdr.markForCheck();
   }
@@ -191,8 +204,12 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
 
   addToCart(): void {
     if (this.isOutOfStock) return;
-    this.cartService.addToCart(this.selectedProduct, this.quantity);
-    this.showSnackbar(`Đã thêm ${this.selectedProduct.FullName} vào giỏ hàng`);
+    const ok = this.cartService.addToCart(this.selectedProduct, this.quantity);
+    if (ok) {
+      this.showSnackbar(`Đã thêm ${this.selectedProduct.FullName} vào giỏ hàng`);
+    } else {
+      this.showSnackbar(`Tồn kho chỉ còn ${this.selectedProductStock} "${this.selectedProduct.FullName}"`);
+    }
     this.quantity = 1;
     this.addedAnimation = true;
     this.cdr.markForCheck();

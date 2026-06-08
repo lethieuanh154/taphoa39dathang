@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -34,6 +34,22 @@ interface Category {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent implements OnInit, OnDestroy {
+  private categoryScrollEl?: HTMLElement;
+  showLeftArrow = false;
+  showRightArrow = false;
+
+  @ViewChild('categoryScroll') set categoryScrollRef(ref: ElementRef<HTMLElement> | undefined) {
+    if (ref) {
+      const el = ref.nativeElement;
+      if (el !== this.categoryScrollEl) {
+        this.categoryScrollEl = el;
+        this.initCategoryDragScroll();
+        el.addEventListener('scroll', () => this.updateArrowVisibility());
+        // Initial check after layout
+        setTimeout(() => this.updateArrowVisibility(), 100);
+      }
+    }
+  }
 
   // All master products from search/category (after grouping)
   private allMasterProducts: Product[] = [];
@@ -71,9 +87,8 @@ export class HomeComponent implements OnInit, OnDestroy {
   changePasswordSubmitting = false;
   changePasswordMessage = '';
 
-  // Category bubble menu
+  // Category bar
   categories: Category[] = [];
-  isBubbleMenuOpen = false;
   activeCategory: Category | null = null;
 
   private readonly PAGE_SIZE = 20;
@@ -192,6 +207,37 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.promoSub?.unsubscribe();
   }
 
+  private initCategoryDragScroll(): void {
+    const el = this.categoryScrollEl;
+    if (!el) return;
+
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+
+    el.addEventListener('mousedown', (e: MouseEvent) => {
+      isDown = true;
+      el.style.cursor = 'grabbing';
+      startX = e.pageX - el.offsetLeft;
+      scrollLeft = el.scrollLeft;
+    });
+    el.addEventListener('mouseleave', () => { isDown = false; el.style.cursor = ''; });
+    el.addEventListener('mouseup', () => { isDown = false; el.style.cursor = ''; });
+    el.addEventListener('mousemove', (e: MouseEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - el.offsetLeft;
+      el.scrollLeft = scrollLeft - (x - startX);
+    });
+    // Mouse wheel → horizontal scroll
+    el.addEventListener('wheel', (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        el.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
+
   @HostListener('window:scroll')
   onWindowScroll(): void {
     const scrollY = window.scrollY;
@@ -240,7 +286,6 @@ export class HomeComponent implements OnInit, OnDestroy {
   // ======================== Category ========================
 
   onCategoryClick(category: Category): void {
-    this.isBubbleMenuOpen = false;
     this.activeCategory = category;
     this.lastSearchTerm = '';
     this.isLoading = true;
@@ -290,7 +335,14 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // ======================== Product display helpers ========================
 
+  private isPromoFreeProduct(p: Product): boolean {
+    if (p.BasePrice > 0) return false;
+    const name = (p.Name || p.FullName || '').trim();
+    return /[_\s]?[Kk][Mm](\s*\(|$|\s)/.test(name) || name.toUpperCase().endsWith('KM');
+  }
+
   private appendProducts(results: Product[]): void {
+    results = results.filter(p => !this.isPromoFreeProduct(p));
     const grouped = this.groupService.group(results);
     // Merge new grouped products into existing
     Object.assign(this.groupedProducts, grouped);
@@ -503,23 +555,30 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  toggleBubbleMenu(): void {
-    this.isBubbleMenuOpen = !this.isBubbleMenuOpen;
-    this.cdr.markForCheck();
+  private updateArrowVisibility(): void {
+    const el = this.categoryScrollEl;
+    if (!el) return;
+    this.showLeftArrow = el.scrollLeft > 5;
+    this.showRightArrow = el.scrollLeft < el.scrollWidth - el.clientWidth - 5;
+    this.cdr.detectChanges();
+  }
+
+  scrollCategoryLeft(): void {
+    if (!this.categoryScrollEl) return;
+    this.categoryScrollEl.scrollBy({ left: -200, behavior: 'smooth' });
+  }
+
+  scrollCategoryRight(): void {
+    if (!this.categoryScrollEl) return;
+    this.categoryScrollEl.scrollBy({ left: 200, behavior: 'smooth' });
   }
 
   onShowAllClick(): void {
-    this.isBubbleMenuOpen = false;
     this.activeCategory = null;
     this.lastSearchTerm = '';
     this.isLoading = true;
     this.cdr.markForCheck();
     this.loadFeaturedDisplay();
-  }
-
-  closeBubbleMenu(): void {
-    this.isBubbleMenuOpen = false;
-    this.cdr.markForCheck();
   }
 
   getMarketPrice(basePrice: number): number {
@@ -533,11 +592,4 @@ export class HomeComponent implements OnInit, OnDestroy {
     return cat.Id;
   }
 
-  getFanFontSize(name: string): string {
-    const len = name.length;
-    if (len <= 8) return '12px';
-    if (len <= 12) return '11px';
-    if (len <= 16) return '10px';
-    return '9px';
-  }
 }

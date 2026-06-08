@@ -4,7 +4,30 @@
   (confirmed)="onIdentityConfirmed($event)">
 </app-customer-identity-dialog>
 
-<app-header (search)="onSearch($event)"></app-header>
+<div class="sticky-top-wrap">
+  <app-header (search)="onSearch($event)" (logoClick)="onShowAllClick()"></app-header>
+
+  <!-- Category Bar -->
+  <nav class="category-bar" *ngIf="categories.length > 0">
+    <div class="category-bar-inner">
+      <button class="cat-arrow cat-arrow-left" [class.cat-arrow-hidden]="!showLeftArrow" (click)="scrollCategoryLeft()" aria-label="Scroll left">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="category-bar-scroll" #categoryScroll>
+        <button class="category-chip"
+                [class.category-chip-active]="!activeCategory"
+                (click)="onShowAllClick()">Tất cả</button>
+        <button class="category-chip"
+                *ngFor="let cat of categories; trackBy: trackByCategoryId"
+                [class.category-chip-active]="activeCategory?.Id === cat.Id"
+                (click)="onCategoryClick(cat)">{{ cat.Name }}</button>
+      </div>
+      <button class="cat-arrow cat-arrow-right" [class.cat-arrow-hidden]="!showRightArrow" (click)="scrollCategoryRight()" aria-label="Scroll right">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+    </div>
+  </nav>
+</div>
 
 <main class="main-content">
   <!-- Promotion Bar - Real promotions from database -->
@@ -83,51 +106,6 @@
   [promotion]="detailPromotion"
   (close)="onDetailClose()">
 </app-product-detail>
-
-<!-- Category Bubble Menu -->
-<div class="bubble-backdrop" *ngIf="isBubbleMenuOpen" (click)="closeBubbleMenu()"></div>
-<div class="bubble-container" [class.bubble-open]="isBubbleMenuOpen" appDraggableBubble [storageKey]="'menu-bubble-pos'">
-  <!-- Fan items -->
-  <div class="fan-menu-wrap" *ngIf="isBubbleMenuOpen">
-    <div class="fan-scroll-hint fan-scroll-hint-up">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="18 15 12 9 6 15"/></svg>
-    </div>
-    <div class="fan-menu">
-      <!-- Nút "Tất cả" để quay về featured -->
-      <button class="fan-item fan-item-all"
-              [class.fan-active]="!activeCategory"
-              [style.--fan-index]="0"
-              (click)="onShowAllClick()">
-        <span class="fan-label">Tất cả</span>
-      </button>
-      <button class="fan-item"
-              *ngFor="let cat of categories; let i = index; trackBy: trackByCategoryId"
-              [class.fan-active]="activeCategory?.Id === cat.Id"
-              [style.--fan-index]="i + 1"
-              [style.--fan-total]="categories.length + 1"
-              [style.font-size]="getFanFontSize(cat.Name)"
-              (click)="onCategoryClick(cat)">
-        <span class="fan-label">{{ cat.Name }}</span>
-      </button>
-    </div>
-    <div class="fan-scroll-hint fan-scroll-hint-down">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg>
-    </div>
-  </div>
-  <!-- Bubble button: hiện tên category nếu đang active -->
-  <button class="bubble-btn" (click)="toggleBubbleMenu()" [class.bubble-active]="isBubbleMenuOpen">
-    <svg *ngIf="!isBubbleMenuOpen && !activeCategory" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-      <line x1="4" y1="6" x2="20" y2="6"/>
-      <line x1="4" y1="12" x2="20" y2="12"/>
-      <line x1="4" y1="18" x2="20" y2="18"/>
-    </svg>
-    <span *ngIf="!isBubbleMenuOpen && activeCategory" class="bubble-cat-label">{{ activeCategory.Name }}</span>
-    <svg *ngIf="isBubbleMenuOpen" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-      <line x1="18" y1="6" x2="6" y2="18"/>
-      <line x1="6" y1="6" x2="18" y2="18"/>
-    </svg>
-  </button>
-</div>
 
 <!-- Change Password Popup -->
 <div class="cpw-backdrop" *ngIf="showChangePasswordPopup">

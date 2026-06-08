@@ -108,11 +108,12 @@
       <!-- Quantity Selector -->
       <div class="quantity-selector" *ngIf="!isOutOfStock">
         <span class="qty-label">Số lượng:</span>
-        <div class="qty-controls">
+        <div class="qty-controls" [class.qty-at-limit]="selectedProductStock > 0 && quantity >= remainingStock">
           <button class="qty-btn" [disabled]="quantity <= 1" (click)="decreaseQuantity()">−</button>
           <span class="qty-value">{{ quantity }}</span>
-          <button class="qty-btn" (click)="increaseQuantity()">+</button>
+          <button class="qty-btn" [disabled]="selectedProductStock > 0 && quantity >= remainingStock" (click)="increaseQuantity()">+</button>
         </div>
+        <span class="qty-stock-hint" *ngIf="selectedProductStock > 0 && quantity >= remainingStock">Tối đa {{ selectedProductStock }}</span>
       </div>
 
       <!-- Add to Cart -->

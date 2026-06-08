@@ -13,8 +13,12 @@
   </div>
 
   <div class="panel-body" *ngIf="items.length > 0">
+    <!-- Stock warning toast -->
+    <div class="stock-warning-toast" *ngIf="stockWarning">{{ stockWarning }}</div>
+
     <div class="cart-item" *ngFor="let item of items; trackBy: trackByCartItem"
-         [class.gift-item]="item.isGift">
+         [class.gift-item]="item.isGift"
+         [class.over-stock-item]="!item.isGift && isOverStock(item)">
       <img [src]="item.product.Image || 'assets/no-image.svg'" [alt]="item.product.FullName" class="item-img" />
       <div class="item-info">
         <div class="item-name">
@@ -32,9 +36,10 @@
           <span class="price-original" *ngIf="item.product.BasePrice > 0">{{ formatPrice(item.product.BasePrice) }}đ</span>
           0đ (tặng kèm)
         </div>
+        <div class="stock-hint" *ngIf="!item.isGift && isOverStock(item)">Kho: {{ getItemStock(item) }}</div>
       </div>
       <div class="item-actions" *ngIf="!item.isGift">
-        <div class="qty-control">
+        <div class="qty-control" [class.qty-over-stock]="isOverStock(item)">
           <button class="qty-btn" (click)="decrease(item.product.Code)" aria-label="Giam">-</button>
           <span class="qty-value">{{ item.quantity }}</span>
           <button class="qty-btn" (click)="increase(item.product.Code)" aria-label="Tang">+</button>

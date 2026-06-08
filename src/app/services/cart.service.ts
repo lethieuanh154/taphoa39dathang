@@ -25,6 +25,10 @@ export class CartService {
   private totalDiscountSubject = new BehaviorSubject<number>(0);
   totalDiscount$ = this.totalDiscountSubject.asObservable();
 
+  // Stock warning
+  private stockWarningSubject = new Subject<string>();
+  stockWarning$ = this.stockWarningSubject.asObservable();
+
   constructor(private promotionService: PromotionService, private productApiService: ProductApiService) {
     this.loadFromStorage();
 
@@ -78,33 +82,78 @@ export class CartService {
     return this.appliedPromotions;
   }
 
-  addToCart(product: Product, quantity = 1): void {
+  getAvailableStock(product: Product): number {
+    return product.OnHand + (product.CloneOnHandNV || 0);
+  }
+
+  getCartQuantity(code: string): number {
+    const item = this.items.find(i => i.product.Code === code && !i.isGift && !i.isPromotionItem);
+    return item ? item.quantity : 0;
+  }
+
+  addToCart(product: Product, quantity = 1): boolean {
+    const stock = this.getAvailableStock(product);
     const idx = this.items.findIndex(i => i.product.Code === product.Code && !i.isGift);
+    const currentQty = idx >= 0 ? this.items[idx].quantity : 0;
+    const newQty = currentQty + quantity;
+
+    if (stock > 0 && newQty > stock) {
+      const maxAdd = stock - currentQty;
+      if (maxAdd <= 0) {
+        this.stockWarningSubject.next(`"${product.FullName || product.Name}" đã đạt tối đa tồn kho (${stock})`);
+        return false;
+      }
+      // Add chỉ số lượng còn lại
+      if (idx >= 0) {
+        this.items = this.items.map((item, i) =>
+          i === idx ? { ...item, quantity: stock } : item
+        );
+      } else {
+        this.items = [...this.items, { product, quantity: maxAdd, unitPriceSaleOff: 0 }];
+      }
+      this.stockWarningSubject.next(`Chỉ còn ${stock} "${product.FullName || product.Name}" trong kho`);
+      this.emit();
+      this.recalculatePromotions();
+      return false;
+    }
+
     if (idx >= 0) {
       this.items = this.items.map((item, i) =>
-        i === idx ? { ...item, quantity: item.quantity + quantity } : item
+        i === idx ? { ...item, quantity: newQty } : item
       );
     } else {
       this.items = [...this.items, { product, quantity, unitPriceSaleOff: 0 }];
     }
     this.emit();
     this.recalculatePromotions();
+    return true;
   }
 
-  updateQuantity(code: string, quantity: number): void {
+  updateQuantity(code: string, quantity: number): boolean {
     if (quantity <= 0) {
       this.removeFromCart(code);
-      return;
+      return true;
     }
-    // Don't allow editing gift item quantity
     const item = this.items.find(i => i.product.Code === code);
-    if (item?.isGift) return;
+    if (item?.isGift) return false;
 
-    this.items = this.items.map(item =>
-      item.product.Code === code && !item.isGift ? { ...item, quantity } : item
+    const stock = item ? this.getAvailableStock(item.product) : 0;
+    if (stock > 0 && quantity > stock) {
+      this.items = this.items.map(i =>
+        i.product.Code === code && !i.isGift ? { ...i, quantity: stock } : i
+      );
+      this.stockWarningSubject.next(`Chỉ còn ${stock} "${item!.product.FullName || item!.product.Name}" trong kho`);
+      this.emit();
+      this.recalculatePromotions();
+      return false;
+    }
+
+    this.items = this.items.map(i =>
+      i.product.Code === code && !i.isGift ? { ...i, quantity } : i
     );
     this.emit();
     this.recalculatePromotions();
+    return true;
   }
 
   removeFromCart(code: string): void {

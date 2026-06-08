@@ -20,6 +20,8 @@ export class CartPanelComponent implements OnDestroy {
   private historyPushed = false;
 
   totalDiscount = 0;
+  stockWarning = '';
+  private stockWarningTimer: any;
 
   constructor(
     private cartService: CartService,
@@ -44,8 +46,21 @@ export class CartPanelComponent implements OnDestroy {
       this.cartService.totalDiscount$.subscribe(d => {
         this.totalDiscount = d;
         this.cdr.markForCheck();
+      }),
+      this.cartService.stockWarning$.subscribe(msg => {
+        this.showStockWarning(msg);
       })
     );
+  }
+
+  private showStockWarning(msg: string): void {
+    clearTimeout(this.stockWarningTimer);
+    this.stockWarning = msg;
+    this.cdr.markForCheck();
+    this.stockWarningTimer = setTimeout(() => {
+      this.stockWarning = '';
+      this.cdr.markForCheck();
+    }, 3000);
   }
 
   @HostListener('window:popstate')
@@ -98,6 +113,15 @@ export class CartPanelComponent implements OnDestroy {
   goToMyOrders(): void {
     this.cartService.closePanel();
     this.router.navigate(['/don-hang-cua-toi']);
+  }
+
+  getItemStock(item: CartItem): number {
+    return this.cartService.getAvailableStock(item.product);
+  }
+
+  isOverStock(item: CartItem): boolean {
+    const stock = this.getItemStock(item);
+    return stock > 0 && item.quantity >= stock;
   }
 
   trackByCartItem(_: number, item: CartItem): string {
