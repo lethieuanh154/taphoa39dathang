@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -17,6 +17,7 @@ export class CartPanelComponent implements OnDestroy {
   items: CartItem[] = [];
   isOpen = false;
   private subs: Subscription[] = [];
+  private historyPushed = false;
 
   totalDiscount = 0;
 
@@ -31,6 +32,12 @@ export class CartPanelComponent implements OnDestroy {
         this.cdr.markForCheck();
       }),
       this.cartService.panelOpen$.subscribe(open => {
+        if (open && !this.isOpen) {
+          history.pushState({ modal: 'cart-panel' }, '');
+          this.historyPushed = true;
+        } else if (!open && this.isOpen && this.historyPushed) {
+          this.historyPushed = false;
+        }
         this.isOpen = open;
         this.cdr.markForCheck();
       }),
@@ -39,6 +46,14 @@ export class CartPanelComponent implements OnDestroy {
         this.cdr.markForCheck();
       })
     );
+  }
+
+  @HostListener('window:popstate')
+  onPopState(): void {
+    if (this.isOpen) {
+      this.historyPushed = false;
+      this.cartService.closePanel();
+    }
   }
 
   ngOnDestroy(): void {

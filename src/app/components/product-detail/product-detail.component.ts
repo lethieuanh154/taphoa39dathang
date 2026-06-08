@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Product, Promotion } from '../../models/product';
@@ -13,7 +13,7 @@ import { environment } from '../../../environments/environment';
   styleUrls: ['./product-detail.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ProductDetailComponent {
+export class ProductDetailComponent implements OnInit, OnDestroy {
   @Input() product!: Product;
   @Input() group: Product[] = [];
   @Input() isSale = false;
@@ -34,11 +34,32 @@ export class ProductDetailComponent {
   currentImageIndex = 0;
   imagesLoaded = false;
 
+  private historyPushed = false;
+
   constructor(
     private cartService: CartService,
     private cdr: ChangeDetectorRef,
     private http: HttpClient
   ) {}
+
+  ngOnInit(): void {
+    history.pushState({ modal: 'product-detail' }, '');
+    this.historyPushed = true;
+  }
+
+  ngOnDestroy(): void {
+    if (this.historyPushed) {
+      this.historyPushed = false;
+    }
+  }
+
+  @HostListener('window:popstate')
+  onPopState(): void {
+    if (this.historyPushed) {
+      this.historyPushed = false;
+      this.close.emit();
+    }
+  }
 
   ngOnChanges(): void {
     this.selectedProduct = this.product;
