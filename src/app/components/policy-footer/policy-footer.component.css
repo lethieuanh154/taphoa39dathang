@@ -41,13 +41,13 @@
   text-decoration: underline;
 }
 
-/* Right column: Policy Links — 2 sub-columns */
+/* Right column: Policy Links */
 .footer-links {
   flex: 1;
   min-width: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .footer-links a {
@@ -64,30 +64,20 @@
   text-decoration: underline;
 }
 
-/* ===== Bottom: BCT logo + copyright (single line) ===== */
-.footer-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.15);
-}
-
 .footer-bct {
   display: inline-flex;
+  margin-top: 8px;
 }
 
 .bct-logo {
-  height: 28px;
+  height: 56px;
   width: auto;
 }
 
 .footer-cr {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.5);
-  margin: 0;
+  margin: 6px 0 0;
 }
 
 /* ===== Mobile: stack vertically ===== */

@@ -131,7 +131,7 @@
   width: 90%;
   max-width: 420px;
   max-height: 85vh;
-  overflow: hidden;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -227,33 +227,21 @@
 }
 
 .about-promo {
-  padding: 8px 20px 20px;
-  max-height: 200px;
-  overflow: hidden;
+  padding: 12px 20px 24px;
+  overflow: visible;
   position: relative;
 }
 
 .about-promo-scroll {
-  animation: slowScroll 20s linear infinite;
-  font-size: 14px;
+  font-size: 15px;
   color: #555;
-  line-height: 1.7;
+  line-height: 1.8;
 }
 
 .about-promo-scroll p {
   margin: 0 0 10px;
 }
 
-.about-promo:hover .about-promo-scroll {
-  animation-play-state: paused;
-}
-
-@keyframes slowScroll {
-  0% { transform: translateY(0); }
-  10% { transform: translateY(0); }
-  90% { transform: translateY(calc(-100% + 200px)); }
-  100% { transform: translateY(calc(-100% + 200px)); }
-}
 
 @media (max-width: 600px) {
   .logo-text {

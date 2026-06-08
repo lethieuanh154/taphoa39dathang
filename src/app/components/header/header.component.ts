@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, EventEmitter, Output, ChangeDetectionStrategy, ChangeDetectorRef, OnDestroy, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -30,6 +30,25 @@ export class HeaderComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.cartSub.unsubscribe();
+  }
+
+  openAbout(): void {
+    this.showAbout = true;
+    history.pushState({ modal: 'about' }, '');
+  }
+
+  closeAbout(): void {
+    if (this.showAbout) {
+      this.showAbout = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  @HostListener('window:popstate', ['$event'])
+  onPopState(event: PopStateEvent): void {
+    if (this.showAbout) {
+      this.closeAbout();
+    }
   }
 
   onSearch(): void {

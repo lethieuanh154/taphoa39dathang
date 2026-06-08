@@ -1,14 +1,14 @@
 <header class="site-header">
   <div class="header-inner">
-    <a class="logo-link" (click)="showAbout = true; $event.preventDefault()" href="javascript:void(0)">
+    <a class="logo-link" (click)="openAbout(); $event.preventDefault()" href="javascript:void(0)">
       <img src="iconSongMinh.png" alt="Song Minh" class="logo-img" />
       <span class="logo-text">Song Minh</span>
     </a>
 
     <!-- About Modal -->
-    <div class="about-overlay" *ngIf="showAbout" (click)="showAbout = false">
+    <div class="about-overlay" *ngIf="showAbout" (click)="closeAbout()">
       <div class="about-modal" (click)="$event.stopPropagation()">
-        <button class="about-close" (click)="showAbout = false">&times;</button>
+        <button class="about-close" (click)="closeAbout()">&times;</button>
 
         <div class="about-header">
           <img src="logo_Name_SongMinh.png" alt="Song Minh" class="about-banner" />
@@ -25,13 +25,13 @@
         <hr class="about-divider" />
 
         <nav class="about-policy-links">
-          <a routerLink="/gioi-thieu" (click)="showAbout = false">Giới thiệu</a>
-          <a routerLink="/huong-dan-mua-hang" (click)="showAbout = false">Hướng dẫn mua hàng</a>
-          <a routerLink="/chinh-sach-doi-tra" (click)="showAbout = false">Chính sách đổi trả</a>
-          <a routerLink="/chinh-sach-van-chuyen" (click)="showAbout = false">Chính sách vận chuyển</a>
-          <a routerLink="/phuong-thuc-thanh-toan" (click)="showAbout = false">Phương thức thanh toán</a>
-          <a routerLink="/chinh-sach-bao-mat" (click)="showAbout = false">Chính sách bảo mật</a>
-          <a routerLink="/dieu-khoan-su-dung" (click)="showAbout = false">Điều khoản sử dụng</a>
+          <a routerLink="/gioi-thieu" (click)="closeAbout()">Giới thiệu</a>
+          <a routerLink="/huong-dan-mua-hang" (click)="closeAbout()">Hướng dẫn mua hàng</a>
+          <a routerLink="/chinh-sach-doi-tra" (click)="closeAbout()">Chính sách đổi trả</a>
+          <a routerLink="/chinh-sach-van-chuyen" (click)="closeAbout()">Chính sách vận chuyển</a>
+          <a routerLink="/phuong-thuc-thanh-toan" (click)="closeAbout()">Phương thức thanh toán</a>
+          <a routerLink="/chinh-sach-bao-mat" (click)="closeAbout()">Chính sách bảo mật</a>
+          <a routerLink="/dieu-khoan-su-dung" (click)="closeAbout()">Điều khoản sử dụng</a>
         </nav>
 
         <hr class="about-divider" />
