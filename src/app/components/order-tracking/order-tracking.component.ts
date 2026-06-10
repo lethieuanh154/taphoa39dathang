@@ -28,7 +28,7 @@ interface DisplayStatus {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './order-tracking.component.html',
-  styleUrls: ['./order-tracking.component.scss'],
+  styleUrls: ['../../../../node_modules/leaflet/dist/leaflet.css', './order-tracking.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class OrderTrackingComponent implements OnInit, AfterViewInit, OnDestroy {

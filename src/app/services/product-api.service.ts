@@ -115,9 +115,11 @@ export class ProductApiService implements OnDestroy {
       );
       const products = this.filterOriginalProducts(response?.products || []);
 
+      // Cache to IndexedDB (non-blocking — don't let IDB failure prevent returning products)
       if (products.length > 0) {
-        await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
-        this.invalidateCache();
+        this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products)
+          .then(() => this.invalidateCache())
+          .catch(e => console.warn('[ProductApi] IDB cache failed (featured):', e));
       }
 
       this.productsReady$.next(true);
@@ -148,9 +150,11 @@ export class ProductApiService implements OnDestroy {
       );
       const products = this.filterOriginalProducts(response?.products || []);
 
+      // Cache to IndexedDB (non-blocking — don't let IDB failure prevent returning products)
       if (products.length > 0) {
-        await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
-        this.invalidateCache();
+        this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products)
+          .then(() => this.invalidateCache())
+          .catch(e => console.warn('[ProductApi] IDB cache failed (category):', e));
       }
 
       return { products, hasMore: response?.hasMore ?? false };
@@ -185,10 +189,11 @@ export class ProductApiService implements OnDestroy {
       );
       const products = this.filterOriginalProducts(response?.products || []);
 
-      // Cache search results in IndexedDB for offline use
+      // Cache search results in IndexedDB for offline use (non-blocking)
       if (products.length > 0) {
-        await this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products);
-        this.invalidateCache();
+        this.idb.putMany(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, products)
+          .then(() => this.invalidateCache())
+          .catch(e => console.warn('[ProductApi] IDB cache failed (search):', e));
       }
 
       return products;

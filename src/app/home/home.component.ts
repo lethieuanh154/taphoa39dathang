@@ -181,10 +181,16 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     this.productApi.initialize().then(async () => {
       // Purge hidden-category products (e.g. "Thuốc lá") from IndexedDB
-      await this.productApi.purgeHiddenCategoryProducts();
+      await this.productApi.purgeHiddenCategoryProducts().catch(() => {});
       // Load categories after DB is initialized to avoid race condition
       this.loadCategories();
       // Show featured products on initial load (no search needed)
+      this.loadFeaturedDisplay();
+      this.loadPromotionProducts();
+    }).catch(err => {
+      console.error('[Home] Initialize failed:', err);
+      // Still try to load products even if IndexedDB init failed
+      this.loadCategories();
       this.loadFeaturedDisplay();
       this.loadPromotionProducts();
     });

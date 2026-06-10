@@ -2,12 +2,6 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Subject, BehaviorSubject, firstValueFrom } from 'rxjs';
 import { SnackbarService } from './snackbar.service';
-import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import {
-  getFirestore, collection, onSnapshot, query, where, orderBy,
-  Firestore, Unsubscribe
-} from 'firebase/firestore';
-import { openDB, IDBPDatabase } from 'idb';
 import { environment } from '../../environments/environment';
 
 export interface ChatMessage {
@@ -29,14 +23,15 @@ export class ChatService implements OnDestroy {
   private newMessage$ = new Subject<ChatMessage>();
   private messages$ = new BehaviorSubject<ChatMessage[]>([]);
 
-  // Firestore realtime
-  private chatApp: FirebaseApp | null = null;
-  private chatDb: Firestore | null = null;
-  private conversationUnsub: Unsubscribe | null = null;
+  // Firestore realtime (lazy-loaded)
+  private chatApp: any = null;
+  private chatDb: any = null;
+  private conversationUnsub: (() => void) | null = null;
   private knownMessageIds = new Set<string>();
+  private firestoreModule: any = null;
 
   // IndexedDB cache
-  private idbPromise: Promise<IDBPDatabase> | null = null;
+  private idbPromise: Promise<any> | null = null;
 
   constructor(private http: HttpClient, private snackbar: SnackbarService) {}
 
@@ -44,8 +39,8 @@ export class ChatService implements OnDestroy {
    * Kết nối Firestore realtime cho conversation của customer.
    * Gọi connect() rồi sau đó loadMessages(conversationId) để listen.
    */
-  connect(): void {
-    this.initFirestore();
+  async connect(): Promise<void> {
+    await this.initFirestore();
     this.initIDB();
   }
 
@@ -111,19 +106,20 @@ export class ChatService implements OnDestroy {
     }
 
     // Listen to conversation via Firestore onSnapshot
-    const messagesRef = collection(this.chatDb, 'chatMessages');
-    const q = query(
+    const fs = this.firestoreModule;
+    const messagesRef = fs.collection(this.chatDb, 'chatMessages');
+    const q = fs.query(
       messagesRef,
-      where('conversationId', '==', conversationId),
-      orderBy('timestamp', 'asc')
+      fs.where('conversationId', '==', conversationId),
+      fs.orderBy('timestamp', 'asc')
     );
 
     return new Promise<ChatMessage[]>((resolve) => {
       let resolved = false;
       let isInitial = true;
 
-      this.conversationUnsub = onSnapshot(q, (snapshot) => {
-        const msgs: ChatMessage[] = snapshot.docs.map(doc =>
+      this.conversationUnsub = fs.onSnapshot(q, (snapshot: any) => {
+        const msgs: ChatMessage[] = snapshot.docs.map((doc: any) =>
           this.docToMessage(doc.id, doc.data())
         );
         this.messages$.next(msgs);
@@ -133,10 +129,10 @@ export class ChatService implements OnDestroy {
 
         if (isInitial) {
           isInitial = false;
-          snapshot.docs.forEach(doc => this.knownMessageIds.add(doc.id));
+          snapshot.docs.forEach((doc: any) => this.knownMessageIds.add(doc.id));
         } else {
           // Emit new messages only
-          snapshot.docChanges().forEach(change => {
+          snapshot.docChanges().forEach((change: any) => {
             if (change.type === 'added' && !this.knownMessageIds.has(change.doc.id)) {
               this.knownMessageIds.add(change.doc.id);
               this.newMessage$.next(this.docToMessage(change.doc.id, change.doc.data()));
@@ -160,7 +156,7 @@ export class ChatService implements OnDestroy {
 
   // --- Private helpers ---
 
-  private initFirestore(): void {
+  private async initFirestore(): Promise<void> {
     if (this.chatDb) return;
     const config = (environment as any).firebaseChat;
     if (!config?.projectId) {
@@ -168,14 +164,18 @@ export class ChatService implements OnDestroy {
       return;
     }
 
+    const firebaseApp = await import('firebase/app');
+    this.firestoreModule = await import('firebase/firestore');
+
     const appName = 'chat-realtime';
-    const existing = getApps().find(app => app.name === appName);
-    this.chatApp = existing || initializeApp(config, appName);
-    this.chatDb = getFirestore(this.chatApp);
+    const existing = firebaseApp.getApps().find(app => app.name === appName);
+    this.chatApp = existing || firebaseApp.initializeApp(config, appName);
+    this.chatDb = this.firestoreModule.getFirestore(this.chatApp);
   }
 
-  private initIDB(): void {
+  private async initIDB(): Promise<void> {
     if (this.idbPromise) return;
+    const { openDB } = await import('idb');
     this.idbPromise = openDB(CHAT_DB_NAME, CHAT_DB_VERSION, {
       upgrade(db) {
         if (!db.objectStoreNames.contains(MESSAGES_STORE)) {
@@ -191,7 +191,7 @@ export class ChatService implements OnDestroy {
       const db = await this.idbPromise;
       if (!db) return [];
       const msgs = await db.getAllFromIndex(MESSAGES_STORE, 'conversationId', conversationId);
-      return msgs.sort((a, b) => (a.timestamp || '').localeCompare(b.timestamp || ''));
+      return msgs.sort((a: ChatMessage, b: ChatMessage) => (a.timestamp || '').localeCompare(b.timestamp || ''));
     } catch {
       return [];
     }

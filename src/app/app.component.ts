@@ -11,7 +11,13 @@ const IDENTITY_KEY = 'sm_customer_identity';
   selector: 'app-root',
   standalone: true,
   imports: [CommonModule, RouterModule, SnackbarComponent, ChatBubbleComponent, DraggableBubbleDirective],
-  template: `<router-outlet></router-outlet><app-snackbar /><app-chat-bubble *ngIf="customerIdentity" appDraggableBubble [storageKey]="'chat-bubble-pos'"></app-chat-bubble>`,
+  template: `
+    <router-outlet></router-outlet>
+    <app-snackbar />
+    @defer (when customerIdentity) {
+      <app-chat-bubble appDraggableBubble [storageKey]="'chat-bubble-pos'"></app-chat-bubble>
+    }
+  `,
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {

@@ -1,6 +1,5 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { Subject, BehaviorSubject } from 'rxjs';
-import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
 
 export interface ProductWSUpdate {
@@ -40,8 +39,8 @@ export interface BonusUpdatedPayload {
 
 @Injectable({ providedIn: 'root' })
 export class WebSocketService implements OnDestroy {
-  private socket: Socket | null = null;
-  private customerSocket: Socket | null = null;
+  private socket: any = null;
+  private customerSocket: any = null;
 
   private productUpdates$ = new Subject<ProductWSUpdate[]>();
   private productsAdded$ = new Subject<ProductWSUpdate[]>();
@@ -49,10 +48,16 @@ export class WebSocketService implements OnDestroy {
   private bonusUpdated$ = new Subject<BonusUpdatedPayload>();
   private connectionStatus$ = new BehaviorSubject<'connected' | 'disconnected' | 'connecting'>('disconnected');
 
-  connect(): void {
+  private async loadIO(): Promise<typeof import('socket.io-client')['io']> {
+    const mod = await import('socket.io-client');
+    return mod.io;
+  }
+
+  async connect(): Promise<void> {
     if (this.socket?.connected) return;
 
     this.connectionStatus$.next('connecting');
+    const io = await this.loadIO();
 
     this.socket = io(`${environment.domainUrl}/api/websocket/products`, {
       transports: ['polling'],
@@ -70,7 +75,7 @@ export class WebSocketService implements OnDestroy {
       this.connectionStatus$.next('disconnected');
     });
 
-    this.socket.on('connect_error', (err) => {
+    this.socket.on('connect_error', (err: any) => {
       console.warn('[WS] Connection error:', err.message);
     });
 
@@ -100,8 +105,10 @@ export class WebSocketService implements OnDestroy {
   }
 
   /** Connect to customer namespace (bonus updates). Safe to call multiple times. */
-  connectCustomer(): void {
+  async connectCustomer(): Promise<void> {
     if (this.customerSocket?.connected) return;
+
+    const io = await this.loadIO();
 
     this.customerSocket = io(`${environment.domainUrl}/api/websocket/customers`, {
       transports: ['polling'],
@@ -115,7 +122,7 @@ export class WebSocketService implements OnDestroy {
       console.log('[WS-Customer] Connected to /api/websocket/customers');
     });
 
-    this.customerSocket.on('connect_error', (err) => {
+    this.customerSocket.on('connect_error', (err: any) => {
       console.warn('[WS-Customer] Connection error:', err.message);
     });
 

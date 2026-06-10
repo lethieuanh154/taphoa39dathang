@@ -5,7 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import JsBarcode from 'jsbarcode';
+// jsbarcode loaded dynamically to reduce initial bundle
 import { environment } from '../../../environments/environment';
 import { SnackbarService } from '../../services/snackbar.service';
 
@@ -171,9 +171,10 @@ export class ProfileBubbleComponent implements OnInit {
     this.loggedOut.emit();
   }
 
-  private renderBarcode(): void {
+  private async renderBarcode(): Promise<void> {
     if (!this.barcodeEl?.nativeElement || !this.customerCode) return;
     try {
+      const { default: JsBarcode } = await import('jsbarcode');
       JsBarcode(this.barcodeEl.nativeElement, this.customerCode, {
         format: 'CODE128',
         width: 1.5,
