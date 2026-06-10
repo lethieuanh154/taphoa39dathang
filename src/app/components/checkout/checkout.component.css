@@ -276,7 +276,7 @@
   border-radius: 10px;
   box-shadow: 0 4px 20px rgba(0,0,0,0.18);
   padding: 12px;
-  min-width: 280px;
+  min-width: 300px;
   animation: popIn 0.15s ease-out;
 }
 

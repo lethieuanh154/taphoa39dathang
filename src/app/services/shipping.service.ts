@@ -1,11 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, map, of } from 'rxjs';
+import { Observable, map, of, switchMap } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { CartItem, ShipCostResult } from '../models/product';
 
 const STORE_LAT = environment.storeLat;
 const STORE_LNG = environment.storeLng;
+
+/** Đà Nẵng bounding box for Nominatim viewbox (lon1,lat1,lon2,lat2) */
+const DA_NANG_VIEWBOX = '108.10,16.12,108.28,15.96';
+
+/** Bán kính tối đa (km) chấp nhận kết quả geocoding — loại bỏ kết quả ngoài Đà Nẵng */
+const MAX_GEOCODE_KM = 15;
 
 /** Road distance factor: multiply straight-line distance by this to estimate real road distance */
 const ROAD_FACTOR = 1.3;
@@ -16,28 +22,81 @@ const AVG_SPEED_KMH = 25;
 export class ShippingService {
   constructor(private http: HttpClient) {}
 
-  /** Geocode address to lat/lng via Nominatim (OpenStreetMap) - free, no API key needed */
+  /** Geocode address to lat/lng — Photon (fuzzy match + location bias) → Nominatim fallback */
   geocodeAddress(address: string): Observable<{ lat: number; lng: number }> {
-    let cleaned = this.normalizeAddress(address);
-    // Append city/country only if not already present
-    const lower = cleaned.toLowerCase();
-    if (!/đà\s*nẵng|da\s*nang/.test(lower)) {
-      cleaned += ', Đà Nẵng';
-    }
-    if (!/việt\s*nam|viet\s*nam/.test(lower)) {
-      cleaned += ', Việt Nam';
-    }
-    const query = encodeURIComponent(cleaned);
-    const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1&countrycodes=vn`;
-    return this.http.get<any[]>(url, {
-      headers: { 'Accept-Language': 'vi' }
-    }).pipe(
-      map(results => {
-        if (!results?.length) {
-          throw new Error('Không tìm thấy địa chỉ ở Đà Nẵng. Vui lòng nhập chi tiết hơn.');
+    const cleaned = this.normalizeAddress(address);
+    let query = cleaned;
+    const lower = query.toLowerCase();
+    if (!/đà\s*nẵng|da\s*nang/.test(lower)) query += ', Đà Nẵng';
+
+    // Try 1: Photon — fuzzy matching, chọn kết quả gần cửa hàng nhất
+    return this.photonSearch(query).pipe(
+      switchMap(best => {
+        if (best) return of(best);
+        // Try 2: Nominatim free-form fallback
+        let full = query;
+        if (!/việt\s*nam|viet\s*nam/.test(full.toLowerCase())) full += ', Việt Nam';
+        return this.nominatimFreeform(full).pipe(
+          map(r => this.pickClosestNominatim(r))
+        );
+      }),
+      map(best => {
+        if (!best) {
+          throw new Error('Không tìm thấy địa chỉ. Vui lòng thêm dấu phẩy giữa số nhà, đường, phường, quận (VD: 120, Phan Trọng Tuệ, Hòa Cường, Đà Nẵng).');
         }
-        return { lat: parseFloat(results[0].lat), lng: parseFloat(results[0].lon) };
+        return best;
       })
+    );
+  }
+
+  /** Photon geocoder — fuzzy match + location bias gần cửa hàng */
+  private photonSearch(query: string): Observable<{ lat: number; lng: number } | null> {
+    const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lat=${STORE_LAT}&lon=${STORE_LNG}`;
+    return this.http.get<any>(url).pipe(
+      map(res => {
+        const features = res?.features;
+        if (!features?.length) return null;
+        let bestDist = Infinity;
+        let best: { lat: number; lng: number } | null = null;
+        for (const f of features) {
+          const coords = f.geometry?.coordinates;
+          if (!coords) continue;
+          const lng = coords[0];
+          const lat = coords[1];
+          const dist = this.haversineDistance(STORE_LAT, STORE_LNG, lat, lng);
+          if (dist < bestDist && dist <= MAX_GEOCODE_KM) {
+            bestDist = dist;
+            best = { lat, lng };
+          }
+        }
+        return best;
+      })
+    );
+  }
+
+  /** Chọn kết quả Nominatim gần cửa hàng nhất trong phạm vi MAX_GEOCODE_KM */
+  private pickClosestNominatim(results: any[] | null): { lat: number; lng: number } | null {
+    if (!results?.length) return null;
+    let bestDist = Infinity;
+    let best: { lat: number; lng: number } | null = null;
+    for (const r of results) {
+      const lat = parseFloat(r.lat);
+      const lng = parseFloat(r.lon);
+      if (isNaN(lat) || isNaN(lng)) continue;
+      const dist = this.haversineDistance(STORE_LAT, STORE_LNG, lat, lng);
+      if (dist < bestDist && dist <= MAX_GEOCODE_KM) {
+        bestDist = dist;
+        best = { lat, lng };
+      }
+    }
+    return best;
+  }
+
+  /** Nominatim free-form fallback */
+  private nominatimFreeform(query: string): Observable<any[]> {
+    return this.http.get<any[]>(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5&countrycodes=vn&viewbox=${DA_NANG_VIEWBOX}`,
+      { headers: { 'Accept-Language': 'vi' } }
     );
   }
 
@@ -54,6 +113,7 @@ export class ShippingService {
       .replace(/\b(thị trấn|thi tran)\s+/gi, '')
       .replace(/\b(khu phố|khu pho)\s+/gi, '')
       .replace(/\b(tổ|to)\s+\d+\s*/gi, '')
+      .replace(/^(\d+)\s*,\s*/, '$1 ')   // "120, Phan Trọng Tuệ" → "120 Phan Trọng Tuệ"
       .replace(/,\s*,/g, ',')
       .replace(/\s+/g, ' ')
       .trim();
