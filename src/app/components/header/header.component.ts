@@ -22,7 +22,7 @@ export class HeaderComponent implements OnDestroy {
 
   constructor(private cartService: CartService, private cdr: ChangeDetectorRef) {
     this.cartSub = this.cartService.cart$.subscribe(() => {
-      this.totalItems = this.cartService.getTotalItems();
+      this.totalItems = Math.round(this.cartService.getTotalItems() * 10) / 10;
       this.cdr.markForCheck();
     });
   }

@@ -80,7 +80,11 @@ export class CartPanelComponent implements OnDestroy {
   }
 
   get totalItems(): number {
-    return this.cartService.getTotalItems();
+    return Math.round(this.cartService.getTotalItems() * 10) / 10;
+  }
+
+  round1(val: number): number {
+    return Math.round(val * 10) / 10;
   }
 
   formatPrice(price: number): string {
@@ -116,7 +120,8 @@ export class CartPanelComponent implements OnDestroy {
   }
 
   getItemStock(item: CartItem): number {
-    return this.cartService.getAvailableStock(item.product);
+    const stock = this.cartService.getAvailableStock(item.product);
+    return Math.round(stock * 10) / 10;
   }
 
   isOverStock(item: CartItem): boolean {

@@ -41,7 +41,7 @@
       <div class="item-actions" *ngIf="!item.isGift">
         <div class="qty-control" [class.qty-over-stock]="isOverStock(item)">
           <button class="qty-btn" (click)="decrease(item.product.Code)" aria-label="Giam">-</button>
-          <span class="qty-value">{{ item.quantity }}</span>
+          <span class="qty-value">{{ round1(item.quantity) }}</span>
           <button class="qty-btn" (click)="increase(item.product.Code)" aria-label="Tang">+</button>
         </div>
         <button class="remove-btn" (click)="remove(item.product.Code)" aria-label="Xoa">
@@ -51,7 +51,7 @@
         </button>
       </div>
       <div class="item-actions gift-qty" *ngIf="item.isGift">
-        <span class="qty-value">x{{ item.quantity }}</span>
+        <span class="qty-value">x{{ round1(item.quantity) }}</span>
       </div>
     </div>
   </div>
