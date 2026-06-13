@@ -76,15 +76,15 @@ export class CartPanelComponent implements OnDestroy {
   }
 
   get totalPrice(): number {
-    return this.cartService.getTotalPrice();
+    return Math.ceil(this.cartService.getTotalPrice() / 1000) * 1000;
   }
 
   get totalItems(): number {
-    return Math.round(this.cartService.getTotalItems() * 10) / 10;
+    return Math.floor(this.cartService.getTotalItems() * 10) / 10;
   }
 
   round1(val: number): number {
-    return Math.round(val * 10) / 10;
+    return Math.floor(val * 10) / 10;
   }
 
   formatPrice(price: number): string {
@@ -99,6 +99,13 @@ export class CartPanelComponent implements OnDestroy {
   decrease(code: string): void {
     const item = this.items.find(i => i.product.Code === code);
     if (item) this.cartService.updateQuantity(code, item.quantity - 1);
+  }
+
+  onQtyInput(code: string, event: Event): void {
+    const val = parseFloat((event.target as HTMLInputElement).value);
+    if (!isNaN(val) && val >= 1) {
+      this.cartService.updateQuantity(code, val);
+    }
   }
 
   remove(code: string): void {
@@ -121,7 +128,7 @@ export class CartPanelComponent implements OnDestroy {
 
   getItemStock(item: CartItem): number {
     const stock = this.cartService.getAvailableStock(item.product);
-    return Math.round(stock * 10) / 10;
+    return Math.floor(stock * 10) / 10;
   }
 
   isOverStock(item: CartItem): boolean {

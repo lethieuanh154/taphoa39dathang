@@ -146,6 +146,26 @@
   font-weight: 600;
 }
 
+.qty-input {
+  width: 44px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  -moz-appearance: textfield;
+  font-family: inherit;
+}
+
+.qty-input::-webkit-outer-spin-button,
+.qty-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
 .remove-btn {
   display: flex;
   align-items: center;

@@ -41,7 +41,9 @@
       <div class="item-actions" *ngIf="!item.isGift">
         <div class="qty-control" [class.qty-over-stock]="isOverStock(item)">
           <button class="qty-btn" (click)="decrease(item.product.Code)" aria-label="Giam">-</button>
-          <span class="qty-value">{{ round1(item.quantity) }}</span>
+          <input class="qty-input" type="number" [value]="round1(item.quantity)" min="1"
+                 (change)="onQtyInput(item.product.Code, $event)"
+                 (focus)="$any($event.target).select()" />
           <button class="qty-btn" (click)="increase(item.product.Code)" aria-label="Tang">+</button>
         </div>
         <button class="remove-btn" (click)="remove(item.product.Code)" aria-label="Xoa">
