@@ -17,6 +17,7 @@ import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
 import { PromotionService } from '../services/promotion.service';
 import { CartService } from '../services/cart.service';
+import { SnackbarService } from '../services/snackbar.service';
 import { Product, Promotion } from '../models/product';
 
 interface Category {
@@ -95,6 +96,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   private lastSearchTerm = '';
   private updateSub?: Subscription;
   private promoSub?: Subscription;
+  private cartExpiredSub?: Subscription;
 
   // Promotion bar - products with active promotions
   promotionProducts: { product: Product; promotion: Promotion }[] = [];
@@ -105,10 +107,18 @@ export class HomeComponent implements OnInit, OnDestroy {
     private promotionService: PromotionService,
     private cartService: CartService,
     private cdr: ChangeDetectorRef,
-    private http: HttpClient
+    private http: HttpClient,
+    private snackbar: SnackbarService
   ) {}
 
   ngOnInit(): void {
+    // Giỏ hàng quá 24h đã bị xoá → báo khách chọn lại (nút checkout tự ẩn vì giỏ trống)
+    this.cartExpiredSub = this.cartService.cartExpired$.subscribe(expired => {
+      if (expired) {
+        this.snackbar.warning('Giỏ hàng đã hết hạn sau 24 giờ. Vui lòng chọn lại sản phẩm.');
+      }
+    });
+
     const storedIdentity = CustomerIdentityDialogComponent.getStoredIdentity();
     if (storedIdentity) {
       this.customerIdentity = storedIdentity;
@@ -211,6 +221,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.updateSub?.unsubscribe();
     this.promoSub?.unsubscribe();
+    this.cartExpiredSub?.unsubscribe();
   }
 
   private initCategoryDragScroll(): void {
@@ -316,6 +327,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
     this.isLoading = false;
     this.cdr.markForCheck();
+    this.fillViewport();
   }
 
   // ======================== Featured (initial) ========================
@@ -337,6 +349,25 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
     this.isLoading = false;
     this.cdr.markForCheck();
+    this.fillViewport();
+  }
+
+  /**
+   * Desktop fix: wide multi-column grid can render the first page shorter than
+   * the viewport → no scrollbar → window:scroll never fires → loadMore never runs.
+   * Keep loading until the page is tall enough to scroll (or no more data).
+   * On phone the 2-column grid is already taller than the viewport, so the loop
+   * exits immediately and behavior is unchanged.
+   */
+  private async fillViewport(): Promise<void> {
+    let guard = 0;
+    while (this.hasMore && !this.isLoadingMore && guard < 10) {
+      // Wait for the just-rendered products to lay out before measuring height.
+      await new Promise(resolve => setTimeout(resolve, 50));
+      if (document.documentElement.scrollHeight > window.innerHeight + 100) break;
+      guard++;
+      await this.loadMore();
+    }
   }
 
   // ======================== Product display helpers ========================

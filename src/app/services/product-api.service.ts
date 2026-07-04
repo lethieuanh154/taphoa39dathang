@@ -109,7 +109,7 @@ export class ProductApiService implements OnDestroy {
     try {
       const response = await firstValueFrom(
         this.http.get<{ products: any[]; count: number; total: number; hasMore: boolean }>(
-          `${environment.domainUrl}/api/firebase/products/featured`,
+          `${environment.domainUrl}/api/public/products/featured`,
           { params: { limit: String(limit), offset: String(offset) } }
         )
       );
@@ -144,7 +144,7 @@ export class ProductApiService implements OnDestroy {
     try {
       const response = await firstValueFrom(
         this.http.get<{ products: any[]; count: number; total: number; hasMore: boolean }>(
-          `${environment.domainUrl}/api/firebase/get/products/by-category/${categoryId}`,
+          `${environment.domainUrl}/api/public/products/by-category/${categoryId}`,
           { params: { limit: String(limit), offset: String(offset) } }
         )
       );
@@ -183,7 +183,7 @@ export class ProductApiService implements OnDestroy {
     try {
       const response = await firstValueFrom(
         this.http.get<{ products: any[]; count: number }>(
-          `${environment.domainUrl}/api/firebase/products/search`,
+          `${environment.domainUrl}/api/public/products/search`,
           { params: { q: term.trim(), limit: String(this.SEARCH_LIMIT) } }
         )
       );

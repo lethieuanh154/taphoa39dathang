@@ -29,6 +29,11 @@ export class CartService {
   private stockWarningSubject = new Subject<string>();
   stockWarning$ = this.stockWarningSubject.asObservable();
 
+  // Cart hết hạn (giỏ cũ > 24h bị xoá để chặn đặt hàng với giá/KM lỗi thời)
+  private readonly CART_TTL_MS = 24 * 60 * 60 * 1000;
+  private cartExpiredSubject = new BehaviorSubject<boolean>(false);
+  cartExpired$ = this.cartExpiredSubject.asObservable();
+
   constructor(private promotionService: PromotionService, private productApiService: ProductApiService) {
     this.loadFromStorage();
 
@@ -335,18 +340,30 @@ export class CartService {
   private saveToStorage(): void {
     try {
       localStorage.setItem('sm_cart', JSON.stringify(this.items));
+      localStorage.setItem('sm_cart_ts', String(Date.now()));
     } catch {}
   }
 
   private loadFromStorage(): void {
     try {
       const data = localStorage.getItem('sm_cart');
-      if (data) {
-        this.items = JSON.parse(data);
-        this.cartSubject.next([...this.items]);
-        // Recalculate promotions on load (promotions may have changed)
-        this.recalculatePromotions();
+      if (!data) return;
+
+      // Giỏ hàng quá 24h → xoá, chặn đặt hàng với giá/khuyến mãi lỗi thời
+      const ts = Number(localStorage.getItem('sm_cart_ts') || 0);
+      if (ts && Date.now() - ts > this.CART_TTL_MS) {
+        localStorage.removeItem('sm_cart');
+        localStorage.removeItem('sm_cart_ts');
+        this.items = [];
+        this.cartSubject.next([]);
+        this.cartExpiredSubject.next(true);
+        return;
       }
+
+      this.items = JSON.parse(data);
+      this.cartSubject.next([...this.items]);
+      // Recalculate promotions on load (promotions may have changed)
+      this.recalculatePromotions();
     } catch {}
   }
 }

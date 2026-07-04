@@ -18,7 +18,7 @@ export class PromotionService {
   async loadActivePromotions(): Promise<void> {
     try {
       const promos = await firstValueFrom(
-        this.http.get<Promotion[]>(`${this.baseUrl}/active`)
+        this.http.get<Promotion[]>(`${environment.domainUrl}/api/public/promotions/active`)
       );
       this.activePromotions = promos || [];
       this.promotionsSubject.next(this.activePromotions);

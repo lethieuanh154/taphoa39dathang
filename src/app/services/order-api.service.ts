@@ -9,7 +9,7 @@ export class OrderApiService {
   constructor(private http: HttpClient) {}
 
   submitOrder(order: OrderData): Observable<any> {
-    return this.http.post(`${environment.domainUrl}/api/firebase/add_order`, order);
+    return this.http.post(`${environment.domainUrl}/api/public/add_order`, order);
   }
 
   getOrderById(orderId: string): Observable<any> {
