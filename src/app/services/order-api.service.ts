@@ -13,6 +13,6 @@ export class OrderApiService {
   }
 
   getOrderById(orderId: string): Observable<any> {
-    return this.http.get(`${environment.domainUrl}/api/firebase/orders/${orderId}`);
+    return this.http.get(`${environment.domainUrl}/api/public/orders/${orderId}`);
   }
 }
