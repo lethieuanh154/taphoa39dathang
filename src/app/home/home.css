@@ -11,155 +11,191 @@
   }
 }
 
-/* ========== Discount Bar ========== */
-.discount-bar {
+/* ========== Deal Bar (khuyen mai kieu flash deals) ========== */
+.deal-bar {
+  background: linear-gradient(135deg, #ff8a3d, #f4511e);
+  border-radius: 14px;
+  padding: 12px;
   margin-bottom: 16px;
+  box-shadow: 0 3px 12px rgba(244, 81, 30, 0.25);
 }
 
-.discount-header {
+.deal-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  background: linear-gradient(135deg, #ff6b35, #e74c3c);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.deal-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
   color: #fff;
-  border-radius: 10px 10px 0 0;
-  font-size: 13px;
-  font-weight: 600;
   letter-spacing: 0.3px;
+  white-space: nowrap;
 }
 
-.discount-header svg {
-  flex-shrink: 0;
+.deal-countdown {
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.discount-scroll-wrap {
+.deal-cd-box {
+  min-width: 26px;
+  padding: 3px 5px;
+  background: #212121;
+  color: #fff;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.deal-cd-sep {
+  color: #fff;
+  font-weight: 800;
+}
+
+.deal-all {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 4px;
+  white-space: nowrap;
+  text-decoration: underline;
+}
+
+.deal-scroll-wrap {
   position: relative;
 }
 
-.discount-scroll {
+.deal-scroll {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 10px 8px 12px;
-  background: linear-gradient(180deg, #fff5f2, #fff);
-  border: 1px solid #ffccbc;
-  border-top: none;
-  border-radius: 0 0 10px 10px;
-  scroll-snap-type: x mandatory;
+  padding: 2px;
+  scroll-snap-type: x proximity;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-.discount-scroll::-webkit-scrollbar { height: 4px; }
-.discount-scroll::-webkit-scrollbar-thumb { background: #ffccbc; border-radius: 4px; }
+.deal-scroll::-webkit-scrollbar { display: none; }
 
-.scroll-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #e74c3c;
-  pointer-events: none;
-  animation: arrowPulse 1.5s ease-in-out infinite;
-}
-
-.scroll-arrow-right {
-  right: 4px;
-}
-
-@keyframes arrowPulse {
-  0%, 100% { opacity: 0.7; transform: translateY(-50%) translateX(0); }
-  50% { opacity: 1; transform: translateY(-50%) translateX(3px); }
-}
-
-.discount-item {
-  flex: 0 0 100px;
+.deal-item {
+  flex: 0 0 150px;
   scroll-snap-align: start;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.discount-item:hover { transform: scale(1.05); }
-
-.discount-img-wrap {
-  position: relative;
-  display: inline-block;
-}
-
-.discount-img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 8px;
-  border: 1px solid #ffe0d6;
   background: #fff;
+  border-radius: 10px;
+  padding: 8px;
+  cursor: pointer;
+  transition: transform 0.15s;
 }
 
-.sale-badge {
+.deal-item:active { transform: scale(0.97); }
+
+.deal-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.deal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.deal-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #e74c3c;
+  top: 4px;
+  right: 4px;
+  background: #e53935;
   color: #fff;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
-  padding: 2px 5px;
-  border-radius: 4px;
+  padding: 3px 6px;
+  border-radius: 5px;
   line-height: 1;
-  letter-spacing: 0.5px;
-  box-shadow: 0 1px 4px rgba(231, 76, 60, 0.4);
 }
 
-.discount-name {
-  font-size: 11px;
+.deal-badge-gift { background: #2e7d32; }
+
+.deal-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.deal-price {
+  font-size: 16px;
+  font-weight: 800;
+  color: #e64a19;
+}
+
+.deal-price-old {
+  font-size: 12px;
+  color: #999;
+  text-decoration: line-through;
+}
+
+.deal-name {
+  font-size: 13px;
   color: #333;
-  margin-top: 4px;
-  line-height: 1.2;
+  line-height: 1.3;
+  margin-top: 2px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  max-height: 2.4em;
+  min-height: 2.6em;
 }
 
-.discount-market-price {
-  font-size: 10px;
-  color: #999;
-  text-decoration: line-through;
-  margin-top: 2px;
-  line-height: 1;
-}
-
-.discount-price {
+.deal-detail {
   font-size: 12px;
-  font-weight: 700;
-  color: #e74c3c;
-  margin-top: 1px;
-}
-
-.sale-badge-gift {
-  background: #2e7d32;
-}
-
-.discount-gift-info {
-  font-size: 10px;
-  color: #2e7d32;
   font-weight: 600;
+  color: #2e7d32;
   margin-top: 2px;
-  line-height: 1.2;
+  line-height: 1.3;
   display: -webkit-box;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Mui ten bam duoc - phai nam TREN cung, khong de click roi vao san pham */
+.deal-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e64a19;
+  cursor: pointer;
+}
+
+.deal-arrow:active { transform: translateY(-50%) scale(0.9); }
+.deal-arrow-left { left: -4px; }
+.deal-arrow-right { right: -4px; }
 
 /* ========== Product Grid ========== */
 .product-grid {
@@ -301,11 +337,12 @@
 
 .category-bar-scroll {
   display: flex;
+  align-items: flex-start;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  gap: 8px;
-  padding: 8px 8px;
+  gap: 4px;
+  padding: 8px 6px 10px;
   flex: 1;
   min-width: 0;
   cursor: grab;
@@ -315,40 +352,78 @@
   display: none;
 }
 
-.category-chip {
-  flex-shrink: 0;
-  padding: 6px 16px;
-  border-radius: 20px;
-  border: 1.5px solid #ddd;
-  background: #fff;
-  font-size: 13px;
-  font-weight: 500;
-  color: #555;
+/* Nut danh muc: icon tron + nhan ben duoi */
+.cat-item {
+  flex: 0 0 auto;
+  width: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 2px;
+  border: none;
+  background: transparent;
   cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
 }
 
-.category-chip:active {
-  transform: scale(0.95);
-}
-
-.category-chip:hover {
-  border-color: var(--green-600, #2e7d32);
-  color: var(--green-600, #2e7d32);
-}
-
-.category-chip-active {
-  background: var(--green-600, #2e7d32);
+.cat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  line-height: 1;
   color: #fff;
-  border-color: var(--green-600, #2e7d32);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease;
 }
 
-.category-chip-active:hover {
-  background: var(--green-700, #256b29);
-  color: #fff;
+.cat-icon-promo {
+  background: linear-gradient(135deg, #ff5252, #d32f2f);
+}
+
+.cat-icon-all {
+  background: linear-gradient(135deg, #66bb6a, #2e7d32);
+}
+
+.cat-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #444;
+  line-height: 1.25;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  max-height: 2.5em;
+}
+
+.cat-item:active .cat-icon { transform: scale(0.92); }
+.cat-item:hover .cat-icon { transform: translateY(-2px); }
+
+.cat-item-active .cat-label {
+  color: var(--green-700, #256b29);
+  font-weight: 800;
+}
+
+.cat-item-active .cat-icon {
+  box-shadow: 0 0 0 2.5px var(--green-600, #2e7d32);
+}
+
+.cat-item-promo .cat-label {
+  color: #d32f2f;
+  font-weight: 800;
+}
+
+@media (max-width: 768px) {
+  .cat-item { width: 70px; }
+  .cat-icon { width: 44px; height: 44px; border-radius: 12px; font-size: 22px; }
+  .cat-label { font-size: 11px; }
 }
 
 /* ========== Profile Bubble (host positioning) ========== */

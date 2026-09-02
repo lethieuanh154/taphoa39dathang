@@ -1,0 +1,107 @@
+<div class="promo-sticky">
+  <app-header (search)="onSearch($event)" (logoClick)="goHome()"></app-header>
+
+  <div class="promo-topbar">
+    <button class="promo-back" (click)="goHome()" aria-label="Quay lại">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="15 18 9 12 15 6"/>
+      </svg>
+      <span>Trang chủ</span>
+    </button>
+    <h1 class="promo-title">Khuyến mại</h1>
+  </div>
+
+  <div class="promo-filters" *ngIf="!isLoading && cards.length > 0">
+    <button class="promo-filter"
+            *ngFor="let f of filters"
+            [class.promo-filter-active]="activeFilter === f.key"
+            [hidden]="countOf(f.key) === 0"
+            (click)="setFilter(f.key)">
+      {{ f.label }} ({{ countOf(f.key) }})
+    </button>
+  </div>
+</div>
+
+<main class="promo-main">
+  <div class="loading-state" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Đang tải khuyến mại...</p>
+  </div>
+
+  <div class="promo-empty" *ngIf="!isLoading && cards.length === 0">
+    <span class="promo-empty-icon">🎁</span>
+    <p>Hiện chưa có chương trình khuyến mại nào.</p>
+    <button class="promo-empty-btn" (click)="goHome()">Xem sản phẩm</button>
+  </div>
+
+  <div class="promo-list" *ngIf="!isLoading && cards.length > 0">
+    <article class="promo-card"
+             *ngFor="let card of visibleCards; trackBy: trackByPromoId"
+             (click)="openDetail(card)">
+
+      <div class="promo-card-head">
+        <span class="promo-kind promo-kind-{{ card.kind }}">{{ card.kindLabel }}</span>
+        <span class="promo-end" *ngIf="card.endText">{{ card.endText }}</span>
+      </div>
+
+      <div class="promo-card-body">
+        <div class="promo-thumb-wrap">
+          <img class="promo-thumb" [src]="card.product.Image || 'assets/no-image.svg'"
+               [alt]="card.product.Name" loading="lazy">
+          <span class="promo-badge promo-badge-{{ card.kind }}">{{ card.badge }}</span>
+        </div>
+
+        <div class="promo-info">
+          <h2 class="promo-name">{{ card.product.Name }}</h2>
+          <p class="promo-detail">{{ card.detail }}</p>
+          <p class="promo-condition">{{ card.condition }}</p>
+
+          <div class="promo-price-row">
+            <ng-container *ngIf="card.discountedPrice !== null">
+              <span class="promo-price-old">{{ card.product.BasePrice | number:'1.0-0' }}đ</span>
+              <span class="promo-price-new">{{ card.discountedPrice | number:'1.0-0' }}đ</span>
+            </ng-container>
+            <span class="promo-price-new" *ngIf="card.discountedPrice === null">
+              {{ card.product.BasePrice | number:'1.0-0' }}đ
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Qua tang / san pham mua kem -->
+      <div class="promo-gifts" *ngIf="card.gifts.length > 0">
+        <div class="promo-gifts-label">
+          {{ isBuyAGetB(card) ? 'Được mua kèm giá ưu đãi:' : 'Quà tặng kèm:' }}
+        </div>
+        <div class="promo-gift-list">
+          <div class="promo-gift" *ngFor="let g of card.gifts">
+            <img class="promo-gift-img" [src]="g.Image || 'assets/no-image.svg'" [alt]="g.Name" loading="lazy">
+            <div class="promo-gift-info">
+              <div class="promo-gift-name">{{ g.GiftQuantity }} x {{ g.Name }}</div>
+              <div class="promo-gift-price" *ngIf="isBuyAGetB(card)">
+                <span class="promo-price-old">{{ g.BasePrice | number:'1.0-0' }}đ</span>
+                <span class="promo-gift-deal">{{ giftDealPrice(card, g) | number:'1.0-0' }}đ</span>
+              </div>
+              <div class="promo-gift-free" *ngIf="!isBuyAGetB(card)">Miễn phí</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="promo-cta" (click)="openDetail(card); $event.stopPropagation()">
+        Chọn mua
+      </button>
+    </article>
+  </div>
+</main>
+
+<app-cart-panel></app-cart-panel>
+
+<app-product-detail
+  *ngIf="detailProduct"
+  [product]="detailProduct"
+  [group]="detailGroup"
+  [isSale]="true"
+  [promotion]="detailPromotion"
+  (close)="onDetailClose()">
+</app-product-detail>

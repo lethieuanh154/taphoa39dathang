@@ -8,6 +8,11 @@ const routeConfig: Routes = [
     title: 'Song Minh - Đặt hàng'
   },
   {
+    path: 'khuyen-mai',
+    loadComponent: () => import('./components/promotion-page/promotion-page.component').then(m => m.PromotionPageComponent),
+    title: 'Song Minh - Khuyến mại'
+  },
+  {
     path: 'checkout',
     loadComponent: () => import('./components/checkout/checkout.component').then(m => m.CheckoutComponent),
     title: 'Song Minh - Thanh toán'

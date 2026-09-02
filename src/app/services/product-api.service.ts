@@ -249,7 +249,7 @@ export class ProductApiService implements OnDestroy {
     // 2. Try IndexedDB cache
     try {
       const cached = await this.idb.getByKey<{ key: string; value: Category[]; timestamp: number }>(
-        this.DB_NAME, this.DB_VERSION, this.META_STORE, 'categories'
+        this.DB_NAME, this.DB_VERSION, this.META_STORE, 'categories_v2'
       );
       if (cached && cached.value?.length > 0 && Date.now() - cached.timestamp < this.CATEGORIES_TTL) {
         this.categoriesCache = cached.value;
@@ -257,27 +257,64 @@ export class ProductApiService implements OnDestroy {
       }
     } catch { /* IndexedDB read failed, continue to API */ }
 
-    // 3. Fetch from API
+    // 3. Fetch from API.
+    // /api/public/categories suy ra tu Firestore -> uu tien vi khong phu thuoc token KiotViet.
+    // /api/kiotviet/categories chi la fallback (tra 502 khi KiotViet loi -> mat sach danh muc).
+    const endpoints = [
+      `${environment.domainUrl}/api/public/categories`,
+      `${environment.domainUrl}/api/kiotviet/categories`
+    ];
+
+    let lastErr: unknown = null;
+    for (const url of endpoints) {
+      try {
+        const categories = await firstValueFrom(this.http.get<Category[]>(url));
+        if (categories && categories.length > 0) {
+          this.categoriesCache = categories;
+          await this.idb.put(this.DB_NAME, this.DB_VERSION, this.META_STORE, {
+            key: 'categories_v2',
+            value: categories,
+            timestamp: Date.now()
+          });
+          return categories;
+        }
+      } catch (err) {
+        lastErr = err;
+        console.error(`[ProductApi] Categories load failed (${url}):`, err);
+      }
+    }
+
+    // 4. Ca 2 endpoint hong -> dung danh muc suy ra tu san pham da cache offline
+    const fromCache = await this.deriveCategoriesFromCache();
+    if (fromCache.length > 0) {
+      this.categoriesCache = fromCache;
+      return fromCache;
+    }
+
+    if (lastErr && !(lastErr instanceof HttpErrorResponse && lastErr.status >= 500)) {
+      this.snackbar.error('Không tải được danh mục sản phẩm.');
+    }
+    return this.categoriesCache || [];
+  }
+
+  /** Danh muc suy ra tu products trong IndexedDB - phao cuu sinh khi API danh muc chet. */
+  private async deriveCategoriesFromCache(): Promise<Category[]> {
     try {
-      const categories = await firstValueFrom(
-        this.http.get<Category[]>(`${environment.domainUrl}/api/kiotviet/categories`)
-      );
-      if (categories && categories.length > 0) {
-        this.categoriesCache = categories;
-        // Save to IndexedDB
-        await this.idb.put(this.DB_NAME, this.DB_VERSION, this.META_STORE, {
-          key: 'categories',
-          value: categories,
-          timestamp: Date.now()
-        });
+      // Dung raw: SP tu /api/public/* khong co field isActive nen getAllCachedProducts() loc mat
+      const products = await this.getAllRawCachedProducts();
+      const seen = new Map<number, string>();
+      for (const p of products) {
+        const id = p.CategoryId;
+        const name = (p.CategoryName || '').trim();
+        if (id === null || id === undefined || !name || seen.has(id)) continue;
+        if (ProductApiService.HIDDEN_CATEGORY_IDS.has(id)) continue;
+        seen.set(id, name);
       }
-      return this.categoriesCache || [];
-    } catch (err) {
-      console.error('[ProductApi] Categories load failed:', err);
-      if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
-        this.snackbar.error('Không tải được danh mục sản phẩm.');
-      }
-      return this.categoriesCache || [];
+      return [...seen.entries()]
+        .map(([Id, Name]) => ({ Id, Name, Path: '' }))
+        .sort((a, b) => a.Name.localeCompare(b.Name, 'vi'));
+    } catch {
+      return [];
     }
   }
 

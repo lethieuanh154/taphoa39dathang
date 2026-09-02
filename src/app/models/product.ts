@@ -45,6 +45,22 @@ export interface CartItem {
   parentProductId?: string;      // ID sản phẩm trigger
 }
 
+export interface GiftEntry {
+  productId: string;
+  code?: string;
+  name?: string;
+  basePrice?: number;
+  quantity: number;
+}
+
+export interface GiftProduct extends Partial<Product> {
+  Id: number;
+  Name: string;
+  BasePrice: number;
+  Image: string | null;
+  GiftQuantity: number;
+}
+
 export interface Promotion {
   id: string;
   name: string;
@@ -68,6 +84,8 @@ export interface Promotion {
   giftProductName?: string;
   giftProductBasePrice?: number;
   giftQuantity?: number;
+  giftItems?: GiftEntry[];              // multi-gift (Type 1) - chuan hoa boi BE
+  giftProducts?: GiftProduct[];         // product data cua gift, kem GiftQuantity
   fromDate: string;
   toDate: string;
   createdDate: string;

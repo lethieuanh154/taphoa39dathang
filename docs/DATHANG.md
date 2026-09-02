@@ -34,7 +34,8 @@ src/app/
 ## Routes
 | Path | Component | Mo ta |
 |------|-----------|-------|
-| `/` | HomeComponent | Trang chu, hien thi san pham |
+| `/` | HomeComponent | Trang chu, hien thi san pham. Nhan `?q=<tu khoa>` de mo thang ket qua tim kiem |
+| `/khuyen-mai` | PromotionPageComponent (lazy) | Trang khuyen mai rieng (xem muc duoi) |
 | `/checkout` | CheckoutComponent (lazy) | Form dat hang |
 | `/confirm/:orderId` | OrderConfirmComponent (lazy) | Xac nhan don hang |
 
@@ -84,3 +85,40 @@ src/app/
 - Gio hang luu localStorage de khong mat khi reload
 - Quick search tags cho nguoi dung chon nhanh
 - Slide panel cart (khong chuyen trang)
+
+
+## Thanh danh muc (Home)
+Thay chip chu bang **nut icon tron + nhan** (`.cat-item`), cuon ngang, mui ten trai/phai chi hien tren desktop.
+Thu tu: **Khuyen mai** (mo `/khuyen-mai`) → **Tat ca** → cac danh muc KiotViet.
+- Icon/mau lay tu `shared/category-icon.ts` — `getCategoryVisual(name, index)` do tu khoa trong ten danh muc (da bo dau) ra emoji, gradient xoay vong theo index. Tinh 1 lan luc `loadCategories()` roi gan vao `Category.icon/.gradient` (khong goi trong template vi OnPush).
+- Thanh danh muc **luon hien** (khong con `*ngIf="categories.length > 0"`): du khong load duoc danh muc van con nut Khuyen mai + Tat ca.
+
+### Chuoi load danh muc (`ProductApiService.loadCategories()`)
+1. Cache RAM → 2. IndexedDB (`meta/categories`, TTL 24h) → 3. **`GET /api/public/categories`** → 4. `GET /api/kiotviet/categories` (fallback) → 5. `deriveCategoriesFromCache()` suy ra tu `CategoryId/CategoryName` cua san pham trong IndexedDB.
+
+**Ly do:** `/api/kiotviet/categories` goi thang KiotViet, token het han → **502** → FE nhan `[]` va **im lang** (catch bo qua loi >= 500) → mat sach thanh danh muc. Endpoint public lay tu Firestore nen khong dinh loi nay.
+Buoc 5 dung `getAllRawCachedProducts()` chu **khong** `getAllCachedProducts()`: SP tu `/api/public/*` khong co field `isActive` nen bi ham do loc mat.
+
+## Trang khuyen mai `/khuyen-mai`
+Component: `components/promotion-page/`. Nguon du lieu: `GET /api/public/promotions/active` qua `PromotionService`.
+
+Phan loai KM (port tu `TapHoa39BanHang/src/app/shared/promotion-engine.ts`, dung `shared/promotion-display.ts`):
+| Loai | Dieu kien | Hien thi |
+|------|-----------|----------|
+| `gift` | co gift entry, khong giam gia | "Mua N tang X" + danh sach qua (Mien phi) |
+| `direct` | co giam gia, khong gift entry | "Giam X% / X d" + gia gach ngang → gia moi |
+| `buy_a_get_b` | co giam gia + co gift entry | "Mua N duoc mua X giam Y%" + gia uu dai cua SP mua kem |
+
+- Bo loc theo loai (`Tat ca / Mua tang qua / Giam gia truc tiep / Mua kem gia uu dai`), an tab khi count = 0.
+- Bam the → mo `ProductDetailComponent` (truyen `[promotion]`) de them vao gio.
+- Tu dong load lai khi WebSocket bao KM thay doi (`getPromotionsUpdated$`) + `cartService.recalculatePromotions()`.
+- Cache ca SP target va SP qua vao IndexedDB de gio hang resolve duoc.
+
+### `shared/promotion-display.ts`
+Ham thuan (dung chung Home + trang KM):
+`getPromoKind`, `getPromoKindLabel`, `getPromoBadge`, `getPromoDetail`, `getPromoCondition`, `getGiftEntries`, `getGiftProducts`, `calcDiscountAmount`, `getDiscountedPrice`, `getPromoEndTime`.
+**Quan trong:** `calcDiscountAmount()` lam tron **floor xuong 1.000d** giong `promotion-engine.ts` va BE `_recompute_order_economics()` → gia hien thi khop gia BE tinh lai luc dat hang.
+
+## Thanh khuyen mai tren Home
+Style "flash deals": nen cam, tieu de + **dem nguoc** toi KM het han som nhat (chi hien khi con < 24h) + nut "Xem tat ca" → `/khuyen-mai`.
+Mui ten cuon la `<button>` that (`.deal-arrow`, `z-index: 3`), **khong con `pointer-events: none`** → bam duoc, khong bi lot click xuong san pham ben duoi.

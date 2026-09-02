@@ -11,7 +11,7 @@ import { ProductDetailComponent } from '../components/product-detail/product-det
 import { CustomerIdentityDialogComponent, IdentityConfirmedEvent } from '../components/customer-identity-dialog/customer-identity-dialog.component';
 import { ProfileBubbleComponent } from '../components/profile-bubble/profile-bubble.component';
 import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
-import { RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PolicyFooterComponent } from '../components/policy-footer/policy-footer.component';
 import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
@@ -19,11 +19,18 @@ import { PromotionService } from '../services/promotion.service';
 import { CartService } from '../services/cart.service';
 import { SnackbarService } from '../services/snackbar.service';
 import { Product, Promotion } from '../models/product';
+import { getCategoryVisual } from '../shared/category-icon';
+import {
+  getPromoBadge, getPromoDetail, getDiscountedPrice, getPromoKind,
+  hasAnyDiscount, getPromoEndTime
+} from '../shared/promotion-display';
 
 interface Category {
   Id: number;
   Name: string;
   Path: string;
+  icon?: string;
+  gradient?: string;
 }
 
 @Component({
@@ -51,6 +58,23 @@ export class HomeComponent implements OnInit, OnDestroy {
       }
     }
   }
+
+  private promoScrollEl?: HTMLElement;
+  showPromoLeftArrow = false;
+  showPromoRightArrow = false;
+
+  @ViewChild('promoScroll') set promoScrollRef(ref: ElementRef<HTMLElement> | undefined) {
+    if (ref && ref.nativeElement !== this.promoScrollEl) {
+      const el = ref.nativeElement;
+      this.promoScrollEl = el;
+      el.addEventListener('scroll', () => this.updatePromoArrows());
+      setTimeout(() => this.updatePromoArrows(), 100);
+    }
+  }
+
+  /** Dem nguoc toi luc KM gan nhat het han. */
+  countdown: { h: string; m: string; s: string } | null = null;
+  private countdownTimer?: ReturnType<typeof setInterval>;
 
   // All master products from search/category (after grouping)
   private allMasterProducts: Product[] = [];
@@ -94,6 +118,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private readonly PAGE_SIZE = 20;
   private lastSearchTerm = '';
+  private pendingQuery = '';
   private updateSub?: Subscription;
   private promoSub?: Subscription;
   private cartExpiredSub?: Subscription;
@@ -108,7 +133,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     private cartService: CartService,
     private cdr: ChangeDetectorRef,
     private http: HttpClient,
-    private snackbar: SnackbarService
+    private snackbar: SnackbarService,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
@@ -118,6 +145,9 @@ export class HomeComponent implements OnInit, OnDestroy {
         this.snackbar.warning('Giỏ hàng đã hết hạn sau 24 giờ. Vui lòng chọn lại sản phẩm.');
       }
     });
+
+    // Tu trang KM chuyen ve kem ?q= -> mo ket qua tim kiem ngay
+    this.pendingQuery = (this.route.snapshot.queryParamMap.get('q') || '').trim();
 
     const storedIdentity = CustomerIdentityDialogComponent.getStoredIdentity();
     if (storedIdentity) {
@@ -195,13 +225,13 @@ export class HomeComponent implements OnInit, OnDestroy {
       // Load categories after DB is initialized to avoid race condition
       this.loadCategories();
       // Show featured products on initial load (no search needed)
-      this.loadFeaturedDisplay();
+      this.applyInitialView();
       this.loadPromotionProducts();
     }).catch(err => {
       console.error('[Home] Initialize failed:', err);
       // Still try to load products even if IndexedDB init failed
       this.loadCategories();
-      this.loadFeaturedDisplay();
+      this.applyInitialView();
       this.loadPromotionProducts();
     });
 
@@ -222,6 +252,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.updateSub?.unsubscribe();
     this.promoSub?.unsubscribe();
     this.cartExpiredSub?.unsubscribe();
+    this.stopCountdown();
   }
 
   private initCategoryDragScroll(): void {
@@ -331,6 +362,17 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   // ======================== Featured (initial) ========================
+
+  /** Mo ket qua tim kiem neu vao trang kem ?q=, khong thi hien SP noi bat. */
+  private applyInitialView(): void {
+    const q = this.pendingQuery;
+    this.pendingQuery = '';
+    if (q) {
+      this.onSearch(q);
+    } else {
+      this.loadFeaturedDisplay();
+    }
+  }
 
   private async loadFeaturedDisplay(): Promise<void> {
     this.currentMode = 'featured';
@@ -469,6 +511,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     if (promos.length === 0) {
       this.promotionProducts = [];
       this.discountProducts = [];
+      this.stopCountdown();
+      this.countdown = null;
       this.cdr.markForCheck();
       return;
     }
@@ -491,7 +535,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     // Keep discountProducts for template backward compat
     this.discountProducts = this.promotionProducts.map(pp => pp.product);
+    this.startCountdown();
     this.cdr.markForCheck();
+    setTimeout(() => this.updatePromoArrows(), 150);
 
     // Cache promotion products to IndexedDB (fire-and-forget for cart/detail use)
     if (productsToCache.length > 0) {
@@ -520,72 +566,98 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   isGiftOnlyPromo(promo: Promotion): boolean {
-    const hasGift = promo.hasGift ?? promo.type === 'gift';
-    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
-    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
-    return hasGift && !hasPct && !hasFixed;
+    return getPromoKind(promo) === 'gift';
   }
 
   hasDiscountPromo(promo: Promotion): boolean {
-    return (promo.hasPercentDiscount ?? promo.type === 'percentage')
-      || (promo.hasFixedDiscount ?? promo.type === 'fixed_amount');
+    return hasAnyDiscount(promo);
   }
 
-  getPromotionBadge(product: Product): string {
-    const pp = this.promotionProducts.find(p => p.product.Id === product.Id);
-    if (!pp) return 'SALE';
-    const promo = pp.promotion;
-    const hasGift = promo.hasGift ?? promo.type === 'gift';
-    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
-    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
-
-    const parts: string[] = [];
-    if (hasGift) parts.push('TẶNG');
-    if (hasPct) parts.push(`-${promo.discountPercent}%`);
-    if (hasFixed) {
-      const amt = promo.discountAmount || 0;
-      parts.push(amt >= 1000 ? `-${Math.round(amt / 1000)}K` : `-${amt} đ`);
-    }
-    return parts.join(' + ') || 'SALE';
+  getPromotionBadge(promo: Promotion): string {
+    return getPromoBadge(promo);
   }
 
-  getPromotionDetail(product: Product): string {
-    const pp = this.promotionProducts.find(p => p.product.Id === product.Id);
-    if (!pp) return '';
-    const promo = pp.promotion;
-    const hasGift = promo.hasGift ?? promo.type === 'gift';
-    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
-    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
-
-    const parts: string[] = [];
-    if (hasGift && promo.giftProductName) parts.push(`Tặng ${promo.giftProductName}`);
-    if (hasPct && promo.discountPercent) parts.push(`Giảm ${promo.discountPercent}%`);
-    if (hasFixed && promo.discountAmount) parts.push(`Giảm ${promo.discountAmount.toLocaleString()}d`);
-    return parts.join(' + ') || '';
+  getPromotionDetail(promo: Promotion): string {
+    return getPromoDetail(promo);
   }
 
-  getDiscountedPrice(product: Product): number {
-    const pp = this.promotionProducts.find(p => p.product.Id === product.Id);
-    if (!pp) return product.BasePrice;
-    const promo = pp.promotion;
-    const hasPct = promo.hasPercentDiscount ?? promo.type === 'percentage';
-    const hasFixed = promo.hasFixedDiscount ?? promo.type === 'fixed_amount';
+  /** Gia hien thi tren the KM: giam truc tiep thi lay gia sau giam, con lai lay gia goc. */
+  promoPrice(pp: { product: Product; promotion: Promotion }): number {
+    return getPromoKind(pp.promotion) === 'direct'
+      ? getDiscountedPrice(pp.product.BasePrice, pp.promotion)
+      : pp.product.BasePrice;
+  }
 
-    let price = product.BasePrice;
-    if (hasPct && promo.discountPercent) {
-      price = Math.round(price * (1 - promo.discountPercent / 100));
+  goToPromotions(): void {
+    this.router.navigate(['/khuyen-mai']);
+  }
+
+  scrollPromoLeft(): void {
+    this.promoScrollEl?.scrollBy({ left: -280, behavior: 'smooth' });
+  }
+
+  scrollPromoRight(): void {
+    this.promoScrollEl?.scrollBy({ left: 280, behavior: 'smooth' });
+  }
+
+  private updatePromoArrows(): void {
+    const el = this.promoScrollEl;
+    if (!el) return;
+    const left = el.scrollLeft > 5;
+    const right = el.scrollLeft < el.scrollWidth - el.clientWidth - 5;
+    if (left !== this.showPromoLeftArrow || right !== this.showPromoRightArrow) {
+      this.showPromoLeftArrow = left;
+      this.showPromoRightArrow = right;
+      this.cdr.detectChanges();
     }
-    if (hasFixed && promo.discountAmount) {
-      price = Math.max(0, price - promo.discountAmount);
+  }
+
+  /** Dem nguoc toi KM het han som nhat (chi hien khi con duoi 24h). */
+  private startCountdown(): void {
+    this.stopCountdown();
+    const ends = this.promotionProducts
+      .map(pp => getPromoEndTime(pp.promotion))
+      .filter(t => t > Date.now());
+    if (ends.length === 0) {
+      this.countdown = null;
+      return;
     }
-    return price;
+    const nearest = Math.min(...ends);
+
+    const tick = () => {
+      const left = nearest - Date.now();
+      if (left <= 0 || left > 86400000) {
+        this.countdown = null;
+        this.stopCountdown();
+      } else {
+        const h = Math.floor(left / 3600000);
+        const m = Math.floor((left % 3600000) / 60000);
+        const sec = Math.floor((left % 60000) / 1000);
+        const pad = (n: number) => String(n).padStart(2, '0');
+        this.countdown = { h: pad(h), m: pad(m), s: pad(sec) };
+      }
+      this.cdr.markForCheck();
+    };
+
+    tick();
+    if (this.countdown) {
+      this.countdownTimer = setInterval(tick, 1000);
+    }
+  }
+
+  private stopCountdown(): void {
+    if (this.countdownTimer) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = undefined;
+    }
   }
 
   // ======================== Category bubble menu ========================
 
   private async loadCategories(): Promise<void> {
     try {
-      this.categories = (await this.productApi.loadCategories()).filter(c => c.Id !== 1440125 && c.Id !== 1787413);
+      const list = (await this.productApi.loadCategories()).filter(c => c.Id !== 1440125 && c.Id !== 1787413);
+      this.categories = list.map((c, i) => ({ ...c, ...getCategoryVisual(c.Name, i) }));
       this.cdr.markForCheck();
     } catch {
       this.categories = [];
@@ -627,6 +699,10 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   trackByCategoryId(_: number, cat: Category): number {
     return cat.Id;
+  }
+
+  trackByPromoId(_: number, pp: { product: Product; promotion: Promotion }): string {
+    return pp.promotion.id;
   }
 
 }
