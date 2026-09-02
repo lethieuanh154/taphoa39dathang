@@ -8,11 +8,12 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 // jsbarcode loaded dynamically to reduce initial bundle
 import { environment } from '../../../environments/environment';
 import { SnackbarService } from '../../services/snackbar.service';
+import { GiftHistoryDialogComponent } from '../gift-history-dialog/gift-history-dialog.component';
 
 @Component({
   selector: 'app-profile-bubble',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, GiftHistoryDialogComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profile-bubble.component.html',
   styleUrl: './profile-bubble.component.css'
@@ -26,6 +27,9 @@ export class ProfileBubbleComponent implements OnInit {
   customerPhone = '';
   customerCode = '';
   giftPoint = 0;
+
+  // Lich su tang qua - mo dialog rieng (GiftHistoryDialogComponent)
+  showGiftHistory = false;
 
   // Change password
   showChangePassword = false;
@@ -59,6 +63,17 @@ export class ProfileBubbleComponent implements OnInit {
 
   closeModal(): void {
     this.isOpen = false;
+    this.showGiftHistory = false;
+    this.cdr.markForCheck();
+  }
+
+  openGiftHistory(): void {
+    this.showGiftHistory = true;
+    this.cdr.markForCheck();
+  }
+
+  closeGiftHistory(): void {
+    this.showGiftHistory = false;
     this.cdr.markForCheck();
   }
 
@@ -91,6 +106,9 @@ export class ProfileBubbleComponent implements OnInit {
           if (res.giftPoint != null) {
             this.giftPoint = res.giftPoint;
             localStorage.setItem('sm_customer_giftpoint', String(res.giftPoint));
+          }
+          if (res.token) {
+            localStorage.setItem('sm_customer_token', res.token);
           }
           this.cdr.markForCheck();
         }
@@ -164,10 +182,12 @@ export class ProfileBubbleComponent implements OnInit {
   logout(): void {
     const keys = [
       'sm_customer', 'sm_customer_code', 'sm_customer_giftpoint',
-      'sm_customer_identity', 'sm_customer_name', 'sm_customer_phone'
+      'sm_customer_identity', 'sm_customer_name', 'sm_customer_phone',
+      'sm_customer_token'
     ];
     keys.forEach(k => localStorage.removeItem(k));
     this.isOpen = false;
+    this.showGiftHistory = false;
     this.loggedOut.emit();
   }
 

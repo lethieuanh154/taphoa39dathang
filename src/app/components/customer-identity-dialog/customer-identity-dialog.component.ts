@@ -11,6 +11,7 @@ const IDENTITY_NAME_KEY = 'sm_customer_name';
 const IDENTITY_PHONE_KEY = 'sm_customer_phone';
 const IDENTITY_CODE_KEY = 'sm_customer_code';
 const GIFT_POINT_KEY = 'sm_customer_giftpoint';
+const TOKEN_KEY = 'sm_customer_token';
 const REGISTER_URL = 'https://songminhdangkythanhvien.onrender.com/';
 
 interface VerifyResponse {
@@ -23,6 +24,7 @@ interface VerifyResponse {
   message?: string;
   giftPoint?: number;
   hasPassword?: boolean;
+  token?: string;
   requirePassword?: boolean;
 }
 
@@ -269,6 +271,9 @@ export class CustomerIdentityDialogComponent {
           localStorage.setItem(IDENTITY_CODE_KEY, res.code);
         }
         localStorage.setItem(GIFT_POINT_KEY, String(res.giftPoint || 0));
+        if (res.token) {
+          localStorage.setItem(TOKEN_KEY, res.token);
+        }
         this.confirmed.emit({ identity: res.identity || val, hasPassword: res.hasPassword ?? false });
       } else {
         this.errorMessage = res?.message || 'Không tìm thấy khách hàng';

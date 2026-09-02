@@ -8,6 +8,7 @@ Online ordering app. Angular 19, CSS only (no UI lib), mobile-first cho 30-70 tu
 ## Critical Rules
 - Order ID: `"DH" + timestamp`, status: pending → checked/canceled/edited
 - API (dùng `/api/public/*` để ẩn data nội bộ): products `GET /api/public/products/{featured|by-category/<id>|search}`, KM `GET /api/public/promotions/active`, đặt hàng `POST /api/public/add_order` (BE tự tính lại giá/ship/điểm/giá vốn + flag `suspiciousOrder`). Xem `TapHoa39BackEnd/docs/PUBLIC-API.md`.
+- Lich su tang qua (profile → dialog `gift-history-dialog`): `POST /api/chat/customer-notes` body `{identity, token}`; token do `verify-identity` phat, luu `sm_customer_token`, **thieu/het han → 401**. Xem `TapHoa39BackEnd/docs/GIFT-NOTES.md`.
 - Cart + KH info luu localStorage, khong bat login. Cart TTL 24h (`sm_cart_ts`): quá hạn tự xoá → `cartExpired$` báo, nút checkout ẩn (giỏ trống)
 - Design: Green #2E7D32, Orange #F57C00, font Be Vietnam Pro min 16px, button 48px
 - KM: 3 loai `gift | direct | buy_a_get_b`, phan loai + tinh gia bang `shared/promotion-display.ts` (port tu `TapHoa39BanHang/src/app/shared/promotion-engine.ts`). Giam % **floor xuong 1.000d** — phai khop BE `_recompute_order_economics()`, dung tu che cong thuc khac.

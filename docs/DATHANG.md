@@ -122,3 +122,10 @@ Ham thuan (dung chung Home + trang KM):
 ## Thanh khuyen mai tren Home
 Style "flash deals": nen cam, tieu de + **dem nguoc** toi KM het han som nhat (chi hien khi con < 24h) + nut "Xem tat ca" → `/khuyen-mai`.
 Mui ten cuon la `<button>` that (`.deal-arrow`, `z-index: 3`), **khong con `pointer-events: none`** → bam duoc, khong bi lot click xuong san pham ben duoi.
+
+## Lich su tang qua
+Nut **"Lich su tang qua"** trong modal the thanh vien (`components/profile-bubble/`), dat giua "Doi mat khau" va "Dang xuat" → mo **dialog rieng** `components/gift-history-dialog/` (standalone, inline template, backdrop `z-index: 10000` de nam tren modal profile).
+- Dialog tu load: `POST /api/chat/customer-notes` body `{ identity, token }` — identity = `sm_customer_code` → `sm_customer_phone` → `sm_customer_identity`; token = `sm_customer_token`. Tra `{ notes: [{ id, text, createdAt }] }` moi nhat truoc.
+- **Token phien**: `verify-identity` tra `token` khi dang nhap thanh cong → luu `sm_customer_token` (o ca identity-dialog va profile-bubble), xoa khi logout. Thieu/het han → BE tra **401**; dialog tu goi lai `verify-identity` (khong mat khau) de xin token moi, that bai thi hien "Vui long dang nhap lai...". Xem `TapHoa39BackEnd/docs/GIFT-NOTES.md`.
+- 404 (khong tim thay KH) → hien "Ban chua co lich su tang qua", khong bao loi.
+- Noi dung note do nhan vien ghi tu **TapHoa39BanHang `/customers-page`** (cot "Ghi chu"), luu o field `GiftNotes` trong doc `customers`.
