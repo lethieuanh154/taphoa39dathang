@@ -643,3 +643,32 @@ app-profile-bubble {
 .cpw-btn-secondary:hover {
   background: #f5f5f5;
 }
+
+/* ---- Skeleton khuyen mai ---- */
+.deal-skel {
+  cursor: default;
+  pointer-events: none;
+}
+
+.deal-skel-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  background: #eceff1;
+  animation: deal-skel-pulse 1.2s ease-in-out infinite;
+}
+
+.deal-skel-line {
+  height: 10px;
+  margin-top: 8px;
+  border-radius: 4px;
+  background: #eceff1;
+  animation: deal-skel-pulse 1.2s ease-in-out infinite;
+}
+
+.deal-skel-line-sm { width: 60%; }
+
+@keyframes deal-skel-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

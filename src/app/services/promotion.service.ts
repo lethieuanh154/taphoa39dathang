@@ -13,20 +13,39 @@ export class PromotionService {
   private promotionsSubject = new BehaviorSubject<Promotion[]>([]);
   promotions$ = this.promotionsSubject.asObservable();
 
+  /** Payload KM ~280KB: chia se giua Home va trang /khuyen-mai thay vi goi lai moi lan dieu huong. */
+  private static readonly CACHE_TTL_MS = 60_000;
+  private loadedAt = 0;
+  private inFlight: Promise<void> | null = null;
+
   constructor(private http: HttpClient, private snackbar: SnackbarService) {}
 
-  async loadActivePromotions(): Promise<void> {
+  /** @param force bo qua cache (dung khi WebSocket bao KM thay doi). */
+  loadActivePromotions(force = false): Promise<void> {
+    if (!force && this.inFlight) return this.inFlight;
+    if (!force && this.activePromotions.length > 0
+        && Date.now() - this.loadedAt < PromotionService.CACHE_TTL_MS) {
+      return Promise.resolve();
+    }
+
+    this.inFlight = this.fetchActivePromotions().finally(() => { this.inFlight = null; });
+    return this.inFlight;
+  }
+
+  private async fetchActivePromotions(): Promise<void> {
     try {
       const promos = await firstValueFrom(
         this.http.get<Promotion[]>(`${environment.domainUrl}/api/public/promotions/active`)
       );
       this.activePromotions = promos || [];
+      this.loadedAt = Date.now();
       this.promotionsSubject.next(this.activePromotions);
     } catch (err) {
       console.error('Failed to load promotions:', err);
       if (!(err instanceof HttpErrorResponse && err.status >= 500)) {
         this.snackbar.error('Không tải được chương trình khuyến mãi.');
       }
+      this.loadedAt = 0;
       this.activePromotions = [];
       this.promotionsSubject.next([]);
     }

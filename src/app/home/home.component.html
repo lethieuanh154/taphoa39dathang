@@ -53,6 +53,20 @@
 </div>
 
 <main class="main-content">
+  <!-- Skeleton KM: giu cho san khi payload KM chua ve, tranh layout nhay -->
+  <section class="deal-bar" *ngIf="promoLoading && promotionProducts.length === 0">
+    <div class="deal-head">
+      <h2 class="deal-title">Khuyến mại</h2>
+    </div>
+    <div class="deal-scroll">
+      <div class="deal-item deal-skel" *ngFor="let i of promoSkeletons">
+        <div class="deal-skel-img"></div>
+        <div class="deal-skel-line deal-skel-line-sm"></div>
+        <div class="deal-skel-line"></div>
+      </div>
+    </div>
+  </section>
+
   <!-- Promotion Bar - KM that tu database, style "flash deals" -->
   <section class="deal-bar" *ngIf="promotionProducts.length > 0">
     <div class="deal-head">

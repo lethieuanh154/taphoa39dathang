@@ -67,12 +67,12 @@ export class PromotionPageComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.productApi.initialize()
-      .catch(() => {})
-      .then(() => this.load());
+    // KM khong phu thuoc IndexedDB -> tai ngay; initialize() chay song song cho phan cache
+    this.load();
+    this.productApi.initialize().catch(() => {});
 
     this.promoSub = this.productApi.getPromotionsUpdated$().subscribe(() => {
-      this.load();
+      this.load(true);
       this.cartService.recalculatePromotions();
     });
   }
@@ -105,11 +105,11 @@ export class PromotionPageComponent implements OnInit, OnDestroy {
     this.router.navigate(['/']);
   }
 
-  private async load(): Promise<void> {
-    this.isLoading = true;
+  private async load(force = false): Promise<void> {
+    this.isLoading = this.cards.length === 0;
     this.cdr.markForCheck();
 
-    await this.promotionService.loadActivePromotions();
+    await this.promotionService.loadActivePromotions(force);
     const promos = this.promotionService.getActivePromotions();
 
     const cards: PromoCard[] = [];

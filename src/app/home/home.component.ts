@@ -128,6 +128,9 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // Promotion bar - products with active promotions
   promotionProducts: { product: Product; promotion: Promotion }[] = [];
+  /** Dang tai KM lan dau -> hien skeleton thay vi an han khu KM. */
+  promoLoading = true;
+  readonly promoSkeletons = [0, 1, 2, 3, 4];
 
   constructor(
     private productApi: ProductApiService,
@@ -222,6 +225,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.cdr.markForCheck();
 
+    // KM khong phu thuoc IndexedDB -> ban request ngay, khong cho initialize()
+    this.loadPromotionProducts();
+
     this.productApi.initialize().then(async () => {
       // Purge hidden-category products (e.g. "Thuốc lá") from IndexedDB
       await this.productApi.purgeHiddenCategoryProducts().catch(() => {});
@@ -245,7 +251,7 @@ export class HomeComponent implements OnInit, OnDestroy {
 
     // Listen for promotion changes via WebSocket (created/updated/deleted/toggled in BanHang)
     this.promoSub = this.productApi.getPromotionsUpdated$().subscribe(() => {
-      this.loadPromotionProducts();
+      this.loadPromotionProducts(true);
       // Recalculate cart promotions with updated promotion data
       this.cartService.recalculatePromotions();
     });
@@ -520,9 +526,13 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   // ======================== Promotion bar ========================
 
-  private async loadPromotionProducts(): Promise<void> {
-    await this.promotionService.loadActivePromotions();
+  private async loadPromotionProducts(force = false): Promise<void> {
+    this.promoLoading = this.promotionProducts.length === 0;
+    this.cdr.markForCheck();
+
+    await this.promotionService.loadActivePromotions(force);
     const promos = this.promotionService.getActivePromotions();
+    this.promoLoading = false;
     if (promos.length === 0) {
       this.promotionProducts = [];
       this.discountProducts = [];

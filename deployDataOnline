@@ -31,6 +31,14 @@ server {
     root /apps/taphoa39dathang;
     index index.html;
 
+    # Nen response: /api/public/promotions/active ~280KB JSON -> ~30KB
+    gzip on;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_vary on;
+    gzip_types application/json application/javascript text/css text/plain image/svg+xml;
+
     # Angular SPA - mọi route đều trả về index.html
     location / {
         try_files $uri $uri/ /index.html;
