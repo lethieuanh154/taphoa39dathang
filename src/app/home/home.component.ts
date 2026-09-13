@@ -76,6 +76,9 @@ export class HomeComponent implements OnInit, OnDestroy {
   countdown: { h: string; m: string; s: string } | null = null;
   private countdownTimer?: ReturnType<typeof setInterval>;
 
+  // Raw products tich luy qua cac trang (chua group). Phai giu lai de group LAI TOAN BO:
+  // group theo tung trang lam mat don vi con khi master roi vao trang khac.
+  private allRawProducts: Product[] = [];
   // All master products from search/category (after grouping)
   private allMasterProducts: Product[] = [];
   // Displayed subset for infinite scroll
@@ -421,30 +424,42 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   private appendProducts(results: Product[]): void {
-    results = results.filter(p => !this.isPromoFreeProduct(p));
-    const grouped = this.groupService.group(results);
-    // Merge new grouped products into existing
-    Object.assign(this.groupedProducts, grouped);
+    const incoming = results.filter(p => !this.isPromoFreeProduct(p));
 
-    const newMasters = Object.values(grouped).map(group => group[0]);
-    // Sort: in-stock first
+    // Tich luy raw roi group LAI TOAN BO, khong group tung trang.
+    // GroupService pass 2 chi gan duoc child khi master co mat trong chinh mang truyen vao;
+    // group theo tung trang (PAGE_SIZE=20) nen gia dinh bi cat ngang bien trang thi child bi
+    // bo VINH VIEN (khong bao gio duoc xet lai) -> dialog chi tiet mat don vi chai/loc/thung.
+    // Group lai toan bo cung khien child mo coi tu tu duoc nhan lai khi master ve o trang sau.
+    const seenRawIds = new Set(this.allRawProducts.map(p => p.Id));
+    for (const p of incoming) {
+      if (!seenRawIds.has(p.Id)) {
+        seenRawIds.add(p.Id);
+        this.allRawProducts.push(p);
+      }
+    }
+
+    this.groupedProducts = this.groupService.group(this.allRawProducts);
+
+    // Chi lay master CHUA render (gom ca group vua du master nho lan group lai nay)
+    const existingIds = new Set(this.allMasterProducts.map(p => p.Id));
+    const newMasters = Object.values(this.groupedProducts)
+      .map(group => group[0])
+      .filter(p => !existingIds.has(p.Id));
+
+    // Sort: in-stock first. Chi sort trong lo moi de cac the da render khong bi nhay cho.
     newMasters.sort((a, b) => {
       const stockA = a.OnHand + (a.CloneOnHandNV || 0);
       const stockB = b.OnHand + (b.CloneOnHandNV || 0);
       return (stockB > 0 ? 1 : 0) - (stockA > 0 ? 1 : 0);
     });
 
-    // Avoid duplicates
-    const existingIds = new Set(this.allMasterProducts.map(p => p.Id));
-    for (const p of newMasters) {
-      if (!existingIds.has(p.Id)) {
-        this.allMasterProducts.push(p);
-      }
-    }
+    this.allMasterProducts.push(...newMasters);
     this.displayedProducts = [...this.allMasterProducts];
   }
 
   private clearProducts(): void {
+    this.allRawProducts = [];
     this.allMasterProducts = [];
     this.displayedProducts = [];
     this.groupedProducts = {};

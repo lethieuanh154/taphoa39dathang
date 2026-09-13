@@ -19,7 +19,6 @@ L.Icon.Default.mergeOptions({
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `<div #mapEl class="tracking-map"></div>`,
-  styleUrls: ['../../../../node_modules/leaflet/dist/leaflet.css'],
   styles: [`
     .tracking-map {
       width: 100%;
