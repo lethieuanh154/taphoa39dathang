@@ -15,12 +15,23 @@ export class ProductCardComponent {
   @Input() product!: Product;
   @Output() cardClick = new EventEmitter<Product>();
   addedAnimation = false;
+  showDescription = false;
 
   constructor(private cartService: CartService, private cdr: ChangeDetectorRef) {}
 
   get isOutOfStock(): boolean {
     const totalStock = this.product.OnHand + (this.product.CloneOnHandNV || 0);
     return totalStock <= 0;
+  }
+
+  get hasDescription(): boolean {
+    return !!this.product.Description && this.product.Description.trim().length > 0;
+  }
+
+  toggleDescription(event: Event): void {
+    event.stopPropagation();
+    this.showDescription = !this.showDescription;
+    this.cdr.markForCheck();
   }
 
   formatPrice(price: number): string {

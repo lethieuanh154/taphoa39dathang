@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, EventEmitter, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -220,6 +220,7 @@ export class CustomerIdentityDialogComponent {
 
   private http = inject(HttpClient);
   private snackbar = inject(SnackbarService);
+  private cdr = inject(ChangeDetectorRef);
 
   inputValue = '';
   passwordValue = '';
@@ -258,6 +259,7 @@ export class CustomerIdentityDialogComponent {
         // Customer has password but user didn't provide one
         this.errorMessage = 'Vui lòng nhập mật khẩu';
         this.isVerifying = false;
+        this.cdr.markForCheck();
         return;
       }
 
@@ -291,6 +293,7 @@ export class CustomerIdentityDialogComponent {
     }
 
     this.isVerifying = false;
+    this.cdr.markForCheck();
   }
 
   onRegister(): void {

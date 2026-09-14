@@ -42,6 +42,56 @@
   border-radius: 12px;
 }
 
+.info-btn {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: rgba(255,255,255,0.9);
+  color: var(--text-secondary);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  cursor: pointer;
+  z-index: 2;
+}
+
+.info-btn:active {
+  transform: scale(0.92);
+}
+
+.desc-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  padding: 10px 12px;
+  background: rgba(0,0,0,0.82);
+  color: #fff;
+  overflow-y: auto;
+  cursor: pointer;
+  -webkit-overflow-scrolling: touch;
+}
+
+.desc-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.75;
+  margin-bottom: 4px;
+}
+
+.desc-text {
+  font-size: 13px;
+  line-height: 1.45;
+  white-space: pre-line;
+  word-break: break-word;
+}
+
 .card-body {
   padding: 12px;
   flex: 1;
