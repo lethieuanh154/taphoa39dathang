@@ -131,7 +131,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
             return this.shippingService.calculateDistance(lat, lng);
           }),
           catchError(err => {
-            this.shipError = err?.message || 'Lỗi tính khoảng cách';
+            this.shipError = err?.message
+              || 'Không tính được khoảng cách giao hàng từ địa chỉ này (dịch vụ bản đồ không phản hồi hoặc mất mạng). Vui lòng nhập lại địa chỉ rõ hơn, hoặc chọn tự đến lấy hàng.';
             this.isCalculatingShip = false;
             this.distanceKm = 0;
             this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '', heavySurcharge: 0 };
@@ -439,12 +440,40 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         console.error('Order submission failed:', err);
-        this.errorMessage = 'Không thể đặt hàng. Vui lòng thử lại sau.';
-        this.snackbar.error('Đặt hàng thất bại. Vui lòng thử lại.');
+        const reason = this.describeOrderError(err);
+        this.errorMessage = reason;
+        this.snackbar.error(reason);
         this.isSubmitting = false;
         this.cdr.markForCheck();
       }
     });
+  }
+
+  /** Dịch lỗi HTTP thành lý do cụ thể cho khách, ưu tiên message server trả về. */
+  private describeOrderError(err: any): string {
+    const serverMsg = (err?.error?.error || err?.error?.message || '').toString().trim();
+    if (serverMsg) return serverMsg;
+
+    const status = err?.status;
+    if (status === 0) {
+      return 'Đơn chưa gửi được vì mất kết nối mạng (điện thoại không vào được internet hoặc mạng cửa hàng đang gián đoạn). Vui lòng kiểm tra Wi-Fi/4G rồi bấm Đặt hàng lại.';
+    }
+    if (status === 400) {
+      return 'Đơn hàng bị từ chối do thông tin không hợp lệ (số điện thoại, địa chỉ hoặc sản phẩm trong giỏ). Vui lòng kiểm tra lại rồi đặt lại.';
+    }
+    if (status === 409) {
+      return 'Đơn này đã được gửi trước đó nên hệ thống không tạo đơn trùng. Vui lòng xem mục "Đơn hàng của tôi" trước khi đặt lại.';
+    }
+    if (status === 404) {
+      return 'Không kết nối được tới hệ thống đặt hàng của cửa hàng (địa chỉ dịch vụ không tồn tại). Vui lòng tải lại trang; nếu vẫn lỗi xin gọi trực tiếp cho cửa hàng.';
+    }
+    if (status === 429) {
+      return 'Bạn gửi đơn quá nhanh nên hệ thống tạm chặn. Vui lòng đợi khoảng 1 phút rồi đặt lại.';
+    }
+    if (status >= 500) {
+      return 'Máy chủ cửa hàng đang bận nên chưa nhận được đơn. Đơn CHƯA được ghi nhận. Vui lòng thử lại sau ít phút hoặc gọi trực tiếp cho cửa hàng.';
+    }
+    return `Chưa gửi được đơn hàng (lỗi không xác định, mã ${status ?? '?'}). Đơn CHƯA được ghi nhận. Vui lòng thử lại; nếu vẫn lỗi xin gọi trực tiếp cho cửa hàng.`;
   }
 
   trackByCartItem(_: number, item: CartItem): string {
