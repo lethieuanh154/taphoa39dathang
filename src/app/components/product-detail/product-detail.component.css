@@ -330,6 +330,14 @@
   background: #f57c00;
 }
 
+.stock-status.stock-insufficient {
+  background: #fbe9e7;
+  color: #bf360c;
+}
+.stock-status.stock-insufficient .stock-dot {
+  background: #e64a19;
+}
+
 .stock-status.stock-out-of-stock {
   background: #ffebee;
   color: #c62828;

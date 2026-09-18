@@ -128,26 +128,35 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     return this.selectedProduct.BasePrice;
   }
 
-  /** Total stock across all group variants, converted to master unit */
+  /** Group variants, fallback to the selected product when no group is passed */
+  private get unitVariants(): Product[] {
+    return this.group.length > 0 ? this.group : [this.selectedProduct];
+  }
+
+  /** ConversionValue of the selected unit, always >= 1 */
+  private get selectedConversion(): number {
+    const cv = this.selectedProduct?.ConversionValue || 1;
+    return cv > 0 ? cv : 1;
+  }
+
+  /**
+   * Tồn kho quy về đơn vị gốc.
+   * KiotViet lưu OnHand đã quy đổi sẵn cho từng unit (chai 6 / lốc 1 / 4 lốc 0.25)
+   * — cùng một lượng hàng, KHÔNG cộng dồn. Lấy max để bỏ qua variant bị stale.
+   */
   get totalMasterStock(): number {
-    return this.group.reduce((sum, p) => {
-      const stock = p.OnHand + (p.CloneOnHandNV || 0);
-      return sum + stock * (p.ConversionValue || 1);
+    return this.unitVariants.reduce((max, p) => {
+      const stock = (p.OnHand + (p.CloneOnHandNV || 0)) * (p.ConversionValue || 1);
+      return stock > max ? stock : max;
     }, 0);
   }
 
-  /** Stock as percentage of the largest ConversionValue in the group */
-  get stockPercent(): number {
-    const maxCV = Math.max(...this.group.map(p => p.ConversionValue || 1));
-    if (maxCV <= 0) return this.totalMasterStock > 0 ? 100 : 0;
-    return (this.totalMasterStock / maxCV) * 100;
-  }
-
-  get stockStatus(): 'in-stock' | 'low-stock' | 'very-low' | 'out-of-stock' {
-    const pct = this.stockPercent;
-    if (pct <= 0) return 'out-of-stock';
-    if (pct < 3) return 'very-low';
-    if (pct <= 10) return 'low-stock';
+  get stockStatus(): 'in-stock' | 'low-stock' | 'very-low' | 'insufficient' | 'out-of-stock' {
+    if (this.totalMasterStock <= 0) return 'out-of-stock';
+    const units = this.selectedProductStock;
+    if (units <= 0) return 'insufficient';
+    if (units <= 2) return 'very-low';
+    if (units <= 5) return 'low-stock';
     return 'in-stock';
   }
 
@@ -155,13 +164,19 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     switch (this.stockStatus) {
       case 'in-stock': return 'Còn hàng';
       case 'low-stock': return 'Sắp hết hàng';
-      case 'very-low': return 'Chỉ còn vài sản phẩm';
+      case 'very-low': return `Chỉ còn ${this.selectedProductStock} ${this.selectedProduct.Unit || 'sản phẩm'}`;
+      case 'insufficient': return `Không đủ hàng cho ${this.selectedProduct.Unit || 'đơn vị này'}`;
       case 'out-of-stock': return 'Hết hàng';
     }
   }
 
   get isOutOfStock(): boolean {
     return this.stockStatus === 'out-of-stock';
+  }
+
+  /** Không mua được: hết hàng hoặc tồn kho không đủ 1 đơn vị đang chọn */
+  get isUnavailable(): boolean {
+    return this.stockStatus === 'out-of-stock' || this.stockStatus === 'insufficient';
   }
 
   formatPrice(price: number): string {
@@ -177,18 +192,27 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  /** Tồn kho quy đổi sang đơn vị đang chọn */
   get selectedProductStock(): number {
-    return this.selectedProduct.OnHand + (this.selectedProduct.CloneOnHandNV || 0);
+    return Math.floor(this.totalMasterStock / this.selectedConversion);
+  }
+
+  /** Số lượng đã trong giỏ của cả nhóm, quy đổi về đơn vị gốc */
+  private get cartMasterQuantity(): number {
+    return this.unitVariants.reduce(
+      (sum, p) => sum + this.cartService.getCartQuantity(p.Code) * (p.ConversionValue || 1),
+      0
+    );
   }
 
   get remainingStock(): number {
-    const inCart = this.cartService.getCartQuantity(this.selectedProduct.Code);
-    return Math.max(0, this.selectedProductStock - inCart);
+    const remain = this.totalMasterStock - this.cartMasterQuantity;
+    return Math.max(0, Math.floor(remain / this.selectedConversion));
   }
 
   increaseQuantity(): void {
-    if (this.selectedProductStock > 0 && this.quantity >= this.remainingStock) {
-      this.showSnackbar(`Chỉ còn ${this.selectedProductStock} sản phẩm trong kho`);
+    if (this.quantity >= this.remainingStock) {
+      this.showSnackbar(`Chỉ còn ${this.remainingStock} ${this.selectedProduct.Unit || 'sản phẩm'} trong kho`);
       return;
     }
     this.quantity++;
@@ -203,7 +227,11 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   }
 
   addToCart(): void {
-    if (this.isOutOfStock) return;
+    if (this.isUnavailable) return;
+    if (this.quantity > this.remainingStock) {
+      this.showSnackbar(`Tồn kho chỉ còn ${this.remainingStock} ${this.selectedProduct.Unit || 'sản phẩm'}`);
+      return;
+    }
     const ok = this.cartService.addToCart(this.selectedProduct, this.quantity);
     if (ok) {
       this.showSnackbar(`Đã thêm ${this.selectedProduct.FullName} vào giỏ hàng`);
