@@ -19,7 +19,8 @@ export class SnackbarService {
     this.message$.next({ text, type: 'success', duration });
   }
 
-  error(text: string, duration = 4000): void {
+  /** Khong dat duration mac dinh: snackbar tu tinh thoi gian doc theo do dai message. */
+  error(text: string, duration?: number): void {
     this.message$.next({ text, type: 'error', duration });
   }
 

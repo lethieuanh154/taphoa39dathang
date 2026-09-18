@@ -10,7 +10,9 @@ import { SnackbarService, SnackbarMessage } from '../../services/snackbar.servic
   template: `
     <div
       class="snackbar-global"
+      role="alert"
       [class.snackbar-show]="visible"
+      (click)="dismiss()"
       [class.snackbar-error]="current?.type === 'error'"
       [class.snackbar-warning]="current?.type === 'warning'"
       [class.snackbar-success]="current?.type === 'success'"
@@ -30,24 +32,37 @@ import { SnackbarService, SnackbarMessage } from '../../services/snackbar.servic
   styles: [`
     .snackbar-global {
       position: fixed;
-      bottom: -60px;
+      /* Nam tren thanh dieu huong cua may (safe-area), khong bi che */
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
       left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 20px;
+      /* An bang transform, KHONG bang bottom am: hop cao bao nhieu cung ra khoi man hinh */
+      transform: translate(-50%, calc(100% + 32px + env(safe-area-inset-bottom, 0px)));
+      opacity: 0;
+      visibility: hidden;
+      padding: 12px 16px;
       border-radius: 10px;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 500;
       z-index: 99999;
-      transition: bottom 0.3s ease;
+      transition: transform 0.3s ease, opacity 0.3s ease, visibility 0.3s;
       display: flex;
-      align-items: center;
+      align-items: flex-start;
       gap: 8px;
-      max-width: 90vw;
+      width: calc(100vw - 32px);
+      max-width: 520px;
+      box-sizing: border-box;
       box-shadow: 0 4px 16px rgba(0,0,0,0.15);
       pointer-events: none;
+      cursor: pointer;
     }
     .snackbar-show {
-      bottom: 24px;
+      transform: translate(-50%, 0);
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .snackbar-global { transition: opacity 0.15s ease, visibility 0.15s; }
     }
     .snackbar-error {
       background: #d32f2f;
@@ -63,9 +78,13 @@ import { SnackbarService, SnackbarMessage } from '../../services/snackbar.servic
     }
     .snackbar-icon {
       flex-shrink: 0;
+      margin-top: 2px;
     }
     .snackbar-text {
-      line-height: 1.4;
+      line-height: 1.45;
+      text-align: left;
+      /* Message dai van doc duoc, khong tran ra ngoai */
+      overflow-wrap: anywhere;
     }
   `],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -82,11 +101,20 @@ export class SnackbarComponent implements OnDestroy {
       this.current = msg;
       this.visible = true;
       this.cdr.markForCheck();
+      // Message cang dai cang can nhieu thoi gian doc (~55ms/ky tu), toi da 12s
+      const readMs = Math.min(12000, Math.max(3000, (msg.text || '').length * 55));
       this.timer = setTimeout(() => {
         this.visible = false;
         this.cdr.markForCheck();
-      }, msg.duration || 3000);
+      }, msg.duration || readMs);
     });
+  }
+
+  /** Cham vao de tat som, khong phai cho het gio. */
+  dismiss(): void {
+    clearTimeout(this.timer);
+    this.visible = false;
+    this.cdr.markForCheck();
   }
 
   ngOnDestroy(): void {

@@ -585,11 +585,15 @@
 .error-msg {
   background: #fce4ec;
   color: #c62828;
+  border: 1px solid #ef9a9a;
   padding: 12px 16px;
   border-radius: 8px;
   font-size: 15px;
+  line-height: 1.5;
   margin-bottom: 16px;
-  text-align: center;
+  /* Message dai nhieu dong -> canh trai de doc, khong canh giua */
+  text-align: left;
+  scroll-margin-top: 80px;
 }
 
 /* Submit */

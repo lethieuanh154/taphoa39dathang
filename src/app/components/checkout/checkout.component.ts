@@ -445,6 +445,10 @@ export class CheckoutComponent implements OnInit, OnDestroy {
         this.snackbar.error(reason);
         this.isSubmitting = false;
         this.cdr.markForCheck();
+        // Khach co the dang cuon o giua trang -> keo o bao loi vao tam nhin
+        setTimeout(() => {
+          document.querySelector('.error-msg')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 0);
       }
     });
   }
