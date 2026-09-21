@@ -1,0 +1,72 @@
+<div class="demo-page">
+  <header class="demo-head">
+    <a class="back" routerLink="/" aria-label="Về trang chủ">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+      Trang chủ
+    </a>
+    <h1>Danh mục 3D</h1>
+  </header>
+
+  <section class="stage-wrap">
+    <app-category-3d-carousel
+      [categories]="categories"
+      [autoRotate]="autoRotate"
+      [autoRotateInterval]="autoRotateInterval"
+      [cardWidth]="200"
+      [cardHeight]="280"
+      [enableDrag]="enableDrag"
+      [enableTouch]="enableTouch"
+      [enableWheel]="enableWheel"
+      [enableKeyboard]="enableKeyboard"
+      (categorySelected)="onCategorySelected($event)">
+    </app-category-3d-carousel>
+  </section>
+
+  <p class="hint">
+    Kéo chuột / vuốt ngang để xoay · lăn chuột trong vùng carousel · nút ‹ › · click dot ·
+    Tab rồi dùng ← → và Enter
+  </p>
+
+  <section class="panel">
+    <h2>Tuỳ chọn</h2>
+
+    <div class="row">
+      <label for="cnt">Số danh mục</label>
+      <select id="cnt" [(ngModel)]="visibleCount" (ngModelChange)="onVisibleCountChange()">
+        <option *ngFor="let c of countOptions" [ngValue]="c">{{ c }}</option>
+      </select>
+    </div>
+
+    <div class="row">
+      <label for="itv">Auto rotate (ms)</label>
+      <select id="itv" [(ngModel)]="autoRotateInterval">
+        <option [ngValue]="3000">3000</option>
+        <option [ngValue]="4500">4500</option>
+        <option [ngValue]="6000">6000</option>
+      </select>
+    </div>
+
+    <div class="checks">
+      <label><input type="checkbox" [(ngModel)]="autoRotate"> Tự động xoay</label>
+      <label><input type="checkbox" [(ngModel)]="enableDrag"> Kéo chuột</label>
+      <label><input type="checkbox" [(ngModel)]="enableTouch"> Vuốt cảm ứng</label>
+      <label><input type="checkbox" [(ngModel)]="enableWheel"> Lăn chuột</label>
+      <label><input type="checkbox" [(ngModel)]="enableKeyboard"> Bàn phím</label>
+      <label><input type="checkbox" [(ngModel)]="useImages" (ngModelChange)="onUseImagesChange()"> Dùng ảnh placeholder</label>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Sự kiện categorySelected</h2>
+    <p class="selected" *ngIf="selected; else none">
+      Đang chọn: <strong>{{ selected.name }}</strong> ({{ selected.id }})
+    </p>
+    <ng-template #none><p class="selected muted">Chưa chọn danh mục nào.</p></ng-template>
+    <ul class="log">
+      <li *ngFor="let line of log">{{ line }}</li>
+    </ul>
+  </section>
+</div>

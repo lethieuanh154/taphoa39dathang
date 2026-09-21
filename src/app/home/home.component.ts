@@ -13,6 +13,7 @@ import { ProfileBubbleComponent } from '../components/profile-bubble/profile-bub
 import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PolicyFooterComponent } from '../components/policy-footer/policy-footer.component';
+import { Category3dCarouselComponent, Category3D } from '../components/category-3d-carousel/category-3d-carousel.component';
 import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
 import { PromotionService } from '../services/promotion.service';
@@ -36,7 +37,7 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ProfileBubbleComponent, DraggableBubbleDirective, PolicyFooterComponent] as const,
+  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ProfileBubbleComponent, DraggableBubbleDirective, PolicyFooterComponent, Category3dCarouselComponent] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -118,6 +119,30 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Category bar
   categories: Category[] = [];
   activeCategory: Category | null = null;
+
+  // Carousel 3D o dau trang
+  categories3d: Category3D[] = [];
+  /** Thanh ngang chi hien sau khi carousel da cuon qua. */
+  showCategoryBar = false;
+  /** Chieu cao header sticky -> vi tri `top` cua thanh ngang fixed. */
+  stickyHeight = 0;
+  @ViewChild('stickyTop') private stickyTopRef?: ElementRef<HTMLElement>;
+  private catHeroEl?: HTMLElement;
+
+  @ViewChild('catHero') set catHeroRef(ref: ElementRef<HTMLElement> | undefined) {
+    const el = ref?.nativeElement;
+    if (el === this.catHeroEl) return;
+    this.catHeroEl = el;
+    // Doi layout on dinh roi moi do chieu cao header + nguong an/hien thanh ngang.
+    setTimeout(() => {
+      this.updateCategoryBarVisibility();
+      this.cdr.markForCheck();
+    });
+  }
+
+  get activeCategoryId(): string | null {
+    return this.activeCategory ? String(this.activeCategory.Id) : null;
+  }
 
   private readonly PAGE_SIZE = 20;
   private lastSearchTerm = '';
@@ -302,6 +327,8 @@ export class HomeComponent implements OnInit, OnDestroy {
     // Footer: hide when scrolling down, show when near top
     this.footerHidden = scrollY > 100;
 
+    this.updateCategoryBarVisibility();
+
     // Infinite scroll - load more from API
     const scrollPosition = window.innerHeight + scrollY;
     const docHeight = document.documentElement.scrollHeight;
@@ -341,6 +368,37 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   // ======================== Category ========================
+
+  /**
+   * Thanh ngang thay cho carousel khi carousel da cuon qua (con < 40% trong khung nhin).
+   * Thanh ngang la `position: fixed` nen viec bat/tat khong doi layout -> khong nhay.
+   */
+  private updateCategoryBarVisibility(): void {
+    const header = this.stickyTopRef?.nativeElement;
+    if (header) this.stickyHeight = Math.round(header.getBoundingClientRect().height);
+    const hero = this.catHeroEl;
+    // Khong co carousel (chua load xong danh muc) -> luon hien thanh ngang.
+    const show = hero
+      ? hero.getBoundingClientRect().bottom < this.stickyHeight + hero.offsetHeight * 0.4
+      : true;
+    if (show !== this.showCategoryBar) this.showCategoryBar = show;
+  }
+
+  /** Chon danh muc tu carousel: dung chung logic voi thanh ngang, roi cuon xuong san pham. */
+  onCarouselSelect(cat: Category3D): void {
+    const found = this.categories.find(c => String(c.Id) === cat.id);
+    if (!found) return;
+    this.onCategoryClick(found);
+    this.scrollPastHero();
+  }
+
+  /** Cuon vua qua carousel de thay ngay san pham + thanh ngang. */
+  private scrollPastHero(): void {
+    const hero = this.catHeroEl;
+    if (!hero) return;
+    const top = hero.offsetTop + hero.offsetHeight - this.stickyHeight;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  }
 
   onCategoryClick(category: Category): void {
     this.activeCategory = category;
@@ -683,9 +741,16 @@ export class HomeComponent implements OnInit, OnDestroy {
     try {
       const list = (await this.productApi.loadCategories()).filter(c => c.Id !== 1440125 && c.Id !== 1787413);
       this.categories = list.map((c, i) => ({ ...c, ...getCategoryVisual(c.Name, i) }));
+      this.categories3d = this.categories.map(c => ({
+        id: String(c.Id),
+        name: c.Name,
+        icon: c.icon,
+        gradient: c.gradient
+      }));
       this.cdr.markForCheck();
     } catch {
       this.categories = [];
+      this.categories3d = [];
     }
   }
 

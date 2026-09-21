@@ -68,6 +68,11 @@ const routeConfig: Routes = [
     title: 'Song Minh - Theo dõi đơn hàng'
   },
   {
+    path: 'demo-danh-muc-3d',
+    loadComponent: () => import('./components/category-carousel-demo/category-carousel-demo.component').then(m => m.CategoryCarouselDemoComponent),
+    title: 'Song Minh - Demo danh mục 3D'
+  },
+  {
     path: '**',
     redirectTo: ''
   }

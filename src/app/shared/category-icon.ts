@@ -20,28 +20,37 @@ const GRADIENTS = [
   'linear-gradient(135deg,#64b5f6,#1565c0)'
 ];
 
-/** Tu khoa (khong dau, thuong) -> emoji. Uu tien tu khoa dai truoc. */
-const KEYWORD_ICONS: Array<[string, string]> = [
+/**
+ * Tu khoa (khong dau, thuong) -> emoji.
+ * CHI dung emoji <= Emoji 11.0 (2018): 🪥 (13.0) va 🫙 (14.0) ra o vuong tren
+ * Windows 10 va Android cu - da kiem chung bang Chrome tren may dev.
+ * Mang duoc `sort` theo do dai giam dan ngay duoi day, nen thu tu viet trong mang
+ * KHONG quan trong: tu khoa dai luon duoc thu truoc. Quan trong vi nhieu ten danh muc
+ * chua tu khoa ngan cua nhom khac ("van phong pham" chua "pho", "trai cay" chua "tra").
+ */
+const KEYWORD_ICONS: Array<[string, string]> = ([
   ['card', '💳'], ['an vat', '🍿'],
   ['nuoc giai khat', '🥤'], ['nuoc ngot', '🥤'], ['nuoc suoi', '💧'], ['nuoc uong', '🥤'],
+  ['nuoc yen', '🍯'], ['yen sao', '🍯'],
   ['bia', '🍺'], ['ruou', '🍷'],
-  ['sua chua', '🥛'], ['sua', '🥛'],
-  ['banh keo', '🍬'], ['banh', '🍪'], ['keo', '🍬'], ['snack', '🍿'],
-  ['mi', '🍜'], ['pho', '🍜'], ['bun', '🍜'], ['chao', '🥣'],
-  ['gia vi', '🧂'], ['nuoc mam', '🧂'], ['dau an', '🫙'], ['duong', '🍚'],
+  ['sua chua', '🍨'], ['sua', '🥛'],
+  ['banh keo', '🍬'], ['banh my', '🥖'], ['banh mi', '🥖'], ['banh trang', '🍘'],
+  ['banh', '🍪'], ['keo', '🍬'], ['snack', '🍿'],
+  ['my tom', '🍜'], ['mi', '🍜'], ['pho', '🍜'], ['bun', '🍜'], ['chao', '🥣'],
+  ['gia vi', '🧂'], ['nuoc mam', '🧂'], ['dau an', '🍶'], ['duong', '🍚'],
   ['gao', '🌾'], ['do kho', '🌾'],
   ['ca phe', '☕'], ['tra', '🍵'],
   ['do hop', '🥫'], ['dong lanh', '🧊'], ['kem', '🍦'],
   ['rau', '🥬'], ['trai cay', '🍎'], ['hoa qua', '🍎'], ['thit', '🥩'], ['ca ', '🐟'], ['trung', '🥚'],
   ['hoa my pham', '🧴'], ['my pham', '💄'], ['cham soc', '🧴'],
-  ['dau goi', '🧴'], ['sua tam', '🧼'], ['xa phong', '🧼'], ['kem danh rang', '🪥'],
+  ['dau goi', '🧴'], ['sua tam', '🧼'], ['xa phong', '🧼'], ['kem danh rang', '🦷'],
   ['giat', '🧺'], ['tay rua', '🧽'], ['ve sinh', '🧽'],
   ['giay', '🧻'], ['ta', '🍼'], ['bim', '🍼'], ['em be', '🍼'], ['tre em', '🧸'],
   ['gia dung', '🍳'], ['gia dinh', '🏠'], ['nha bep', '🍳'], ['dung cu', '🔧'],
-  ['van phong pham', '✏️'], ['do choi', '🧸'],
+  ['van phong pham', '🖊️'], ['do choi', '🧸'],
   ['thuoc', '💊'], ['y te', '💊'],
   ['thuc pham', '🛒'], ['hang', '📦']
-];
+] as Array<[string, string]>).sort((a, b) => b[0].length - a[0].length);
 
 function normalize(s: string): string {
   return s.normalize('NFD')

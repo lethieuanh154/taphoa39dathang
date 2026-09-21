@@ -8,12 +8,22 @@
     </button>
 
     <!-- Product Image -->
-    <div class="detail-image-wrap">
+    <div
+      class="detail-image-wrap"
+      [class.zoomable]="canZoom"
+      (mouseenter)="onZoomEnter()"
+      (mousemove)="onZoomMove($event)"
+      (mouseleave)="onZoomLeave()"
+    >
       <img
         [src]="currentImage"
         [alt]="selectedProduct.FullName"
         class="detail-image"
       />
+
+      <div class="zoom-lens" *ngIf="showZoom" #zoomLens>
+        <img [src]="currentImage" [alt]="selectedProduct.FullName" class="zoom-img" #zoomImg />
+      </div>
       <span class="stock-badge" *ngIf="isOutOfStock">Hết hàng</span>
 
 

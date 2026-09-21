@@ -1,0 +1,416 @@
+/* ===== Category 3D circular carousel =====
+   Cac card nam tren mot cylinder 3D quanh truc doc o giua.
+   JS chi ghi 2 bien: --ring (goc xoay vong) va --d (do sau 0..1 cua tung card).
+   Con lai CSS tu tinh bang calc() -> drag khong can change detection. */
+
+:host {
+  /* Bi JS ghi lai trong measure(); day chi la gia tri du phong. */
+  --cw: 200px;          /* be rong card */
+  --ch: 280px;          /* chieu cao card */
+  --radius: 300;        /* ban kinh vong tron, unitless de dung trong calc */
+  --perspective: 1200px;
+  --stage-h: 398px;
+  --edge: 300px;        /* nua be rong vong tron sau phoi canh */
+  --tilt: -10deg;       /* nghieng vong tron: cung phia sau nhin cao hon cung phia truoc */
+
+  --dur: 650ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --brand: #2E7D32;
+
+  display: block;
+  width: 100%;
+}
+
+.category-3d-slider {
+  position: relative;
+  width: 100%;
+  padding: 6px 0 0;
+  box-sizing: border-box;
+}
+
+.category-3d-slider.is-empty .carousel-stage {
+  height: 0;
+}
+
+/* ===== Stage: noi dat camera ===== */
+.carousel-stage {
+  position: relative;
+  width: 100%;
+  height: var(--stage-h);
+  perspective: var(--perspective);
+  perspective-origin: 50% 50%;
+  overflow: hidden;
+  /* pan-y: swipe doc van scroll trang duoc, swipe ngang moi xoay carousel */
+  touch-action: pan-y;
+  cursor: grab;
+  outline: none;
+  /* Keo chuot khong duoc boi den text/anh */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.carousel-stage.grabbing {
+  cursor: grabbing;
+}
+
+/* Auto rotate: cham va diu hon thao tac cua user (sine in-out) */
+.carousel-stage.auto-anim {
+  --dur: 1500ms;
+  --ease: cubic-bezier(0.37, 0, 0.63, 1);
+}
+
+/* ===== Ring: xoay quanh truc Y =====
+   translateZ(-radius) day tam vong tron ve sau, nho vay card phia truoc
+   nam dung mat phang man hinh (z = 0) -> khong bi phong to bat thuong. */
+.carousel-ring {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* rotateX: nghieng cylinder de cung phia sau nhin cao hon cung phia truoc */
+  transform:
+    rotateX(var(--tilt))
+    translateZ(calc(var(--radius) * -1px))
+    rotateY(calc(var(--ring, 0) * 1deg));
+  transition: transform var(--dur) var(--ease);
+  /* Khong can will-change: ring da co 3D transform (translateZ) nen Chromium
+     tu tach compositing layer san. */
+}
+
+/* Trong luc drag: bo transition de card di theo con tro ngay lap tuc */
+.carousel-stage.no-anim .carousel-ring,
+.carousel-stage.no-anim .category-card,
+.carousel-stage.no-anim .face-inner {
+  transition: none;
+}
+
+/* ===== Card =====
+   Vi tri tren vong tron: rotateY(--a) translateZ(radius).
+   scale() dat sau cung de card to/nho quanh tam cua chinh no. */
+.category-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--cw);
+  height: var(--ch);
+  /* Dung margin (layout) thay vi translate(-50%,-50%) de khong pha truc xoay */
+  margin-left: calc(var(--cw) / -2);
+  margin-top: calc(var(--ch) / -2);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  transform-style: preserve-3d;
+  transform:
+    rotateY(calc(var(--a, 0) * 1deg))
+    translateZ(calc(var(--radius) * 1px))
+    scale(calc(1.16 - 0.5 * var(--d, 0)));
+  transition: transform var(--dur) var(--ease);
+  z-index: calc(100 - var(--d, 0) * 100);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
+/* Hai mat cua card. backface-visibility: khi card quay ra sau ta thay .face-back,
+   nho vay chu/anh o mat truoc khong bao gio bi lat nguoc. */
+.face {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.face-back {
+  transform: rotateY(180deg);
+}
+
+/* Lop trong giu opacity/filter/shadow.
+   Tach khoi .face vi opacity/filter lam element flatten 3D -> se pha backface. */
+.face-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: inherit;
+  overflow: hidden;
+  /* Card cang ra sau (--d -> 1) cang mo, xam va blur nhe */
+  opacity: calc(1 - 0.55 * var(--d, 0));
+  filter:
+    blur(calc(var(--d, 0) * var(--d, 0) * 1.8px))
+    saturate(calc(1 - 0.3 * var(--d, 0)))
+    brightness(calc(1 - 0.22 * var(--d, 0)));
+  box-shadow:
+    0 calc(8px + 14px * (1 - var(--d, 0)))
+      calc(16px + 26px * (1 - var(--d, 0)))
+      rgba(12, 32, 16, calc(0.08 + 0.24 * (1 - var(--d, 0))));
+  transition: opacity var(--dur) var(--ease), filter var(--dur) var(--ease),
+              box-shadow var(--dur) var(--ease);
+}
+
+.card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.card-icon {
+  font-size: calc(var(--cw) * 0.38);
+  line-height: 1;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.28));
+  user-select: none;
+  pointer-events: none;
+}
+
+.card-back-icon {
+  font-size: calc(var(--cw) * 0.3);
+  line-height: 1;
+  opacity: 0.55;
+  user-select: none;
+}
+
+/* Scrim duoi de chu luon doc duoc tren anh sang */
+.card-scrim {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 52%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.62), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
+
+.card-label {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: clamp(14px, calc(var(--cw) * 0.095), 18px);
+  font-weight: 600;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+/* Hien du ten danh muc: xuong dong duoc, khong cat bang "...".
+   Co chu do fitLabels() tinh va ghi inline. */
+.card-label-text {
+  display: block;
+  width: 100%;
+  white-space: normal;
+  overflow-wrap: break-word;
+  text-align: center;
+  line-height: 1.14;
+  /* Chia deu 2 dong, tranh dong cuoi tro trui 1 chu (Chrome 114+, bo qua neu khong ho tro) */
+  text-wrap: balance;
+}
+
+/* Dau tich: active khong chi phan biet bang mau */
+.card-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: scale(0.5);
+  transition: opacity 240ms var(--ease), transform 240ms var(--ease);
+  pointer-events: none;
+}
+
+.category-card.is-active .card-check {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.category-card.is-active .card-label-text {
+  font-weight: 800;
+}
+
+/* Vien trang dung outline, KHONG dung inset box-shadow:
+   box-shadow co ca inset lan outer tren element bi transform 3D lam Chrome
+   composite sai -> hien mot vet sang hinh chu nhat phia sau card (da kiem chung). */
+.category-card.is-active .face-front .face-inner {
+  box-shadow: 0 22px 44px rgba(12, 32, 16, 0.34);
+  outline: 3px solid rgba(255, 255, 255, 0.92);
+  outline-offset: -3px;
+}
+
+/* Hover chi tren thiet bi co chuot */
+@media (hover: hover) and (pointer: fine) {
+  .category-card:hover .face-front .face-inner {
+    filter: brightness(1.06) saturate(1.05);
+  }
+  .category-card:hover {
+    transform:
+      rotateY(calc(var(--a, 0) * 1deg))
+      translateZ(calc(var(--radius) * 1px))
+      scale(calc(1.22 - 0.5 * var(--d, 0)));
+  }
+}
+
+/* Focus: vong xanh dam ngay ngoai canh card -> nhin ro tren moi mau card */
+.category-card:focus-visible .face-front {
+  outline: 3px solid #1b5e20;
+  outline-offset: 3px;
+}
+
+/* ===== Nav buttons: overlay 2 ben de stage duoc full width ===== */
+.nav {
+  position: absolute;
+  top: calc(var(--stage-h) / 2 + 6px);
+  transform: translateY(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(46, 125, 50, 0.18);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--brand);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+/* Dat sat vien vong tron thay vi vien section */
+.nav-prev { left: max(6px, calc(50% - var(--edge) - 48px)); }
+.nav-next { right: max(6px, calc(50% - var(--edge) - 48px)); }
+
+.nav:hover:not(:disabled) {
+  background: #fff;
+  transform: translateY(-50%) scale(1.06);
+}
+
+.nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.nav:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ===== Pagination ===== */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+  min-height: 24px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(46, 125, 50, 0.28);
+  cursor: pointer;
+  transition: width 240ms var(--ease), background 240ms ease, box-shadow 240ms ease;
+}
+
+.dot.is-active {
+  width: 26px;
+  border-radius: 6px;
+  background: var(--brand);
+  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.18);
+}
+
+.dot:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 3px;
+}
+
+.pagination-progress {
+  gap: 10px;
+}
+
+.progress-track {
+  width: min(220px, 60%);
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(46, 125, 50, 0.16);
+  overflow: hidden;
+}
+
+.progress-bar {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand);
+  transition: width var(--dur) var(--ease);
+}
+
+.progress-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #4a5b4d;
+  font-variant-numeric: tabular-nums;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ===== Responsive ===== */
+/* Mobile: uu tien vuot. Vong tron chiem het be rong nen 2 nut nav
+   xuong hang duoi canh dots thay vi de len card hai ben. */
+@media (max-width: 640px) {
+  .category-3d-slider {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas:
+      "stage stage stage"
+      "prev  pag   next";
+    align-items: center;
+  }
+  .carousel-stage { grid-area: stage; }
+  .pagination { grid-area: pag; }
+  .nav {
+    position: static;
+    width: 40px;
+    height: 40px;
+    transform: none;
+  }
+  .nav-prev { grid-area: prev; }
+  .nav-next { grid-area: next; }
+  .nav:hover:not(:disabled) { transform: none; }
+  .face,
+  .face-inner { border-radius: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host { --dur: 1ms; }
+  .card-check { transition: none; }
+}

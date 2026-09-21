@@ -87,11 +87,31 @@ src/app/
 - Slide panel cart (khong chuyen trang)
 
 
-## Thanh danh muc (Home)
+## Danh muc o Home: carousel 3D + thanh ngang
+
+Tu 2026-09-21, Home co **hai** cho chon danh muc, khong hien cung luc:
+
+| | Khi nao hien | La gi |
+|---|---|---|
+| **Carousel 3D** (`cat-hero`, dau `main`) | Khi o dau trang | `app-category-3d-carousel` - vong tron 3D, cuon theo trang. Kem 2 nut **Khuyen mai** + **Tat ca** (khong nam trong vong tron). |
+| **Thanh ngang** (`.category-bar`) | Khi da cuon qua carousel | Thanh icon tron cu, `position: fixed` ngay duoi header |
+
+- Thanh ngang **khong con nam trong `.sticky-top-wrap`** ma la `position: fixed` + `[style.top.px]="stickyHeight"` (do bang chieu cao header). Nho khong nam trong luong nen bat/tat khong lam noi dung nhay - da do: `hero.offsetTop` khong doi giua 2 trang thai.
+- `updateCategoryBarVisibility()` (goi trong `window:scroll` + khi `#catHero` render) bat thanh ngang khi `hero.getBoundingClientRect().bottom < stickyHeight + hero.offsetHeight * 0.4`. Khong co carousel (chua load duoc danh muc) -> thanh ngang hien luon.
+- Chon tu carousel (`onCarouselSelect`) dung chung `onCategoryClick()` voi thanh ngang, sau do `scrollPastHero()` cuon vua qua carousel de thay san pham.
+- Hai cho dong bo qua `[activeId]="activeCategoryId"`: chon o thanh ngang thi vong 3D tu xoay den card do (khong emit lai).
+- Chiem cho: **38%** chieu cao khung nhin o 390x844, **62%** o 1366x800 (dieu chinh bang input `mobileHeightRatio` = 0.32 / `desktopHeightRatio` = 0.58). Vong tron trai **92%** be rong khung tren desktop, 2 nut nav sat vien - de vong hep lai thi giam `desktopHeightRatio`.
+
+Chi tiet component: `docs/components/CATEGORY-3D-CAROUSEL.md`.
+
+## Thanh danh muc ngang (Home)
 Thay chip chu bang **nut icon tron + nhan** (`.cat-item`), cuon ngang, mui ten trai/phai chi hien tren desktop.
 Thu tu: **Khuyen mai** (mo `/khuyen-mai`) → **Tat ca** → cac danh muc KiotViet.
 - Icon/mau lay tu `shared/category-icon.ts` — `getCategoryVisual(name, index)` do tu khoa trong ten danh muc (da bo dau) ra emoji, gradient xoay vong theo index. Tinh 1 lan luc `loadCategories()` roi gan vao `Category.icon/.gradient` (khong goi trong template vi OnPush).
-- Thanh danh muc **luon hien** (khong con `*ngIf="categories.length > 0"`): du khong load duoc danh muc van con nut Khuyen mai + Tat ca.
+- **2 luat cua `KEYWORD_ICONS` (2026-09-21):**
+  1. Mang tu `.sort()` theo **do dai tu khoa giam dan** ngay tai cho khai bao -> thu tu viet trong mang khong quan trong. Truoc day xep tay nen tu khoa ngan che tu khoa dai: "van phong pham" chua "pho" -> ra 🍜, "trai cay" chua "tra" -> ra 🍵, "kem danh rang" chua "kem" -> ra 🍦, "xa phong" chua "pho", "sua tam" chua "sua".
+  2. **Chi dung emoji <= Emoji 11.0 (2018).** 🪥 (13.0) va 🫙 (14.0) ra **o vuong** tren Windows 10 va Android cu (da kiem chung bang Chrome).
+- Thanh danh muc **luon hien** (khong con `*ngIf="categories.length > 0"`): du khong load duoc danh muc van con nut Khuyen mai + Tat ca. Tu 2026-09-21 no chi hien **khi da cuon qua carousel 3D** (xem muc tren).
 
 ### Chuoi load danh muc (`ProductApiService.loadCategories()`)
 1. Cache RAM → 2. IndexedDB (`meta/categories`, TTL 24h) → 3. **`GET /api/public/categories`** → 4. `GET /api/kiotviet/categories` (fallback) → 5. `deriveCategoriesFromCache()` suy ra tu `CategoryId/CategoryName` cua san pham trong IndexedDB.

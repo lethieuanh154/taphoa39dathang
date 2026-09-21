@@ -1,0 +1,102 @@
+<div class="category-3d-slider" [class.is-empty]="count === 0">
+
+  <button
+    type="button"
+    class="nav nav-prev"
+    aria-label="Danh mục trước"
+    [disabled]="count < 2"
+    (click)="goPrev()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M15 18l-6-6 6-6"/>
+    </svg>
+  </button>
+
+  <div
+    class="carousel-stage"
+    #stage
+    role="group"
+    aria-roledescription="Vòng xoay danh mục 3D"
+    [attr.aria-label]="ariaLabel"
+    (keydown)="onKeydown($event)">
+
+    <div class="carousel-ring" #ring>
+      <!-- Dung div role="button" thay vi <button>: UA style cua button
+           lam hong transform-style: preserve-3d tren mot so trinh duyet. -->
+      <div
+        class="category-card"
+        #cardEl
+        *ngFor="let cat of categories; let i = index; trackBy: trackById"
+        role="button"
+        [class.is-active]="i === activeIndex"
+        [attr.aria-label]="cat.name"
+        [attr.aria-current]="i === activeIndex ? 'true' : null"
+        [attr.tabindex]="i === activeIndex ? 0 : -1"
+        (focus)="onCardFocus(i)"
+        (click)="onCardClick(i)">
+
+        <!-- Mat truoc: anh/gradient + ten danh muc -->
+        <span class="face face-front">
+          <span class="face-inner" [style.background]="cardBackground(cat, i)">
+            <img *ngIf="cat.image" class="card-img" [src]="cat.image" [alt]="cat.name"
+                 draggable="false" loading="lazy">
+            <span *ngIf="!cat.image" class="card-icon" aria-hidden="true">{{ cardIcon(cat, i) }}</span>
+            <span class="card-scrim" aria-hidden="true"></span>
+            <!-- Tick o goc thay vi canh nhan, de nhan danh muc duoc tron be rong card -->
+            <span class="card-check" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 6L9 17l-5-5"/>
+              </svg>
+            </span>
+            <span class="card-label">
+              <span class="card-label-text">{{ cat.name }}</span>
+            </span>
+          </span>
+        </span>
+
+        <!-- Mat sau: cung gradient, chi con icon. Nho backface-visibility nen khong bi lat chu. -->
+        <span class="face face-back" aria-hidden="true">
+          <span class="face-inner" [style.background]="cardBackground(cat, i)">
+            <span class="card-back-icon">{{ cardIcon(cat, i) }}</span>
+          </span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    class="nav nav-next"
+    aria-label="Danh mục sau"
+    [disabled]="count < 2"
+    (click)="goNext()">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 6l6 6-6 6"/>
+    </svg>
+  </button>
+
+  <!-- Dots: chi render khi so danh muc con it, nhieu hon thi dung progress -->
+  <div class="pagination" *ngIf="showDots">
+    <button
+      type="button"
+      class="dot"
+      *ngFor="let cat of categories; let i = index; trackBy: trackById"
+      [class.is-active]="i === activeIndex"
+      [attr.aria-current]="i === activeIndex ? 'true' : null"
+      [attr.aria-label]="'Xem danh mục ' + cat.name"
+      (click)="onDotClick(i)">
+    </button>
+  </div>
+
+  <div class="pagination pagination-progress" *ngIf="showProgress">
+    <span class="progress-track" aria-hidden="true">
+      <span class="progress-bar" [style.width.%]="progressPercent"></span>
+    </span>
+    <span class="progress-text">{{ activeIndex + 1 }} / {{ count }}</span>
+  </div>
+
+  <!-- Thong bao cho screen reader khi card active doi -->
+  <span class="sr-only" aria-live="polite">{{ activeCategory?.name }}</span>
+</div>

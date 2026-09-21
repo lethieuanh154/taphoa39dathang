@@ -1,0 +1,125 @@
+.demo-page {
+  min-height: 100vh;
+  padding: 12px 12px 40px;
+  box-sizing: border-box;
+  background: radial-gradient(120% 70% at 50% 0%, #f2f8f2 0%, #e8f0e9 45%, #dfe8e1 100%);
+  font-size: 16px;
+  color: #23302a;
+}
+
+.demo-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 980px;
+  margin: 0 auto 8px;
+}
+
+.demo-head h1 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 12px 0 6px;
+  border-radius: 12px;
+  color: #2E7D32;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back:hover { background: rgba(46, 125, 50, 0.08); }
+
+.stage-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 10px 0 4px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.34));
+  box-shadow: 0 10px 30px rgba(20, 50, 28, 0.08);
+}
+
+.hint {
+  max-width: 980px;
+  margin: 12px auto 18px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5b6b5f;
+}
+
+.panel {
+  max-width: 980px;
+  margin: 0 auto 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(20, 50, 28, 0.07);
+}
+
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #2E7D32;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.row label { min-width: 150px; }
+
+.row select {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid #cdd8d0;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 16px;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.checks input {
+  width: 20px;
+  height: 20px;
+  accent-color: #2E7D32;
+}
+
+.selected { margin: 0 0 8px; }
+.selected.muted { color: #7a8880; }
+
+.log {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: #5b6b5f;
+}
+
+.log li { margin-bottom: 4px; }
+
+@media (max-width: 640px) {
+  .row { flex-wrap: wrap; }
+  .row label { min-width: 0; }
+}

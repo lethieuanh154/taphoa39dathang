@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, ChangeDetectorRef, OnInit, OnDestroy, HostListener, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Product, Promotion } from '../../models/product';
@@ -34,6 +34,14 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   currentImageIndex = 0;
   imagesLoaded = false;
 
+  // Image zoom (magnifier)
+  @ViewChild('zoomLens') zoomLens?: ElementRef<HTMLElement>;
+  @ViewChild('zoomImg') zoomImg?: ElementRef<HTMLImageElement>;
+  showZoom = false;
+  private readonly LENS_SIZE = 150;
+  private readonly ZOOM_SCALE = 2.5;
+  private readonly IMG_PADDING = 16;
+
   private historyPushed = false;
 
   constructor(
@@ -41,6 +49,45 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef,
     private http: HttpClient
   ) {}
+
+  get canZoom(): boolean {
+    return !!this.currentImage;
+  }
+
+  onZoomEnter(): void {
+    if (!this.canZoom) return;
+    if (typeof window === 'undefined' || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    this.showZoom = true;
+    this.cdr.markForCheck();
+  }
+
+  onZoomLeave(): void {
+    if (!this.showZoom) return;
+    this.showZoom = false;
+    this.cdr.markForCheck();
+  }
+
+  onZoomMove(event: MouseEvent): void {
+    if (!this.showZoom) return;
+    const lens = this.zoomLens?.nativeElement;
+    const img = this.zoomImg?.nativeElement;
+    if (!lens || !img) return;
+
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const half = this.LENS_SIZE / 2;
+    const lensLeft = Math.max(0, Math.min(x - half, rect.width - this.LENS_SIZE));
+    const lensTop = Math.max(0, Math.min(y - half, rect.height - this.LENS_SIZE));
+
+    lens.style.left = lensLeft + 'px';
+    lens.style.top = lensTop + 'px';
+    img.style.width = rect.width * this.ZOOM_SCALE + 'px';
+    img.style.height = rect.height * this.ZOOM_SCALE + 'px';
+    img.style.padding = this.IMG_PADDING * this.ZOOM_SCALE + 'px';
+    img.style.left = (x - lensLeft) - x * this.ZOOM_SCALE + 'px';
+    img.style.top = (y - lensTop) - y * this.ZOOM_SCALE + 'px';
+  }
 
   ngOnInit(): void {
     history.pushState({ modal: 'product-detail' }, '');
@@ -117,7 +164,7 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   }
 
   get marketPrice(): number {
-    return Math.round((this.selectedProduct.BasePrice * 1.10)/500)*500;
+    return Math.ceil((this.selectedProduct.BasePrice * 1.10) / 1000) * 1000;
   }
 
   get originalPrice(): number {

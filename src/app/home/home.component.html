@@ -4,17 +4,21 @@
   (confirmed)="onIdentityConfirmed($event)">
 </app-customer-identity-dialog>
 
-<div class="sticky-top-wrap">
+<div class="sticky-top-wrap" #stickyTop>
   <app-header (search)="onSearch($event)" (logoClick)="onShowAllClick()"></app-header>
+</div>
 
-  <!-- Category Bar - nut icon tron, "Khuyen mai" nam trong cung hang -->
-  <nav class="category-bar">
-    <div class="category-bar-inner">
-      <button class="cat-arrow cat-arrow-left" [class.cat-arrow-hidden]="!showLeftArrow" (click)="scrollCategoryLeft()" aria-label="Xem danh mục trước">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-      </button>
+<!--
+  Category Bar - thanh ngang gon. Dat `position: fixed` (khong nam trong luong)
+  nen bat/tat khong lam trang nhay. Chi hien khi carousel 3D da cuon qua.
+-->
+<nav class="category-bar" [class.category-bar-visible]="showCategoryBar" [style.top.px]="stickyHeight">
+  <div class="category-bar-inner">
+    <button class="cat-arrow cat-arrow-left" [class.cat-arrow-hidden]="!showLeftArrow" (click)="scrollCategoryLeft()" aria-label="Xem danh mục trước">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
 
-      <div class="category-bar-scroll" #categoryScroll>
+    <div class="category-bar-scroll" #categoryScroll>
         <!-- Khuyen mai: mo trang KM rieng -->
         <button class="cat-item cat-item-promo" (click)="goToPromotions()">
           <span class="cat-icon cat-icon-promo">
@@ -45,14 +49,40 @@
         </button>
       </div>
 
-      <button class="cat-arrow cat-arrow-right" [class.cat-arrow-hidden]="!showRightArrow" (click)="scrollCategoryRight()" aria-label="Xem danh mục tiếp">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
-      </button>
-    </div>
-  </nav>
-</div>
+    <button class="cat-arrow cat-arrow-right" [class.cat-arrow-hidden]="!showRightArrow" (click)="scrollCategoryRight()" aria-label="Xem danh mục tiếp">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 6 15 12 9 18"/></svg>
+    </button>
+  </div>
+</nav>
 
 <main class="main-content">
+  <!-- Danh muc 3D: chi o dau trang, cuon xuong thi nhuong cho thanh ngang -->
+  <section class="cat-hero" #catHero *ngIf="categories3d.length > 1">
+    <div class="cat-hero-actions">
+      <button class="cat-hero-btn cat-hero-btn-promo" (click)="goToPromotions()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/>
+        </svg>
+        Khuyến mại
+      </button>
+      <button class="cat-hero-btn" [class.cat-hero-btn-active]="!activeCategory" (click)="onShowAllClick()">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+          <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+        </svg>
+        Tất cả
+      </button>
+    </div>
+
+    <app-category-3d-carousel
+      [categories]="categories3d"
+      [activeId]="activeCategoryId"
+      [autoRotate]="true"
+      [autoRotateInterval]="4500"
+      (categorySelected)="onCarouselSelect($event)">
+    </app-category-3d-carousel>
+  </section>
+
   <!-- Skeleton KM: giu cho san khi payload KM chua ve, tranh layout nhay -->
   <section class="deal-bar" *ngIf="promoLoading && promotionProducts.length === 0">
     <div class="deal-head">
