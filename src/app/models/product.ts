@@ -152,6 +152,8 @@ export interface OrderData {
   distanceKm: number;
   pointsUsedForShip: number;
   pointsUsedForOrder: number;
+  pickupBulkDiscount?: number;
+  heavyCaseCount?: number;
   desiredDeliveryDate: string;
   desiredDeliveryTime: string;
   estimatedStartTime: string;
@@ -165,13 +167,17 @@ export interface ShipCostResult {
   shipCost: number;
   freeKm: number;
   ratePerKm: number;
+  /** Số km tối thiểu bị tính phí dù khách ở gần hơn (nhóm 200k–500k = 1km) */
+  minChargeableKm: number;
   canShip: boolean;
   message: string;
-  heavySurcharge: number;
 }
 
 export interface FinalCalculation {
   orderSubtotal: number;
+  /** Chiết khấu sỉ hàng thùng khi khách tự đến lấy (0 nếu chọn giao hàng) */
+  bulkDiscount: number;
+  subtotalAfterBulk: number;
   shipCost: number;
   pointsUsedForShip: number;
   actualShipPayment: number;

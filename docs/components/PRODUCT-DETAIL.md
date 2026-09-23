@@ -32,3 +32,11 @@ Dialog chi tiet san pham, mo khi user click/tap 1 card o Home.
 
 ## Dependencies
 - `CartService` - them vao gio hang
+
+## Fix mobile (2026-09-21)
+
+1. **Dialog bi cat o tren khi dang o dau trang.** Block `@media (max-width: 480px)` dat `align-items: flex-end` (bottom sheet) + `max-height: 95vh`. Tren Chrome Android, `vh` = layout viewport (**khong** tru thanh URL), nen khi thanh URL dang hien (luc o dau trang) `95vh` > vung thuc su nhin thay -> dialog dinh day thi phan TREN bi day ra ngoai. Cuon xuong thanh URL an di nen het loi -> de tuong la do carousel 3D.
+   - Sua: them `max-height: 92dvh` (`dvh` = vung thuc nhin thay), backdrop dung `height: 100dvh` thay `bottom: 0`, va `margin: auto` / `margin: auto 0 0` tren dialog + `overflow-y: auto` tren backdrop de neu con tran thi **cuon len duoc** chu khong bi cat (chi `align-items` se cat cung).
+   - Giu nguyen `95vh` / `100vh` phia truoc lam fallback cho trinh duyet cu.
+2. **Trang nen van cuon duoc khi dialog dang mo.** `ngOnInit` them class `sm-modal-open` vao `document.body` (`overflow: hidden`, khai bao o `src/styles.css`), `ngOnDestroy` bo ra. Them `overscroll-behavior: contain` de cuon het dialog khong keo lan sang trang nen.
+   - **Cac dialog khac (cart-panel, profile-bubble, gift-history, identity) chua khoa scroll** — dung chung class nay neu can.

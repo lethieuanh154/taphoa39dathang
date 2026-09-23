@@ -18,78 +18,192 @@ const ROAD_FACTOR = 1.3;
 /** Average speed in km/h for estimating travel time in urban area */
 const AVG_SPEED_KMH = 25;
 
+/** Tên cấp tỉnh/thành — KHÔNG được tính là khớp phường (xem matchesWard) */
+const PROVINCE_NAMES = new Set(['da nang', 'quang nam', 'tp da nang']);
+
+/** Trần nâng khoảng cách khi khớp ĐƯỢC CẢ phường (km) — đã chắc đúng đường, chỉ chưa rõ vị trí dọc đường */
+const MAX_UPLIFT_WARD_KM = 2.0;
+/** Trần nâng khi CHỈ khớp tên đường (km) — phải chặt vì Đà Nẵng sau sáp nhập có nhiều đường trùng tên */
+const MAX_UPLIFT_STREET_KM = 1.0;
+
+interface GeoCandidate {
+  lat: number;
+  lng: number;
+  /** Khoảng cách chim bay từ cửa hàng (km) */
+  dist: number;
+  streetMatched: boolean;
+  wardMatched: boolean;
+}
+
+/** Đơn tối thiểu để được giao hàng */
+const MIN_DELIVERY_SUBTOTAL = 200000;
+
+/** Hàng thùng nặng — dùng cho chiết khấu sỉ khi khách tự đến lấy */
+const HEAVY_PATTERN = /\b(bia|nước suối|nước khoáng|sữa|nước ngọt|nước tăng lực|nước giải khát)\b/i;
+/** Phải NHIỀU HƠN mức này mới được chiết khấu sỉ */
+const BULK_DISCOUNT_MIN_CASES = 10;
+/** đ/thùng, chỉ khi khách tự đến lấy hàng */
+const BULK_DISCOUNT_PER_CASE = 2000;
+
 @Injectable({ providedIn: 'root' })
 export class ShippingService {
   constructor(private http: HttpClient) {}
 
-  /** Geocode address to lat/lng — Photon (fuzzy match + location bias) → Nominatim fallback */
+  /**
+   * Geocode địa chỉ → MỘT toạ độ (Nominatim chỉ chạy khi Photon rỗng).
+   * Hệ thống tự chọn vị trí theo 3 tầng tin cậy trong pickCandidate() — xem chú thích ở đó.
+   */
   geocodeAddress(address: string): Observable<{ lat: number; lng: number }> {
     const cleaned = this.normalizeAddress(address);
     let query = cleaned;
     const lower = query.toLowerCase();
     if (!/đà\s*nẵng|da\s*nang/.test(lower)) query += ', Đà Nẵng';
+    const normalizedQuery = this.normalizeForMatch(query);
 
-    // Try 1: Photon — fuzzy matching, chọn kết quả gần cửa hàng nhất
-    return this.photonSearch(query).pipe(
-      switchMap(best => {
-        if (best) return of(best);
-        // Try 2: Nominatim free-form fallback
+    return this.photonSearch(query, normalizedQuery).pipe(
+      switchMap(found => {
+        if (found.length) return of(found);
         let full = query;
         if (!/việt\s*nam|viet\s*nam/.test(full.toLowerCase())) full += ', Việt Nam';
         return this.nominatimFreeform(full).pipe(
-          map(r => this.pickClosestNominatim(r))
+          map(r => this.nominatimCandidates(r, normalizedQuery))
         );
       }),
-      map(best => {
+      map(found => {
+        const best = this.pickCandidate(found);
         if (!best) {
-          throw new Error('Không tìm thấy địa chỉ. Vui lòng thêm dấu phẩy giữa số nhà, đường, phường, quận (VD: 120, Phan Trọng Tuệ, Hòa Cường, Đà Nẵng).');
+          throw new Error('Không tìm thấy địa chỉ. Vui lòng thêm dấu phẩy giữa số nhà, đường, phường (VD: 120, Núi Thành, Hòa Cường, Đà Nẵng).');
         }
-        return best;
+        return { lat: best.lat, lng: best.lng };
       })
     );
   }
 
-  /** Photon geocoder — fuzzy match + location bias gần cửa hàng */
-  private photonSearch(query: string): Observable<{ lat: number; lng: number } | null> {
+  /** Bỏ dấu tiếng Việt + hạ chữ thường để so khớp tên đường */
+  private normalizeForMatch(raw: string): string {
+    return (raw || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Một trường bất kỳ (đường/tên) có xuất hiện trong địa chỉ khách nhập không */
+  private matchesAny(fields: (string | null | undefined)[], normalizedQuery: string): boolean {
+    for (const field of fields) {
+      const t = this.stripPrefixes(this.normalizeForMatch(field || ''));
+      if (t.length > 4 && normalizedQuery.includes(t)) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Khớp PHƯỜNG/XÃ. Bỏ qua các giá trị cấp tỉnh/thành: geocoder luôn trả `city = "Đà Nẵng"`
+   * mà mọi truy vấn cũng luôn kết thúc bằng "Đà Nẵng", nên nếu tính cả chúng thì ứng viên nào
+   * cũng "khớp phường" — tầng B sụp vào tầng A và ăn nhầm trần 2km.
+   * Lỗi thật đã gặp: "28 Lê Trọng Tấn, Hoà An" lấy nhầm Lê Trọng Tấn ở Hoà Khánh (5,4km/thực 2,5km).
+   */
+  private matchesWard(fields: (string | null | undefined)[], normalizedQuery: string): boolean {
+    for (const field of fields) {
+      const t = this.stripPrefixes(this.normalizeForMatch(field || ''));
+      if (t.length <= 4 || PROVINCE_NAMES.has(t)) continue;
+      if (normalizedQuery.includes(t)) return true;
+    }
+    return false;
+  }
+
+  /** Bỏ tiền tố hành chính để so khớp phần tên thuần */
+  private stripPrefixes(t: string): string {
+    for (const prefix of ['duong ', 'hem ', 'kiet ', 'pho ', 'so ', 'phuong ', 'quan ', 'xa ', 'thanh pho ']) {
+      t = t.split(prefix).join('');
+    }
+    return t;
+  }
+
+  /**
+   * Chọn toạ độ theo 3 tầng tin cậy. Trong mỗi tầng lấy điểm XA NHẤT (sai số nghiêng về
+   * phía tính dư: tính thiếu thì cửa hàng lỗ mỗi chuyến, tính dư chỉ mất một đơn ở mép),
+   * chặn bằng một trần so với ứng viên đầu tầng.
+   *
+   * - Tầng A: khớp CẢ tên đường VÀ phường → trần +2km. Đã chắc đúng đường, phần dư chỉ là
+   *   vị trí dọc theo đường đó.
+   * - Tầng B: chỉ khớp tên đường → trần +1km. PHẢI chặt: Đà Nẵng sau khi sáp nhập Quảng Nam
+   *   có nhiều đường trùng tên khác phường. Ví dụ thật: "28 Lê Trọng Tấn, Hoà An" trả về cả
+   *   Lê Trọng Tấn ở An Khê (2,16km) lẫn Lê Trọng Tấn ở Hoà Khánh (4,09km) — trần 1km loại
+   *   đúng cái sai, trần 2km thì lấy nhầm nó.
+   * - Tầng C: không khớp gì → lấy kết quả ĐẦU TIÊN (geocoder đã xếp theo độ khớp).
+   *   Tuyệt đối không lấy xa nhất ở tầng này: mọi ứng viên đều có thể sai, max sẽ tóm
+   *   phải cái sai xa nhất (vd "120 Núi Thành, Hải Châu" → "Đường Thành Điện Hải").
+   *
+   * KHÔNG BAO GIỜ chọn theo "gần cửa hàng nhất" — lỗi cũ khiến địa điểm sai tên nhưng gần hơn
+   * luôn thắng ("08 Phan Đình Phùng" ra Phan Châu Trinh: 6,2km thay vì 8,1km, thực tế 8,0km).
+   */
+  private pickCandidate(candidates: GeoCandidate[]): GeoCandidate | null {
+    if (!candidates.length) return null;
+
+    const tiers: { pool: GeoCandidate[]; uplift: number }[] = [
+      { pool: candidates.filter(c => c.streetMatched && c.wardMatched), uplift: MAX_UPLIFT_WARD_KM },
+      { pool: candidates.filter(c => c.streetMatched && !c.wardMatched), uplift: MAX_UPLIFT_STREET_KM },
+    ];
+
+    for (const tier of tiers) {
+      if (!tier.pool.length) continue;
+      const limit = tier.pool[0].dist + tier.uplift;
+      let best = tier.pool[0];
+      for (const c of tier.pool) {
+        if (c.dist <= limit && c.dist > best.dist) best = c;
+      }
+      return best;
+    }
+
+    return candidates[0];
+  }
+
+  /** Photon geocoder — trả về MỌI ứng viên trong vùng, giữ nguyên thứ tự xếp hạng của Photon */
+  private photonSearch(query: string, normalizedQuery: string): Observable<GeoCandidate[]> {
     const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=5&lat=${STORE_LAT}&lon=${STORE_LNG}`;
     return this.http.get<any>(url).pipe(
       map(res => {
-        const features = res?.features;
-        if (!features?.length) return null;
-        let bestDist = Infinity;
-        let best: { lat: number; lng: number } | null = null;
-        for (const f of features) {
+        const candidates: GeoCandidate[] = [];
+        for (const f of res?.features || []) {
           const coords = f.geometry?.coordinates;
           if (!coords) continue;
           const lng = coords[0];
           const lat = coords[1];
           const dist = this.haversineDistance(STORE_LAT, STORE_LNG, lat, lng);
-          if (dist < bestDist && dist <= MAX_GEOCODE_KM) {
-            bestDist = dist;
-            best = { lat, lng };
-          }
+          if (dist > MAX_GEOCODE_KM) continue;
+          const p = f.properties || {};
+          candidates.push({
+            lat, lng, dist,
+            streetMatched: this.matchesAny([p.street, p.name], normalizedQuery),
+            wardMatched: this.matchesWard([p.district, p.county, p.city], normalizedQuery),
+          });
         }
-        return best;
+        return candidates;
       })
     );
   }
 
-  /** Chọn kết quả Nominatim gần cửa hàng nhất trong phạm vi MAX_GEOCODE_KM */
-  private pickClosestNominatim(results: any[] | null): { lat: number; lng: number } | null {
-    if (!results?.length) return null;
-    let bestDist = Infinity;
-    let best: { lat: number; lng: number } | null = null;
-    for (const r of results) {
+  /** Nominatim fallback — cùng quy tắc, chỉ chạy khi Photon không trả ứng viên nào */
+  private nominatimCandidates(results: any[] | null, normalizedQuery: string): GeoCandidate[] {
+    const candidates: GeoCandidate[] = [];
+    for (const r of results || []) {
       const lat = parseFloat(r.lat);
       const lng = parseFloat(r.lon);
       if (isNaN(lat) || isNaN(lng)) continue;
       const dist = this.haversineDistance(STORE_LAT, STORE_LNG, lat, lng);
-      if (dist < bestDist && dist <= MAX_GEOCODE_KM) {
-        bestDist = dist;
-        best = { lat, lng };
-      }
+      if (dist > MAX_GEOCODE_KM) continue;
+      const parts = (r.display_name || '').split(',').map((x: string) => x.trim());
+      candidates.push({
+        lat, lng, dist,
+        streetMatched: this.matchesAny(parts.slice(0, 2), normalizedQuery),
+        wardMatched: this.matchesWard(parts.slice(2, 5), normalizedQuery),
+      });
     }
-    return best;
+    return candidates;
   }
 
   /** Nominatim free-form fallback */
@@ -150,53 +264,64 @@ export class ShippingService {
     return deg * (Math.PI / 180);
   }
 
-  /** Calculate shipping cost based on order subtotal and distance */
-  calculateShipCost(orderSubtotal: number, distanceKm: number, items: CartItem[] = []): ShipCostResult {
-    if (orderSubtotal < 200000) {
-      return { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: false, message: 'Đơn tối thiểu 200.000đ để giao hàng', heavySurcharge: 0 };
+  /** Calculate shipping cost based on order subtotal and distance.
+   *  Không còn phụ phí hàng nặng — hàng thùng được xử lý bằng chiết khấu sỉ khi tự đến lấy. */
+  calculateShipCost(orderSubtotal: number, distanceKm: number): ShipCostResult {
+    if (orderSubtotal < MIN_DELIVERY_SUBTOTAL) {
+      return { shipCost: 0, freeKm: 0, ratePerKm: 0, minChargeableKm: 0, canShip: false, message: 'Đơn tối thiểu 200.000đ để giao hàng' };
     }
 
     let freeKm = 0;
     let ratePerKm = 0;
+    let minChargeableKm = 0;
 
     if (orderSubtotal < 500000) {
       freeKm = 0;
-      ratePerKm = 12000;
+      ratePerKm = 13000;
+      minChargeableKm = 1;   // tính tối thiểu 1km
     } else if (orderSubtotal < 1000000) {
-      freeKm = 2;
+      freeKm = 1;
       ratePerKm = 6000;
     } else if (orderSubtotal < 2000000) {
+      freeKm = 2;
+      ratePerKm = 5000;
+    } else if (orderSubtotal < 5000000) {
       freeKm = 3;
       ratePerKm = 5000;
-    } else if (orderSubtotal < 10000000){
+    } else if (orderSubtotal < 10000000) {
       freeKm = 5;
       ratePerKm = 5000;
     } else {
-      freeKm = 7;
+      freeKm = 8;
       ratePerKm = 4000;
     }
 
-    const chargeableKm = Math.max(0, distanceKm - freeKm);
-    const rawCost = chargeableKm * ratePerKm;
-    const shipCost = Math.round(rawCost / 1000) * 1000;
-    const heavySurcharge = this.calculateHeavySurcharge(items);
+    const chargeableKm = Math.max(minChargeableKm, distanceKm - freeKm);
+    const shipCost = Math.round(chargeableKm * ratePerKm / 1000) * 1000;
 
-    return { shipCost: shipCost + heavySurcharge, freeKm, ratePerKm, canShip: true, message: '', heavySurcharge };
+    return { shipCost, freeKm, ratePerKm, minChargeableKm, canShip: true, message: '' };
   }
 
-  /** Calculate surcharge for heavy bulk items (thùng bia, nước suối, sữa, nước ngọt) */
-  calculateHeavySurcharge(items: CartItem[]): number {
-    const heavyPattern = /\b(bia|nước suối|nước khoáng|sữa|nước ngọt|nước tăng lực|nước giải khát)\b/i;
+  /** Tổng số thùng hàng nặng (bia, nước suối, sữa, nước ngọt...) trong giỏ */
+  countHeavyCases(items: CartItem[]): number {
     let totalCases = 0;
     for (const item of items) {
-      if (item.product.Unit?.toLowerCase() === 'thùng' && heavyPattern.test(item.product.FullName || item.product.Name)) {
+      if (item.isGift) continue;
+      if (item.product.Unit?.toLowerCase() === 'thùng' && HEAVY_PATTERN.test(item.product.FullName || item.product.Name)) {
         totalCases += item.quantity;
       }
     }
-    if (totalCases > 20) return 100000;
-    if (totalCases > 10) return 50000;
-    if (totalCases > 5) return 20000;
-    return 0;
+    return totalCases;
+  }
+
+  /**
+   * Chiết khấu sỉ khi khách TỰ ĐẾN LẤY hàng: trên 10 thùng hàng nặng → 2.000đ/thùng.
+   * KHÔNG áp dụng cho đơn giao hàng — giá sỉ là giá tại cửa hàng.
+   */
+  calculatePickupBulkDiscount(items: CartItem[]): number {
+    const cases = this.countHeavyCases(items);
+    if (cases <= BULK_DISCOUNT_MIN_CASES) return 0;
+    return cases * BULK_DISCOUNT_PER_CASE;
   }
 
   /**

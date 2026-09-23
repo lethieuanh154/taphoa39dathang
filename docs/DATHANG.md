@@ -149,3 +149,15 @@ Nut **"Lich su tang qua"** trong modal the thanh vien (`components/profile-bubbl
 - **Token phien**: `verify-identity` tra `token` khi dang nhap thanh cong → luu `sm_customer_token` (o ca identity-dialog va profile-bubble), xoa khi logout. Thieu/het han → BE tra **401**; dialog tu goi lai `verify-identity` (khong mat khau) de xin token moi, that bai thi hien "Vui long dang nhap lai...". Xem `TapHoa39BackEnd/docs/GIFT-NOTES.md`.
 - 404 (khong tim thay KH) → hien "Ban chua co lich su tang qua", khong bao loi.
 - Noi dung note do nhan vien ghi tu **TapHoa39BanHang `/customers-page`** (cot "Ghi chu"), luu o field `GiftNotes` trong doc `customers`.
+
+## Hint 1 lan cho 2 bubble keo duoc (2026-09-21)
+
+`components/bubble-hint` — lop mo + khung vien nhay quanh **nut tai khoan** va **nut chat**, kem the huong dan "nhan giu 1 giay roi keo". Chi hien **1 lan duy nhat** moi may.
+
+- Dat trong `app.component` (canh `app-chat-bubble`), trong khoi `@defer (when customerIdentity)` -> chi chay sau khi khach xac nhan so dien thoai.
+- Co: `localStorage['sm_bubble_hint_v1'] = '1'` (doi thanh `_v2` neu muon hien lai cho khach cu). Storage bi chan -> coi nhu da xem, khong hien.
+- Doi 2 bubble render xong bang cach poll `POLL_MS = 700` x `MAX_TRIES = 12` (~8s) vi profile bubble chi co o Home sau khi co danh tinh. Thieu 1 trong 2 bubble -> **khong** hien (de khong "tieu" mat lan hien duy nhat).
+- Vi tri lay bang `getBoundingClientRect()` cua `app-profile-bubble` va `app-chat-bubble` — dung `querySelector` vi 2 bubble o 2 component khac nhau (chat o app root, profile trong Home qua router-outlet) nen `@ViewChild` khong voi toi.
+- Hai bubble xep sat nhau (profile `bottom: 84px`/`70px`, chat `bottom: 20px`, moi cai 56px) nen ve **1 khung vien bao ca hai** thay vi 2 vong tron (2 vong se chong nhau). Bubble that bi lop mo che nen ve lai icon 👤 💬 dung vi tri tung cai.
+- The huong dan tu tranh cho bubble: bubble o nua duoi -> the len tren, va nguoc lai.
+- Tat: click nut "Da hieu", click ra ngoai, hoac Escape.

@@ -66,7 +66,7 @@
       <div class="form-group">
         <label class="form-label" for="address">Địa chỉ giao hàng <span class="required-star"
             *ngIf="wantDelivery">*</span></label>
-        <input id="address" type="text" class="form-input" placeholder="số nhà,đường phố,phường/xã..."
+        <input id="address" type="text" class="form-input" placeholder="VD: 120 Núi Thành, Hòa Cường, Đà Nẵng"
           [(ngModel)]="customerAddress" (ngModelChange)="onAddressChange()" autocomplete="street-address" />
       </div>
 
@@ -87,6 +87,21 @@
       </label>
 
       <div class="pickup-details" *ngIf="!wantDelivery" style="margin-top: 12px;">
+        <div class="bulk-note">
+          <strong>Ưu đãi tự vận chuyển:</strong> mua <strong>trên 10 thùng</strong> hàng nặng
+          (bia, nước suối, nước khoáng, nước ngọt, sữa, nước tăng lực) được giảm <strong>2.000đ/thùng</strong>.
+          Ưu đãi chỉ áp dụng khi Quý khách tự đến lấy hàng.
+        </div>
+
+        <div class="bulk-applied" *ngIf="bulkDiscount > 0">
+          Đơn có <strong>{{ heavyCaseCount }} thùng</strong> hàng nặng &rarr; được giảm
+          <strong>{{ formatPrice(bulkDiscount) }} đ</strong>
+        </div>
+
+        <div class="bulk-hint" *ngIf="bulkDiscount === 0 && heavyCaseCount > 0">
+          Đơn đang có {{ heavyCaseCount }} thùng hàng nặng. Mua trên 10 thùng để được giảm 2.000đ/thùng.
+        </div>
+
         <div class="delivery-datetime">
           <div class="form-group" style="flex:1;margin-bottom:0">
             <label class="form-label" for="pickupDate">Ngày lấy hàng</label>
@@ -143,43 +158,39 @@
                     <tr>
                       <td>200k – 500k</td>
                       <td>Không miễn</td>
-                      <td>12.000đ/km</td>
+                      <td>13.000đ/km<br><span style="font-size:10px">(tối thiểu 1km)</span></td>
                     </tr>
                     <tr>
                       <td>500k – 1 tr</td>
-                      <td>2km đầu</td>
+                      <td>1km đầu</td>
                       <td>6.000đ/km</td>
                     </tr>
                     <tr>
                       <td>1 tr – 2 tr</td>
+                      <td>2km đầu</td>
+                      <td>5.000đ/km</td>
+                    </tr>
+                    <tr>
+                      <td>2 tr – 5 tr</td>
                       <td>3km đầu</td>
                       <td>5.000đ/km</td>
                     </tr>
                     <tr>
-                      <td>&gt;2 tr – 10 tr</td>
+                      <td>5 tr – 10 tr</td>
                       <td>5km đầu</td>
                       <td>5.000đ/km</td>
                     </tr>
                     <tr>
-                      <td>&gt; 10 triệu</td>
-                      <td>7km đầu</td>
+                      <td>&ge; 10 triệu</td>
+                      <td>8km đầu</td>
                       <td>4.000đ/km</td>
                     </tr>
                   </tbody>
                 </table>
                 <div style="margin-top:8px">
-                  <strong>Phụ phí hàng nặng</strong> <br><span style="font-size: 10px;">(các loại thùng bia, nước suối, sữa, nước ngọt, dầu ăn, nước tẩy rửa giặt)</span>
-                  <table style="margin-top:4px">
-                    <thead>
-                      <tr><th>Số thùng</th><th>Phụ phí</th></tr>
-                    </thead>
-                    <tbody>
-                      <tr><td>≤ 5 thùng</td><td>Miễn phí</td></tr>
-                      <tr><td>6 – 10 thùng</td><td>20.000đ</td></tr>
-                      <tr><td>11 – 20 thùng</td><td>50.000đ</td></tr>
-                      <tr><td>21 – 50 thùng</td><td>100.000đ</td></tr>
-                    </tbody>
-                  </table>
+                  <strong>Không có phụ phí hàng nặng.</strong>
+                  <br><span style="font-size: 11px;">Mua trên 10 thùng hàng nặng (bia, nước suối, nước ngọt, sữa…) và
+                  <strong>tự đến lấy hàng</strong> được giảm <strong>2.000đ/thùng</strong>. Ưu đãi không áp dụng cho đơn giao tận nơi.</span>
                 </div>
               </div>
             </div>
@@ -188,6 +199,12 @@
       </div>
 
       <div class="shipping-details" *ngIf="wantDelivery">
+        <div class="bulk-hint" *ngIf="potentialBulkDiscount > 0">
+          Đơn có {{ heavyCaseCount }} thùng hàng nặng. Nếu tự đến lấy hàng, Quý khách được giảm
+          <strong>{{ formatPrice(potentialBulkDiscount) }} đ</strong> (2.000đ/thùng).
+          Ưu đãi này không áp dụng cho đơn giao tận nơi.
+        </div>
+
         <!-- Empty address warning -->
         <div class="ship-address-hint" *ngIf="!customerAddress.trim() && !isCalculatingShip && !shipError">
           Hãy nhập địa chỉ giao hàng
@@ -224,10 +241,6 @@
           <div class="ship-note" *ngIf="shipResult.freeKm > 0">
             Miễn phí ship cho {{ shipResult.freeKm }}km đầu. <i style="font-size: 20px;"
               class="fa-regular fa-hand-point-left"></i>
-          </div>
-          <div class="ship-row" *ngIf="shipResult.heavySurcharge > 0" style="color:#e65100">
-            <span>Phụ phí hàng nặng:</span>
-            <strong>{{ formatPrice(shipResult.heavySurcharge) }} đ</strong>
           </div>
         </div>
 
@@ -289,6 +302,11 @@
       <div class="summary-row">
         <span>Tiền hàng:</span>
         <span>{{ formatPrice(orderSubtotal) }} đ</span>
+      </div>
+
+      <div class="summary-row discount" *ngIf="calculation.bulkDiscount > 0">
+        <span>Chiết khấu sỉ ({{ heavyCaseCount }} thùng, tự lấy):</span>
+        <span>-{{ formatPrice(calculation.bulkDiscount) }} đ</span>
       </div>
 
       <div class="summary-row" *ngIf="wantDelivery && shipCost > 0">

@@ -1,0 +1,41 @@
+<div
+  class="hint-overlay"
+  *ngIf="visible"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Hướng dẫn di chuyển nút tài khoản và nút chat"
+  (click)="dismiss()">
+
+  <!-- 1 khung vien bao ca 2 bubble (chung xep sat nhau). Bubble that bi lop mo
+       che nen ve lai icon dung vi tri tung cai. -->
+  <span
+    class="hint-frame"
+    *ngIf="frame"
+    aria-hidden="true"
+    [style.left.px]="frame.left"
+    [style.top.px]="frame.top"
+    [style.width.px]="frame.width"
+    [style.height.px]="frame.height"></span>
+
+  <span
+    class="hint-icon"
+    *ngFor="let s of spots"
+    aria-hidden="true"
+    [style.left.px]="s.left"
+    [style.top.px]="s.top"
+    [style.width.px]="s.size"
+    [style.height.px]="s.size">{{ s.icon }}</span>
+
+  <div
+    class="hint-card"
+    [style.top.px]="cardTop"
+    [style.bottom.px]="cardBottom"
+    (click)="$event.stopPropagation()">
+    <h2 class="hint-title">Hai nút này di chuyển được</h2>
+    <p class="hint-text">
+      Nhấn giữ khoảng 1 giây vào nút <b>tài khoản</b> 👤 hoặc nút <b>chat</b> 💬,
+      rồi kéo tới chỗ bạn muốn. Vị trí sẽ được ghi nhớ cho lần sau.
+    </p>
+    <button type="button" class="hint-btn" (click)="dismiss()">Đã hiểu</button>
+  </div>
+</div>

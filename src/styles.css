@@ -79,3 +79,9 @@ button {
   outline: 3px solid var(--blue-400);
   outline-offset: 2px;
 }
+
+/* Khoa scroll trang nen khi dang mo dialog (product-detail).
+   Dat o day vi body nam ngoai pham vi style cua component. */
+body.sm-modal-open {
+  overflow: hidden;
+}

@@ -38,7 +38,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
   isCalculatingShip = false;
   distanceKm = 0;
   durationMinutes = 0;
-  shipResult: ShipCostResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '', heavySurcharge: 0 };
+  shipResult: ShipCostResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, minChargeableKm: 0, canShip: true, message: '' };
   shipError = '';
   minDeliveryDate = '';
 
@@ -135,7 +135,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
               || 'Không tính được khoảng cách giao hàng từ địa chỉ này (dịch vụ bản đồ không phản hồi hoặc mất mạng). Vui lòng nhập lại địa chỉ rõ hơn, hoặc chọn tự đến lấy hàng.';
             this.isCalculatingShip = false;
             this.distanceKm = 0;
-            this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '', heavySurcharge: 0 };
+            this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, minChargeableKm: 0, canShip: true, message: '' };
             this.cdr.markForCheck();
             return EMPTY;
           })
@@ -145,7 +145,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     ).subscribe(result => {
       this.distanceKm = result.distanceKm;
       this.durationMinutes = result.durationMinutes+5;
-      this.shipResult = this.shippingService.calculateShipCost(this.orderSubtotal, this.distanceKm, this.items);
+      this.shipResult = this.shippingService.calculateShipCost(this.orderSubtotal, this.distanceKm);
       this.isCalculatingShip = false;
       this.calculateEstimatedDelivery();
       this.cdr.markForCheck();
@@ -171,12 +171,28 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     return this.wantDelivery && this.shipResult.canShip ? this.shipResult.shipCost : 0;
   }
 
+  /** Số thùng hàng nặng trong giỏ — dùng để hiện gợi ý chiết khấu sỉ */
+  get heavyCaseCount(): number {
+    return this.shippingService.countHeavyCases(this.items);
+  }
+
+  /** Chiết khấu sỉ chỉ áp dụng khi khách TỰ ĐẾN LẤY hàng */
+  get bulkDiscount(): number {
+    return this.wantDelivery ? 0 : this.shippingService.calculatePickupBulkDiscount(this.items);
+  }
+
+  /** Số tiền khách sẽ được giảm nếu đổi sang tự đến lấy (dùng cho gợi ý khi đang chọn giao hàng) */
+  get potentialBulkDiscount(): number {
+    return this.shippingService.calculatePickupBulkDiscount(this.items);
+  }
+
   get calculation(): FinalCalculation {
     return this.rewardService.calculateFinal(
       this.orderSubtotal,
       this.shipCost,
       this.usePointsForShip,
-      this.usePointsForOrder
+      this.usePointsForOrder,
+      this.bulkDiscount
     );
   }
 
@@ -207,7 +223,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
     this.wantDelivery = false;
     this.usePointsForShip = false;
     this.distanceKm = 0;
-    this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, canShip: true, message: '', heavySurcharge: 0 };
+    this.shipResult = { shipCost: 0, freeKm: 0, ratePerKm: 0, minChargeableKm: 0, canShip: true, message: '' };
     this.shipError = '';
     this.estimatedDeliveryDate = '';
     this.estimatedDeliveryTime = '';
@@ -384,7 +400,7 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       cartItems,
       totalPrice: calc.finalTotal,
       totalQuantity: this.totalItems,
-      discountAmount: calc.pointsUsedForOrder + (this.cartService.getTotalDiscount() || 0),
+      discountAmount: calc.pointsUsedForOrder + calc.bulkDiscount + (this.cartService.getTotalDiscount() || 0),
       appliedPromotions: this.cartService.getAppliedPromotions(),
       customerPaid:  calc.finalTotal ,
       totalCost: this.items.reduce((sum, i) => sum + (i.product.Cost || 0) * i.quantity, 0),
@@ -398,6 +414,8 @@ export class CheckoutComponent implements OnInit, OnDestroy {
       distanceKm: this.distanceKm,
       pointsUsedForShip: calc.pointsUsedForShip,
       pointsUsedForOrder: calc.pointsUsedForOrder,
+      pickupBulkDiscount: calc.bulkDiscount,
+      heavyCaseCount: this.heavyCaseCount,
       desiredDeliveryDate: this.estimatedDeliveryDate,
       desiredDeliveryTime: this.estimatedDeliveryTime,
       estimatedStartTime: '',

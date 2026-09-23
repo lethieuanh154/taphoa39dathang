@@ -26,9 +26,13 @@ export class RewardService {
     orderSubtotal: number,
     shipCost: number,
     usePointsForShip: boolean,
-    usePointsForOrder: boolean
+    usePointsForOrder: boolean,
+    bulkDiscount: number = 0
   ): FinalCalculation {
     const availablePoints = this.getAvailablePoints();
+    // Chiet khau si chi ap dung khi khach tu den lay -> tru truoc khi tinh diem
+    const cappedBulkDiscount = Math.min(Math.max(0, bulkDiscount), orderSubtotal);
+    const subtotalAfterBulk = orderSubtotal - cappedBulkDiscount;
 
     let pointsUsedForShip = 0;
     let actualShipPayment = shipCost;
@@ -39,9 +43,9 @@ export class RewardService {
     }
 
     let pointsUsedForOrder = 0;
-    let orderAfterDiscount = orderSubtotal;
+    let orderAfterDiscount = subtotalAfterBulk;
     if (usePointsForOrder) {
-      const orderDiscount = this.calculateOrderDiscount(availablePoints, pointsUsedForShip, orderSubtotal);
+      const orderDiscount = this.calculateOrderDiscount(availablePoints, pointsUsedForShip, subtotalAfterBulk);
       pointsUsedForOrder = orderDiscount.pointsUsed;
       orderAfterDiscount = orderDiscount.orderAfterDiscount;
     }
@@ -51,6 +55,8 @@ export class RewardService {
 
     return {
       orderSubtotal,
+      bulkDiscount: cappedBulkDiscount,
+      subtotalAfterBulk,
       shipCost,
       pointsUsedForShip,
       actualShipPayment,

@@ -92,12 +92,15 @@ export class ProductDetailComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     history.pushState({ modal: 'product-detail' }, '');
     this.historyPushed = true;
+    // Khoa scroll trang nen, neu khong khach vuot trong dialog se keo luon trang chu.
+    document.body.classList.add('sm-modal-open');
   }
 
   ngOnDestroy(): void {
     if (this.historyPushed) {
       this.historyPushed = false;
     }
+    document.body.classList.remove('sm-modal-open');
   }
 
   @HostListener('window:popstate')

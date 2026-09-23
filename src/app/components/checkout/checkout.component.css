@@ -622,3 +622,38 @@
   background: #bdbdbd;
   cursor: not-allowed;
 }
+
+/* --- Chiết khấu sỉ hàng thùng khi khách tự đến lấy --- */
+.bulk-note {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--green-700, #2E7D32);
+  background: #e8f5e9;
+  border-left: 4px solid var(--green-700, #2E7D32);
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.bulk-applied {
+  font-size: 15px;
+  line-height: 1.5;
+  color: #1b5e20;
+  background: #c8e6c9;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.bulk-hint {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e65100;
+  background: #fff3e0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+
+/* --- Chon vi tri giao hang khi dia chi khop nhieu noi --- */
