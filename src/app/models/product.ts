@@ -88,6 +88,7 @@ export interface Promotion {
   giftProducts?: GiftProduct[];         // product data cua gift, kem GiftQuantity
   fromDate: string;
   toDate: string;
+  isFlashBanner?: boolean;              // KM ngan ngay (<7 ngay) - hien popup banner o Home
   createdDate: string;
   modifiedDate: string;
 

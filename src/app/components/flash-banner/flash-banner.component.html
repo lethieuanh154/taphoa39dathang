@@ -1,0 +1,49 @@
+<div class="fb-overlay" *ngIf="visible" (click)="close()">
+  <div class="fb-box" role="dialog" aria-modal="true" aria-label="Khuyến mại ngắn ngày" (click)="$event.stopPropagation()">
+    <button class="fb-close" (click)="close()" aria-label="Đóng">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="fb-body" (click)="openPromotions()">
+      <div class="fb-head">
+        <span class="fb-tag">⚡ FLASH SALE</span>
+        <h2 class="fb-title">Khuyến mại ngắn ngày</h2>
+        <span class="fb-end" *ngIf="endText">{{ endText }}</span>
+      </div>
+
+      <div class="fb-grid" [class.fb-grid-1]="items.length === 1">
+        <div class="fb-item" *ngFor="let it of items; trackBy: trackById">
+          <div class="fb-media">
+            <div class="fb-thumb-wrap">
+              <img class="fb-thumb" [src]="it.product.Image || 'assets/no-image.svg'" [alt]="it.product.Name" loading="lazy">
+              <span class="fb-badge">{{ it.badge }}</span>
+            </div>
+            <ng-container *ngIf="it.gifts.length > 0">
+              <span class="fb-plus">+</span>
+              <div class="fb-gifts">
+                <div class="fb-gift" *ngFor="let g of it.gifts" [title]="'Tặng ' + g.GiftQuantity + ' ' + g.Name">
+                  <img class="fb-thumb" [src]="g.Image || 'assets/no-image.svg'" [alt]="g.Name" loading="lazy">
+                  <span class="fb-gift-tag">🎁 x{{ g.GiftQuantity }}</span>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+          <div class="fb-name">{{ it.product.Name }}</div>
+          <div class="fb-price">
+            <span class="fb-price-new">{{ it.price | number:'1.0-0' }}đ</span>
+            <span class="fb-price-old" *ngIf="it.oldPrice">{{ it.oldPrice | number:'1.0-0' }}đ</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="fb-cta" type="button">Xem ngay</button>
+    </div>
+
+    <label class="fb-hide-today">
+      <input type="checkbox" [checked]="dontShowToday" (change)="toggleDontShowToday($event)">
+      <span>Không hiện lại hôm nay</span>
+    </label>
+  </div>
+</div>

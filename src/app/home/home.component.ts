@@ -13,6 +13,7 @@ import { ProfileBubbleComponent } from '../components/profile-bubble/profile-bub
 import { DraggableBubbleDirective } from '../directives/draggable-bubble.directive';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { PolicyFooterComponent } from '../components/policy-footer/policy-footer.component';
+import { FlashBannerComponent } from '../components/flash-banner/flash-banner.component';
 import { Category3dCarouselComponent, Category3D } from '../components/category-3d-carousel/category-3d-carousel.component';
 import { ProductApiService } from '../services/product-api.service';
 import { GroupService } from '../services/group.service';
@@ -37,7 +38,7 @@ interface Category {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ProfileBubbleComponent, DraggableBubbleDirective, PolicyFooterComponent, Category3dCarouselComponent] as const,
+  imports: [CommonModule, FormsModule, RouterModule, HeaderComponent, ProductCardComponent, CartPanelComponent, ProductDetailComponent, CustomerIdentityDialogComponent, ProfileBubbleComponent, DraggableBubbleDirective, PolicyFooterComponent, Category3dCarouselComponent, FlashBannerComponent] as const,
   templateUrl: './home.component.html',
   styleUrls: ['./home.css'],
   changeDetection: ChangeDetectionStrategy.OnPush

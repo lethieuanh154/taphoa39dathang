@@ -173,6 +173,9 @@
 <!-- Cart Panel -->
 <app-cart-panel></app-cart-panel>
 
+<!-- Flash sale banner (KM ngan ngay) -->
+<app-flash-banner *ngIf="!showIdentityDialog"></app-flash-banner>
+
 <!-- Product Detail Dialog -->
 <app-product-detail
   *ngIf="detailProduct"

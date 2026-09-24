@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterModule } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { HeaderComponent } from '../header/header.component';
 import { CartPanelComponent } from '../cart-panel/cart-panel.component';
@@ -15,7 +15,7 @@ import {
   getPromoCondition, getGiftProducts, getDiscountedPrice
 } from '../../shared/promotion-display';
 
-type FilterKind = 'all' | PromoKind;
+type FilterKind = 'all' | 'flash' | PromoKind;
 
 interface PromoCard {
   promotion: Promotion;
@@ -52,6 +52,7 @@ export class PromotionPageComponent implements OnInit, OnDestroy {
 
   readonly filters: { key: FilterKind; label: string }[] = [
     { key: 'all', label: 'Tất cả' },
+    { key: 'flash', label: '⚡ Flash sale' },
     { key: 'gift', label: 'Mua tặng quà' },
     { key: 'direct', label: 'Giảm giá trực tiếp' },
     { key: 'buy_a_get_b', label: 'Mua kèm giá ưu đãi' }
@@ -63,10 +64,12 @@ export class PromotionPageComponent implements OnInit, OnDestroy {
     private groupService: GroupService,
     private cartService: CartService,
     private router: Router,
+    private route: ActivatedRoute,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
+    if (this.route.snapshot.queryParamMap.get('loai') === 'flash') this.activeFilter = 'flash';
     // KM khong phu thuoc IndexedDB -> tai ngay; initialize() chay song song cho phan cache
     this.load();
     this.productApi.initialize().catch(() => {});
@@ -84,11 +87,15 @@ export class PromotionPageComponent implements OnInit, OnDestroy {
   get visibleCards(): PromoCard[] {
     return this.activeFilter === 'all'
       ? this.cards
-      : this.cards.filter(c => c.kind === this.activeFilter);
+      : this.cards.filter(c => this.matchFilter(c, this.activeFilter));
   }
 
   countOf(key: FilterKind): number {
-    return key === 'all' ? this.cards.length : this.cards.filter(c => c.kind === key).length;
+    return key === 'all' ? this.cards.length : this.cards.filter(c => this.matchFilter(c, key)).length;
+  }
+
+  private matchFilter(card: PromoCard, key: FilterKind): boolean {
+    return key === 'flash' ? !!card.promotion.isFlashBanner : card.kind === key;
   }
 
   setFilter(key: FilterKind): void {
@@ -147,6 +154,7 @@ export class PromotionPageComponent implements OnInit, OnDestroy {
       || (b.promotion.priority || 0) - (a.promotion.priority || 0));
 
     this.cards = cards;
+    if (this.activeFilter !== 'all' && this.countOf(this.activeFilter) === 0) this.activeFilter = 'all';
     this.isLoading = false;
     this.cdr.markForCheck();
 
