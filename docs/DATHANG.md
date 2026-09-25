@@ -139,6 +139,12 @@ Ham thuan (dung chung Home + trang KM):
 `getPromoKind`, `getPromoKindLabel`, `getPromoBadge`, `getPromoDetail`, `getPromoCondition`, `getGiftEntries`, `getGiftProducts`, `calcDiscountAmount`, `getDiscountedPrice`, `getPromoEndTime`.
 **Quan trong:** `calcDiscountAmount()` lam tron **floor xuong 1.000d** giong `promotion-engine.ts` va BE `_recompute_order_economics()` → gia hien thi khop gia BE tinh lai luc dat hang.
 
+## Hang het ton tren Home (2026-09-25)
+`HomeComponent.appendProducts()` - tieu chi khop `product-card.isOutOfStock` (`OnHand + CloneOnHandNV <= 0`):
+- **Trang chu (featured) + danh muc**: AN hang het ton.
+- **Search**: hien, xep cuoi TOAN BO danh sach (khong chi trong lo 20 moi tai), giu thu tu goc moi nhom.
+- `loadMore()` tai tiep toi da 5 trang/lan neu trang vua tai toan hang het ton (khong them the nao -> trang khong dai ra -> scroll khong ban lai loadMore).
+
 ## Thanh khuyen mai tren Home
 Style "flash deals": nen cam, tieu de + **dem nguoc** toi KM het han som nhat (chi hien khi con < 24h) + nut "Xem tat ca" → `/khuyen-mai`.
 Mui ten cuon la `<button>` that (`.deal-arrow`, `z-index: 3`), **khong con `pointer-events: none`** → bam duoc, khong bi lot click xuong san pham ben duoi.

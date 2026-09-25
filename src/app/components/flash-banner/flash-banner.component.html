@@ -13,7 +13,15 @@
         <span class="fb-end" *ngIf="endText">{{ endText }}</span>
       </div>
 
-      <div class="fb-grid" [class.fb-grid-1]="items.length === 1">
+      <div class="fb-carousel">
+        <button class="fb-arrow fb-arrow-prev" type="button" *ngIf="canPrev"
+                (click)="scrollBy(-1, $event)" aria-label="Xem trước">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+
+      <div class="fb-track" #track [class.fb-track-1]="items.length === 1" (scroll)="updateArrows()">
         <div class="fb-item" *ngFor="let it of items; trackBy: trackById">
           <div class="fb-media">
             <div class="fb-thumb-wrap">
@@ -23,9 +31,9 @@
             <ng-container *ngIf="it.gifts.length > 0">
               <span class="fb-plus">+</span>
               <div class="fb-gifts">
-                <div class="fb-gift" *ngFor="let g of it.gifts" [title]="'Tặng ' + g.GiftQuantity + ' ' + g.Name">
-                  <img class="fb-thumb" [src]="g.Image || 'assets/no-image.svg'" [alt]="g.Name" loading="lazy">
-                  <span class="fb-gift-tag">🎁 x{{ g.GiftQuantity }}</span>
+                <div class="fb-gift" *ngFor="let g of it.gifts" [title]="g.title">
+                  <img class="fb-thumb" [src]="g.product.Image || 'assets/no-image.svg'" [alt]="g.product.Name" loading="lazy">
+                  <span class="fb-gift-tag">{{ g.tag }}</span>
                 </div>
               </div>
             </ng-container>
@@ -36,6 +44,14 @@
             <span class="fb-price-old" *ngIf="it.oldPrice">{{ it.oldPrice | number:'1.0-0' }}đ</span>
           </div>
         </div>
+      </div>
+
+        <button class="fb-arrow fb-arrow-next" type="button" *ngIf="canNext"
+                (click)="scrollBy(1, $event)" aria-label="Xem tiếp">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </button>
       </div>
 
       <button class="fb-cta" type="button">Xem ngay</button>

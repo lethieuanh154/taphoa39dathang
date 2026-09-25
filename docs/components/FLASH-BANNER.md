@@ -9,9 +9,13 @@ Popup banner "Flash sale" hien giua man hinh khi mo Home, quang cao KM ngan ngay
 
 ## Nguon du lieu
 - Subscribe `PromotionService.promotions$` (Home da goi `loadActivePromotions()`), khong goi API rieng.
-- Lay promo co `isFlashBanner`, co `targetProduct` hop le, dedupe theo `targetProductId`, toi da 4 SP.
+- Lay promo co `isFlashBanner`, co `targetProduct` hop le. Hien **theo tung campaign** (KHONG dedupe theo `targetProductId` - 1 SP co the co nhieu campaign flash; BE gioi han 4 SP).
+- Carousel ngang (`.fb-track`, scroll-snap, 2 card/khung): nut mui ten trai/phai (`scrollBy` 1 khung) chi hien khi con cho cuon (`canPrev`/`canNext`, cap nhat qua su kien `scroll`); vuot tay tren mobile van dung duoc.
 - Khong co promo nao → khong hien.
-- KM loai `gift` (mua tang qua): hien anh qua tang (`getGiftProducts`, toi da 2) ben phai anh SP ban, noi bang dau "+", kem nhan `🎁 x{GiftQuantity}`. Loai `direct`/`buy_a_get_b` khong hien anh qua.
+- Anh SP phu (`getGiftProducts`, toi da 2) hien ben phai anh SP ban, noi bang dau "+":
+  - `gift` (mua tang qua): nhan `🎁 x{GiftQuantity}`, title "Tang ...".
+  - `buy_a_get_b` (mua A duoc mua B giam gia): anh SP B, nhan = badge giam (`-20%`/`-10K`), title "Mua kem B con Xđ"; badge SP A doi thanh `MUA KÈM` (giam ap len B, khong phai A).
+  - `direct`: khong co anh phu.
 
 ## Hanh vi
 | Hanh dong | Ket qua |

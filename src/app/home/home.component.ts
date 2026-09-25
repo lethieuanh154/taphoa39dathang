@@ -512,15 +512,16 @@ export class HomeComponent implements OnInit, OnDestroy {
       .map(group => group[0])
       .filter(p => !existingIds.has(p.Id));
 
-    // Sort: in-stock first. Chi sort trong lo moi de cac the da render khong bi nhay cho.
-    newMasters.sort((a, b) => {
-      const stockA = a.OnHand + (a.CloneOnHandNV || 0);
-      const stockB = b.OnHand + (b.CloneOnHandNV || 0);
-      return (stockB > 0 ? 1 : 0) - (stockA > 0 ? 1 : 0);
-    });
-
     this.allMasterProducts.push(...newMasters);
-    this.displayedProducts = [...this.allMasterProducts];
+
+    // Het hang: AN o trang chu/danh muc; chi khi search moi hien, xep cuoi TOAN BO danh sach.
+    // Tieu chi khop product-card isOutOfStock.
+    const inStock: Product[] = [];
+    const outOfStock: Product[] = [];
+    for (const p of this.allMasterProducts) {
+      (p.OnHand + (p.CloneOnHandNV || 0) > 0 ? inStock : outOfStock).push(p);
+    }
+    this.displayedProducts = this.currentMode === 'search' ? [...inStock, ...outOfStock] : inStock;
   }
 
   private clearProducts(): void {
@@ -537,22 +538,29 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
 
     try {
-      let result: { products: Product[]; hasMore: boolean };
-
-      if (this.currentMode === 'category' && this.activeCategory) {
-        result = await this.productApi.loadByCategory(this.activeCategory.Id, this.PAGE_SIZE, this.currentOffset);
-      } else if (this.currentMode === 'featured') {
-        result = await this.productApi.loadFeaturedProducts(this.PAGE_SIZE, this.currentOffset);
-      } else {
+      if (this.currentMode === 'search') {
         // Search mode — already fully loaded
         this.isLoadingMore = false;
         this.cdr.markForCheck();
         return;
       }
 
-      this.appendProducts(result.products);
-      this.currentOffset += result.products.length;
-      this.hasMore = result.hasMore;
+      // Trang toan hang het ton (bi an) khong lam trang dai ra -> scroll khong ban lai loadMore.
+      // Tai tiep toi khi co SP moi hien thi (gioi han 5 trang/lan).
+      const shownBefore = this.displayedProducts.length;
+      let guard = 0;
+      do {
+        let result: { products: Product[]; hasMore: boolean };
+        if (this.currentMode === 'category' && this.activeCategory) {
+          result = await this.productApi.loadByCategory(this.activeCategory.Id, this.PAGE_SIZE, this.currentOffset);
+        } else {
+          result = await this.productApi.loadFeaturedProducts(this.PAGE_SIZE, this.currentOffset);
+        }
+        this.appendProducts(result.products);
+        this.currentOffset += result.products.length;
+        this.hasMore = result.hasMore;
+        guard++;
+      } while (this.hasMore && this.displayedProducts.length === shownBefore && guard < 5);
     } catch (err) {
       console.error('[Home] loadMore failed:', err);
       this.hasMore = false;
