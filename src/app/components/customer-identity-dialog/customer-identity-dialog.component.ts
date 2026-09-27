@@ -5,6 +5,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { SnackbarService } from '../../services/snackbar.service';
+import { WebSocketService } from '../../services/websocket.service';
 
 const IDENTITY_KEY = 'sm_customer_identity';
 const IDENTITY_NAME_KEY = 'sm_customer_name';
@@ -221,6 +222,7 @@ export class CustomerIdentityDialogComponent {
   private http = inject(HttpClient);
   private snackbar = inject(SnackbarService);
   private cdr = inject(ChangeDetectorRef);
+  private ws = inject(WebSocketService);
 
   inputValue = '';
   passwordValue = '';
@@ -273,6 +275,7 @@ export class CustomerIdentityDialogComponent {
           localStorage.setItem(IDENTITY_CODE_KEY, res.code);
         }
         localStorage.setItem(GIFT_POINT_KEY, String(res.giftPoint || 0));
+        this.ws.watchCustomer();
         if (res.token) {
           localStorage.setItem(TOKEN_KEY, res.token);
         }

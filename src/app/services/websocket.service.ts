@@ -133,6 +133,7 @@ export class WebSocketService implements OnDestroy {
 
     this.customerSocket.on('connect', () => {
       console.log('[WS-Customer] Connected to /api/websocket/customers');
+      this.watchCustomer();
     });
 
     this.customerSocket.on('connect_error', (err: any) => {
@@ -143,14 +144,26 @@ export class WebSocketService implements OnDestroy {
       console.log('[WS-Customer] bonus_updated received:', payload);
       if (payload?.code) {
         const myCode = localStorage.getItem('sm_customer_identity') || '';
+        const myKvCode = localStorage.getItem('sm_customer_code') || '';
         console.log('[WS-Customer] myCode:', myCode, 'payload.code:', payload.code);
-        if (myCode && myCode === payload.code) {
+        if ((myCode && myCode === payload.code) || (myKvCode && myKvCode === payload.code)) {
           localStorage.setItem('sm_customer_giftpoint', String(payload.giftPoint));
           this.bonusUpdated$.next(payload);
           console.log('[WS-Customer] giftPoint updated to', payload.giftPoint);
         }
       }
     });
+  }
+
+  /**
+   * BE chi gui `bonus_updated` vao room cua dung ma khach -> phai bao ma sau moi lan (re)connect
+   * va sau khi khach xac nhan danh tinh.
+   */
+  watchCustomer(): void {
+    const code = localStorage.getItem('sm_customer_code') || localStorage.getItem('sm_customer_identity') || '';
+    if (code && this.customerSocket?.connected) {
+      this.customerSocket.emit('watch_customer', { code });
+    }
   }
 
   getProductUpdates$() {
