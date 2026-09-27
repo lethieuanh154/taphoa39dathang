@@ -4,7 +4,7 @@ import { BehaviorSubject, Subject, Subscription, firstValueFrom } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Product } from '../models/product';
 import { IndexedDBService } from './indexed-db.service';
-import { WebSocketService, ProductWSUpdate } from './websocket.service';
+import { WebSocketService, ProductWSUpdate, CloneStockUpdate } from './websocket.service';
 import { SnackbarService } from './snackbar.service';
 
 interface Category {
@@ -329,8 +329,37 @@ export class ProductApiService implements OnDestroy {
       }),
       this.ws.getProductsAdded$().subscribe(newProducts => {
         this.handleProductsAdded(newProducts);
+      }),
+      this.ws.getCloneStockUpdated$().subscribe(updates => {
+        this.handleCloneStockUpdated(updates);
       })
     );
+  }
+
+  /** BanHang ban hang clone -> cap nhat tong ton clone cua SP original dang co trong IndexedDB. */
+  private async handleCloneStockUpdated(updates: CloneStockUpdate[]): Promise<void> {
+    let changed = false;
+
+    for (const update of updates) {
+      const id = Number(update.Id);
+      if (!id || isNaN(id)) continue;
+
+      const existing = await this.idb.getByKey<Product>(
+        this.DB_NAME, this.DB_VERSION, this.STORE_NAME, id
+      );
+      if (!existing) continue;
+
+      const cloneOnHandNV = Math.max(0, Number(update.CloneOnHandNV) || 0);
+      if ((existing.CloneOnHandNV || 0) === cloneOnHandNV) continue;
+
+      await this.idb.put(this.DB_NAME, this.DB_VERSION, this.STORE_NAME, { ...existing, CloneOnHandNV: cloneOnHandNV });
+      changed = true;
+    }
+
+    if (changed) {
+      this.invalidateCache();
+      this.productUpdated$.next();
+    }
   }
 
   /**
@@ -385,7 +414,7 @@ export class ProductApiService implements OnDestroy {
     for (const raw of newProducts) {
       const id = Number(raw.Id);
       if (!id || isNaN(id)) continue;
-      if (raw['isClone'] === true) continue;
+      if (raw['isClone'] === true || raw['isClone'] === 'true' || raw['KiotVietSync'] === false) continue;
 
       const existing = await this.idb.getByKey<Product>(
         this.DB_NAME, this.DB_VERSION, this.STORE_NAME, id

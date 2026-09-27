@@ -20,6 +20,12 @@ export interface ProductWSUpdate {
   [key: string]: any;
 }
 
+/** Tong ton clone moi cua 1 SP original (BE event `clone_stock_updated`). */
+export interface CloneStockUpdate {
+  Id: number | string;
+  CloneOnHandNV: number;
+}
+
 export interface ProductsUpdatedPayload {
   products: ProductWSUpdate[];
   timestamp: string;
@@ -44,6 +50,7 @@ export class WebSocketService implements OnDestroy {
 
   private productUpdates$ = new Subject<ProductWSUpdate[]>();
   private productsAdded$ = new Subject<ProductWSUpdate[]>();
+  private cloneStockUpdated$ = new Subject<CloneStockUpdate[]>();
   private promotionsUpdated$ = new Subject<PromotionsUpdatedPayload>();
   private bonusUpdated$ = new Subject<BonusUpdatedPayload>();
   private connectionStatus$ = new BehaviorSubject<'connected' | 'disconnected' | 'connecting'>('disconnected');
@@ -88,6 +95,12 @@ export class WebSocketService implements OnDestroy {
     this.socket.on('products_added', (payload: ProductsUpdatedPayload) => {
       if (payload?.products?.length) {
         this.productsAdded$.next(payload.products);
+      }
+    });
+
+    this.socket.on('clone_stock_updated', (payload: { products: CloneStockUpdate[] }) => {
+      if (payload?.products?.length) {
+        this.cloneStockUpdated$.next(payload.products);
       }
     });
 
@@ -146,6 +159,10 @@ export class WebSocketService implements OnDestroy {
 
   getProductsAdded$() {
     return this.productsAdded$.asObservable();
+  }
+
+  getCloneStockUpdated$() {
+    return this.cloneStockUpdated$.asObservable();
   }
 
   getPromotionsUpdated$() {
